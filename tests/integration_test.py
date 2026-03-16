@@ -56,10 +56,45 @@ async def run_test():
         doc_id = resp.json()["id"]
         print(f"SUCCESS: Document uploaded, ID: {doc_id}")
 
-        print("\n--- 5. Wait for Background Processing (2s) ---")
+        print("\n--- 5. Testing Patient Profile ---")
+        profile_data = {
+            "real_name": "Test Patient",
+            "gender": "male",
+            "medical_history": {"condition": "Healthy"}
+        }
+        resp = await client.put(f"{BASE_URL}/patients/me", json=profile_data, headers=headers)
+        if resp.status_code != 200:
+            print(f"FAILED Profile Update: {resp.text}")
+            return
+        patient_id = resp.json()["id"]
+        print(f"SUCCESS: Patient profile created/updated, ID: {patient_id}")
+
+        print("\n--- 6. Testing Family Linking ---")
+        # Create a second user as family member
+        family_email = f"family_{uuid.uuid4().hex[:6]}@example.com"
+        await client.post(f"{BASE_URL}/auth/register", json={
+            "email": family_email,
+            "password": "familypassword123",
+            "name": "Family User"
+        })
+        
+        # Link family member
+        link_data = {
+            "patient_id": patient_id,
+            "family_user_email": family_email,
+            "relationship_type": "brother",
+            "access_level": 1
+        }
+        resp = await client.post(f"{BASE_URL}/family/links", json=link_data, headers=headers)
+        if resp.status_code != 200:
+            print(f"FAILED Family Link: {resp.text}")
+            return
+        print(f"SUCCESS: Family link created for {family_email}")
+
+        print("\n--- 7. Wait for Background Processing (2s) ---")
         await asyncio.sleep(2)
 
-        print("\n--- 6. Testing Chat (SSE) ---")
+        print("\n--- 8. Testing Chat (SSE) ---")
         chat_data = {
             "kb_id": kb_id,
             "conversation_id": str(uuid.uuid4()),

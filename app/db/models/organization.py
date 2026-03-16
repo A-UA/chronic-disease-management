@@ -36,3 +36,17 @@ class OrganizationInvitation(Base, UUIDMixin, TimestampMixin):
     token: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     status: Mapped[str] = mapped_column(String(50), default='pending', server_default='pending')
     expires_at: Mapped[datetime] = mapped_column(nullable=False)
+
+class PatientFamilyLink(Base, TimestampMixin):
+    __tablename__ = "patient_family_links"
+
+    patient_id: Mapped[UUID] = mapped_column(ForeignKey("patient_profiles.id", ondelete="CASCADE"), primary_key=True)
+    family_user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    
+    relationship_type: Mapped[str | None] = mapped_column(String(50)) # parents, spouse, etc.
+    access_level: Mapped[int] = mapped_column(default=1) # 1: ViewOnly, 2: ProxyAction
+    status: Mapped[str] = mapped_column(String(50), default='pending') # pending, active, rejected
+    
+    # Relationships
+    family_user: Mapped["User"] = relationship()
+    patient: Mapped["PatientProfile"] = relationship()
