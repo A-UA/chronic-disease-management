@@ -29,3 +29,17 @@ class PatientManagerAssignment(Base, TimestampMixin):
     # Relationships
     manager: Mapped["User"] = relationship()
     patient: Mapped["PatientProfile"] = relationship()
+
+class ManagementSuggestion(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "management_suggestions"
+
+    org_id: Mapped[UUID] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True)
+    manager_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    patient_id: Mapped[UUID] = mapped_column(ForeignKey("patient_profiles.id", ondelete="CASCADE"), index=True)
+    
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    suggestion_type: Mapped[str] = mapped_column(String(50), default='general') # clinical, lifestyle, medication
+    
+    # Relationships
+    manager: Mapped["User"] = relationship()
+    patient: Mapped["PatientProfile"] = relationship()

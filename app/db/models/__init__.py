@@ -5,7 +5,7 @@ from .knowledge import KnowledgeBase, Document, Chunk
 from .chat import Conversation, Message, UsageLog
 from .api_key import ApiKey
 from .patient import PatientProfile
-from .manager import ManagerProfile, PatientManagerAssignment
+from .manager import ManagerProfile, PatientManagerAssignment, ManagementSuggestion
 
 # Ensure all models are in metadata for migrations
 __all__ = [
@@ -23,5 +23,6 @@ __all__ = [
     "ApiKey",
     "PatientProfile",
     "ManagerProfile",
-    "PatientManagerAssignment"
+    "PatientManagerAssignment",
+    "ManagementSuggestion"
 ]

@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.endpoints import chat, documents, external_api, auth, organizations, knowledge_bases, patients, family
+from app.api.endpoints import chat, documents, external_api, auth, organizations, knowledge_bases, patients, family, managers
 
 api_router = APIRouter()
 
@@ -12,6 +12,7 @@ api_router.include_router(organizations.router, prefix="/organizations", tags=["
 # 医疗画像
 api_router.include_router(patients.router, prefix="/patients", tags=["patients"])
 api_router.include_router(family.router, prefix="/family", tags=["family"])
+api_router.include_router(managers.router, prefix="/managers", tags=["managers"])
 
 # 知识库管理
 api_router.include_router(knowledge_bases.router, prefix="/kb", tags=["knowledge_bases"])
