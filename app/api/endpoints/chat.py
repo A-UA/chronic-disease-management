@@ -10,6 +10,7 @@ from uuid import UUID
 from app.api.deps import get_current_user, get_current_org, get_db, verify_quota
 from app.db.models import User, Message, UsageLog, Conversation
 from app.services.chat import retrieve_chunks, build_rag_prompt
+from app.services.quota import update_org_quota
 
 router = APIRouter()
 
@@ -97,7 +98,10 @@ async def chat_endpoint(
         db.add(usage)
         await db.commit()
         
+        # Deduct quota from Organization
+        await update_org_quota(db, org_id, usage.total_tokens)
+        
         # Yield done
-        yield f"event: done\ndata: {json.dumps({'tokens': usage.prompt_tokens + usage.completion_tokens})}\n\n"
+        yield f"event: done\ndata: {json.dumps({'tokens': usage.total_tokens})}\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")

@@ -34,3 +34,7 @@ class UsageLog(Base, UUIDMixin, TimestampMixin):
     
     action_type: Mapped[str] = mapped_column(String(50), nullable=True)
     resource_id: Mapped[UUID | None] = mapped_column(nullable=True)
+
+    @property
+    def total_tokens(self) -> int:
+        return self.prompt_tokens + self.completion_tokens

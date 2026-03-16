@@ -4,6 +4,7 @@ from langchain_core.documents import Document as LCDocument
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.models import Document, Chunk, UsageLog
+from app.services.quota import update_org_quota
 from typing import List
 
 # Mock embedding for now, usually you'd use langchain_openai.OpenAIEmbeddings
@@ -56,6 +57,9 @@ async def process_document(db: AsyncSession, document_id: UUID, file_content: st
     )
     db.add(usage)
     
-    # 6. Update document status
+    # 6. Update organization quota
+    await update_org_quota(db, document.org_id, total_tokens)
+    
+    # 7. Update document status
     document.status = "completed"
     await db.commit()

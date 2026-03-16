@@ -1,16 +1,18 @@
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 
 from app.api.deps import get_current_user, get_current_org, get_db
 from app.db.models import User, Document
 from app.services.storage import storage_service
+from app.services.rag import process_document
 
 router = APIRouter()
 
 @router.post("/kb/{kb_id}/documents")
 async def upload_document(
     kb_id: UUID,
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
     org_id: UUID = Depends(get_current_org),
@@ -40,6 +42,17 @@ async def upload_document(
         db.add(document)
         await db.commit()
         await db.refresh(document)
+        
+        # Trigger background processing
+        # Note: We pass the bytes decoded as string for now as process_document expects string.
+        # In production, you'd need a real text extractor (PDF/Docx etc.)
+        content = ""
+        try:
+            content = file_bytes.decode("utf-8")
+        except:
+            content = "[Non-text file or encoding error]"
+            
+        background_tasks.add_task(process_document, db, document.id, content)
         
         return {"id": document.id, "minio_url": document.minio_url, "status": document.status}
     except Exception as e:

@@ -53,8 +53,8 @@ async def get_current_org(
     if not org_user:
         raise HTTPException(status_code=403, detail="Not enough permissions")
     
-    # Inject RLS context into session
-    await db.execute(text("SET LOCAL app.current_org_id = :org_id"), {"org_id": str(org_uuid)})
+    # Inject RLS context using set_config to avoid parameter binding issues with SET
+    await db.execute(text("SELECT set_config('app.current_org_id', :org_id, true)"), {"org_id": str(org_uuid)})
     
     return org_uuid
 
@@ -82,7 +82,7 @@ async def get_api_key_context(
         raise HTTPException(status_code=401, detail="Invalid API Key")
         
     # Rate Limiting
-    check_api_key_rate_limit(api_key.id, api_key.qps_limit)
+    await check_api_key_rate_limit(api_key.id, api_key.qps_limit)
     
     # Verify Quota (org level)
     await check_org_quota(db, api_key.org_id)
@@ -92,6 +92,6 @@ async def get_api_key_context(
         raise HTTPException(status_code=402, detail="API Key token quota exceeded")
         
     # RLS
-    await db.execute(text("SET LOCAL app.current_org_id = :org_id"), {"org_id": str(api_key.org_id)})
+    await db.execute(text("SELECT set_config('app.current_org_id', :org_id, true)"), {"org_id": str(api_key.org_id)})
     
     return api_key
