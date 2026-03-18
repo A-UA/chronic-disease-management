@@ -1,6 +1,7 @@
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base, UUIDMixin, TimestampMixin
+from . import OrganizationUser
 
 class User(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "users"

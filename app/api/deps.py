@@ -21,7 +21,7 @@ async def get_current_user(
 ) -> User:
     try:
         payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[ALGORITHM])
-        user_id: str = payload.get("sub")
+        user_id = payload.get("sub")
         if user_id is None:
             raise HTTPException(status_code=401, detail="Invalid token")
     except (jwt.PyJWTError, ValidationError):

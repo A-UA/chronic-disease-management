@@ -2,6 +2,7 @@ from sqlalchemy import String, ForeignKey, Boolean, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from uuid import UUID
 from .base import Base, UUIDMixin, TimestampMixin
+from . import User, Organization, PatientProfile
 
 class ManagerProfile(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "manager_profiles"

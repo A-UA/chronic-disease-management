@@ -3,6 +3,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from uuid import UUID
 from .base import Base, UUIDMixin, TimestampMixin
+from . import User, Organization
 
 class PatientProfile(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "patient_profiles"

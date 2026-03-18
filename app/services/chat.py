@@ -1,17 +1,22 @@
-from typing import List, Dict, Any
+from typing import TypedDict
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.db.models import Chunk
 
+class Citation(TypedDict):
+    doc_id: str
+    ref: str
+    page: int
+
 # Mock embedding for now
 class MockEmbeddings:
-    def embed_query(self, text: str) -> List[float]:
+    def embed_query(self, text: str) -> list[float]:
         return [0.1] * 1536
 
 embeddings_model = MockEmbeddings()
 
-async def retrieve_chunks(db: AsyncSession, query: str, kb_id: UUID, limit: int = 5) -> List[Chunk]:
+async def retrieve_chunks(db: AsyncSession, query: str, kb_id: UUID, limit: int = 5) -> list[Chunk]:
     query_embedding = embeddings_model.embed_query(query)
     
     # Vector Search using pgvector cosine distance
@@ -25,7 +30,7 @@ async def retrieve_chunks(db: AsyncSession, query: str, kb_id: UUID, limit: int 
     result = await db.execute(stmt)
     return list(result.scalars().all())
 
-def build_rag_prompt(query: str, chunks: List[Chunk], history: List[Dict[str, str]] = None) -> str:
+def build_rag_prompt(query: str, chunks: list[Chunk]) -> tuple[str, list[dict[str, Citation]]]:
     context_blocks = []
     citations = []
     

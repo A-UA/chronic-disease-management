@@ -3,6 +3,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from uuid import UUID
 from datetime import datetime
 from .base import Base, UUIDMixin, TimestampMixin
+from . import User, PatientProfile
 
 class Organization(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "organizations"
