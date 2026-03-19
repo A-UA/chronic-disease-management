@@ -9,7 +9,8 @@ from uuid import UUID
 from app.core.config import settings
 from app.core.security import ALGORITHM
 from app.db.session import get_db
-from app.db.models import User, OrganizationUser, Organization, ApiKey
+from sqlalchemy.orm import selectinload
+from app.db.models import User, OrganizationUser, Organization, ApiKey, Role, Permission
 from app.services.quota import check_org_quota, check_api_key_rate_limit
 import hashlib
 
@@ -36,20 +37,26 @@ async def get_current_user(
     
     return user
 
-async def get_current_org(
+async def get_current_org_user(
     x_organization_id: str = Header(...),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
-) -> UUID:
+) -> OrganizationUser:
     try:
         org_uuid = UUID(x_organization_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid Organization ID")
 
-    # Verify user belongs to org
-    stmt = select(OrganizationUser).where(
-        OrganizationUser.org_id == org_uuid,
-        OrganizationUser.user_id == current_user.id
+    # Verify user belongs to org and load RBAC info
+    stmt = (
+        select(OrganizationUser)
+        .options(
+            selectinload(OrganizationUser.rbac_role).selectinload(Role.permissions)
+        )
+        .where(
+            OrganizationUser.org_id == org_uuid,
+            OrganizationUser.user_id == current_user.id
+        )
     )
     result = await db.execute(stmt)
     org_user = result.scalar_one_or_none()
@@ -57,10 +64,70 @@ async def get_current_org(
     if not org_user:
         raise HTTPException(status_code=403, detail="Not enough permissions")
     
-    # Inject RLS context using set_config to avoid parameter binding issues with SET
+    # Inject RLS context
     await db.execute(text("SELECT set_config('app.current_org_id', :org_id, true)"), {"org_id": str(org_uuid)})
     
-    return org_uuid
+    return org_user
+
+async def get_current_org(
+    org_user: OrganizationUser = Depends(get_current_org_user)
+) -> UUID:
+    return org_user.org_id
+
+def check_permission(perm_code: str):
+    async def permission_dependency(
+        org_user: OrganizationUser = Depends(get_current_org_user)
+    ) -> OrganizationUser:
+        # 1. Functional RBAC is only for staff
+        if org_user.user_type != "staff":
+            raise HTTPException(status_code=403, detail="Access denied. Staff only.")
+            
+        # 2. Standard RBAC check
+        if not org_user.rbac_role:
+            raise HTTPException(status_code=403, detail="No role assigned to user")
+            
+        permissions = [p.code for p in org_user.rbac_role.permissions]
+        if perm_code not in permissions:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Missing required permission: {perm_code}"
+            )
+        return org_user
+        
+    return permission_dependency
+
+async def require_patient_identity(
+    org_user: OrganizationUser = Depends(get_current_org_user),
+    db: AsyncSession = Depends(get_db)
+) -> UUID:
+    """
+    Ensure the user is acting as a patient in this organization.
+    Returns the patient_profile.id.
+    """
+    if org_user.user_type != "patient":
+         # Maybe they are a staff but also have a patient profile? Let's check.
+         from app.db.models import PatientProfile
+         stmt = select(PatientProfile.id).where(
+             PatientProfile.user_id == org_user.user_id,
+             PatientProfile.org_id == org_user.org_id
+         )
+         res = await db.execute(stmt)
+         patient_id = res.scalar()
+         if not patient_id:
+             raise HTTPException(status_code=403, detail="User is not a patient in this organization")
+         return patient_id
+    
+    # If they are explicitly marked as patient type, find their profile
+    from app.db.models import PatientProfile
+    stmt = select(PatientProfile.id).where(
+        PatientProfile.user_id == org_user.user_id,
+        PatientProfile.org_id == org_user.org_id
+    )
+    res = await db.execute(stmt)
+    patient_id = res.scalar()
+    if not patient_id:
+        raise HTTPException(status_code=404, detail="Patient profile not found")
+    return patient_id
 
 async def verify_quota(
     org_id: UUID = Depends(get_current_org),

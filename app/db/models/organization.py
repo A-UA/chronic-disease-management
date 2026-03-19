@@ -26,10 +26,16 @@ class OrganizationUser(Base, TimestampMixin):
 
     org_id: Mapped[UUID] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), primary_key=True)
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
-    role: Mapped[str] = mapped_column(String(50), default='member', server_default='member') # owner, admin, member, viewer
+    
+    # staff: admin/manager, patient: the actual patient user
+    user_type: Mapped[str] = mapped_column(String(20), default='staff', server_default='staff') 
+    
+    # Standard RBAC - Only for 'staff' type
+    role_id: Mapped[UUID | None] = mapped_column(ForeignKey("roles.id", ondelete="SET NULL"), index=True)
 
     organization: Mapped["Organization"] = relationship(back_populates="users")
     user: Mapped["User"] = relationship(back_populates="organizations")
+    rbac_role: Mapped["Role"] = relationship()
 
 class OrganizationInvitation(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "organization_invitations"

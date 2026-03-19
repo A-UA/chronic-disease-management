@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from uuid import UUID
 
-from app.api.deps import get_db, get_current_user, get_current_org
+from app.api.deps import get_db, get_current_user, get_current_org, check_permission
 from app.db.models import User, PatientProfile, PatientManagerAssignment, ManagementSuggestion
 from pydantic import BaseModel, ConfigDict
 
@@ -58,6 +58,7 @@ async def create_patient_suggestion(
     suggest_in: SuggestionCreate,
     current_user: User = Depends(get_current_user),
     org_id: UUID = Depends(get_current_org),
+    _ = Depends(check_permission("suggestion:create")),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     # 1. 校验分配关系

@@ -1,6 +1,7 @@
 from .base import Base
 from .user import User
 from .organization import Organization, OrganizationUser, OrganizationInvitation, PatientFamilyLink
+from .rbac import Role, Permission, RolePermission
 from .knowledge import KnowledgeBase, Document, Chunk
 from .chat import Conversation, Message, UsageLog
 from .api_key import ApiKey
@@ -26,5 +27,8 @@ __all__ = [
     "ManagerProfile",
     "PatientManagerAssignment",
     "ManagementSuggestion",
-    "AuditLog"
+    "AuditLog",
+    "Role",
+    "Permission",
+    "RolePermission"
 ]
