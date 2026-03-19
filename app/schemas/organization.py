@@ -1,0 +1,41 @@
+from pydantic import BaseModel, ConfigDict, computed_field
+from uuid import UUID
+
+class OrganizationBase(BaseModel):
+    name: str
+    plan_type: str = "free"
+
+class OrganizationCreate(OrganizationBase):
+    pass
+
+class OrganizationUpdate(BaseModel):
+    name: str | None = None
+    plan_type: str | None = None
+
+class OrganizationReadPublic(OrganizationBase):
+    """Viewable by any member or patient."""
+    id: UUID
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class OrganizationReadAdmin(OrganizationReadPublic):
+    """Viewable only by organization admins."""
+    quota_tokens_limit: int
+    quota_tokens_used: int
+
+    @computed_field
+    def quota_usage_percent(self) -> float:
+        if self.quota_tokens_limit == 0:
+            return 0.0
+        return round((self.quota_tokens_used / self.quota_tokens_limit) * 100, 2)
+
+class OrganizationMemberRead(BaseModel):
+    user_id: UUID
+    email: str
+    name: str | None = None
+    role: str # owner, admin, member, viewer
+
+class PatientAssignmentCreate(BaseModel):
+    patient_id: UUID
+    manager_id: UUID
+    role: str = "main"

@@ -6,21 +6,9 @@ from uuid import UUID
 
 from app.api.deps import get_db, get_current_user
 from app.db.models import User, Organization, OrganizationUser, PatientProfile, PatientManagerAssignment
-from pydantic import BaseModel, ConfigDict
+from app.schemas.organization import OrganizationReadAdmin, OrganizationMemberRead, PatientAssignmentCreate
 
 router = APIRouter()
-
-class OrganizationRead(BaseModel):
-    id: UUID
-    name: str
-    plan_type: str
-    quota_tokens_limit: int
-    quota_tokens_used: int
-
-class PatientAssignmentCreate(BaseModel):
-    patient_id: UUID
-    manager_id: UUID
-    role: str = "main"
 
 @router.post("/{org_id}/assignments", response_model=dict)
 async def assign_patient_to_manager(
@@ -66,18 +54,14 @@ async def assign_patient_to_manager(
     await db.commit()
     return {"status": "success", "message": "Patient assigned successfully"}
 
-class OrganizationMemberRead(BaseModel):
-    user_id: UUID
-    email: str
-    name: str | None
-    role: str
-
-@router.get("/me", response_model=List[OrganizationRead])
+@router.get("/me", response_model=List[OrganizationReadAdmin])
 async def get_my_organizations(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
-    # 获取用户所属的所有组织
+    """
+    获取当前用户所属的所有组织（作为成员或所有者）。
+    """
     stmt = (
         select(Organization)
         .join(OrganizationUser)
@@ -92,6 +76,9 @@ async def get_organization_members(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
+    """
+    获取组织的成员列表（仅限组织成员查看）。
+    """
     # 1. 校验当前用户是否属于该组织
     stmt_check = select(OrganizationUser).where(
         OrganizationUser.org_id == org_id,
@@ -101,11 +88,10 @@ async def get_organization_members(
     if not res_check.scalar_one_or_none():
         raise HTTPException(status_code=403, detail="Not a member of this organization")
 
-    # 2. 获取所有成员详情
-    from app.db.models import User
+    # 2. 获取成员详情并脱敏映射
     stmt = (
-        select(OrganizationUser.user_id, User.email, User.name, OrganizationUser.role)
-        .join(User, OrganizationUser.user_id == User.id)
+        select(User.id, User.email, User.name, OrganizationUser.role)
+        .join(OrganizationUser, OrganizationUser.user_id == User.id)
         .where(OrganizationUser.org_id == org_id)
     )
     result = await db.execute(stmt)

@@ -1,7 +1,10 @@
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import TYPE_CHECKING
 from .base import Base, UUIDMixin, TimestampMixin
-from . import OrganizationUser
+
+if TYPE_CHECKING:
+    from .organization import OrganizationUser
 
 class User(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "users"

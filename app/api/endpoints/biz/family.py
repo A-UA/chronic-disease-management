@@ -5,8 +5,10 @@ from sqlalchemy import select, and_
 from uuid import UUID
 
 from app.api.deps import get_db, get_current_user, get_current_org
-from app.db.models import User, PatientFamilyLink, PatientProfile
+from app.db.models import User, PatientFamilyLink, PatientProfile, ManagementSuggestion
+from app.services.audit import audit_action
 from pydantic import BaseModel, ConfigDict
+from datetime import date
 
 router = APIRouter()
 
@@ -22,6 +24,16 @@ class FamilyLinkRead(BaseModel):
     relationship_type: str | None
     access_level: int
     status: str
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class PatientProfileFamilyRead(BaseModel):
+    id: UUID
+    real_name: str
+    gender: str | None
+    birth_date: date | None
+    medical_history: dict | None
+    relationship_type: str | None
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -76,3 +88,50 @@ async def get_my_linked_patients(
     )
     result = await db.execute(stmt)
     return result.scalars().all()
+
+@router.get("/patients/{patient_id}", response_model=PatientProfileFamilyRead)
+async def get_linked_patient_profile(
+    patient_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> Any:
+    # 1. Verify link exists
+    stmt = select(PatientFamilyLink).where(
+        PatientFamilyLink.patient_id == patient_id,
+        PatientFamilyLink.family_user_id == current_user.id,
+        PatientFamilyLink.status == "active"
+    )
+    result = await db.execute(stmt)
+    link = result.scalar_one_or_none()
+    if not link:
+        raise HTTPException(status_code=403, detail="No active family link for this patient")
+    
+    # 2. Fetch patient profile
+    # RLS will allow this because app.current_user_id is set in deps.get_current_user!
+    stmt_p = select(PatientProfile).where(PatientProfile.id == patient_id)
+    res_p = await db.execute(stmt_p)
+    patient = res_p.scalar_one_or_none()
+    
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient profile not found")
+        
+    # Audit access
+    await audit_action(
+        db, 
+        user_id=current_user.id, 
+        org_id=patient.org_id, 
+        action="view_patient_family", 
+        resource_type="PatientProfile", 
+        resource_id=patient.id
+    )
+    await db.commit() # Ensure audit log is saved
+    
+    # Combine with link info
+    return {
+        "id": patient.id,
+        "real_name": patient.real_name,
+        "gender": patient.gender,
+        "birth_date": patient.birth_date,
+        "medical_history": patient.medical_history,
+        "relationship_type": link.relationship_type
+    }

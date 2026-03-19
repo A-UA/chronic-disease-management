@@ -10,18 +10,10 @@ from app.api.deps import get_db
 from app.core import security
 from app.core.config import settings
 from app.db.models import User, Organization, OrganizationUser
+from app.schemas.user import UserCreate, Token
 from pydantic import BaseModel, EmailStr
 
 router = APIRouter()
-
-class UserCreate(BaseModel):
-    email: EmailStr
-    password: str
-    name: str | None = None
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str
 
 @router.post("/register", response_model=Any)
 async def register(

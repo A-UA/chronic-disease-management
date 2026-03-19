@@ -1,8 +1,13 @@
 from sqlalchemy import String, ForeignKey, Boolean, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from uuid import UUID
+from typing import TYPE_CHECKING
 from .base import Base, UUIDMixin, TimestampMixin
-from . import User, Organization, PatientProfile
+
+if TYPE_CHECKING:
+    from .user import User
+    from .organization import Organization
+    from .patient import PatientProfile
 
 class ManagerProfile(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "manager_profiles"

@@ -2,8 +2,12 @@ from sqlalchemy import String, ForeignKey, Date
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from uuid import UUID
+from typing import TYPE_CHECKING
 from .base import Base, UUIDMixin, TimestampMixin
-from . import User, Organization
+
+if TYPE_CHECKING:
+    from .user import User
+    from .organization import Organization
 
 class PatientProfile(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "patient_profiles"

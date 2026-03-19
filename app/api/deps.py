@@ -30,6 +30,10 @@ async def get_current_user(
     user = await db.get(User, UUID(user_id))
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    # Inject User ID for RLS (e.g. for cross-org family access)
+    await db.execute(text("SELECT set_config('app.current_user_id', :user_id, true)"), {"user_id": str(user.id)})
+    
     return user
 
 async def get_current_org(

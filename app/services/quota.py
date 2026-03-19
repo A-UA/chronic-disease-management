@@ -15,11 +15,24 @@ async def check_org_quota(db: AsyncSession, org_id: UUID) -> Organization:
     org = await db.get(Organization, org_id)
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
-        
+
     if org.quota_tokens_used >= org.quota_tokens_limit:
         raise HTTPException(status_code=402, detail="Organization token quota exceeded. Please upgrade your plan.")
-        
+
+    # Sync to Redis for fast access during streaming
+    quota_key = f"quota:org:{org_id}"
+    await redis_client.set(quota_key, org.quota_tokens_limit - org.quota_tokens_used, ex=300) # 5 min cache
+
     return org
+
+async def check_quota_during_stream(org_id: UUID, tokens_so_far: int) -> bool:
+    """Check if the organization still has quota left in Redis cache."""
+    quota_key = f"quota:org:{org_id}"
+    remaining = await redis_client.get(quota_key)
+    if remaining is None:
+        return True # Default to allow if cache missing, DB will catch at end
+
+    return int(remaining) > tokens_so_far
 
 async def check_api_key_rate_limit(api_key_id: UUID, qps_limit: int):
     # Simple Token Bucket or Fixed Window via Redis (Async)

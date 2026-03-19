@@ -6,27 +6,10 @@ from uuid import UUID
 
 from app.api.deps import get_db, get_current_user, get_current_org
 from app.db.models import User, PatientProfile
-from pydantic import BaseModel, ConfigDict
+from app.schemas.patient import PatientProfileRead, PatientProfileUpdate
 from datetime import date
 
 router = APIRouter()
-
-class PatientProfileUpdate(BaseModel):
-    real_name: str | None = None
-    gender: str | None = None
-    birth_date: date | None = None
-    medical_history: dict | None = None
-
-class PatientProfileRead(BaseModel):
-    id: UUID
-    user_id: UUID
-    org_id: UUID
-    real_name: str
-    gender: str | None
-    birth_date: date | None
-    medical_history: dict | None
-    
-    model_config = ConfigDict(from_attributes=True)
 
 @router.get("/me", response_model=PatientProfileRead)
 async def get_my_patient_profile(
@@ -60,10 +43,6 @@ async def update_my_patient_profile(
     profile = result.scalar_one_or_none()
     
     if not profile:
-        # Create profile if it doesn't exist? 
-        # For simplicity, we assume registration created a default profile or user must be added to org as patient first.
-        # But our current registration creates Org but not PatientProfile.
-        # Let's allow creation if not exists.
         profile = PatientProfile(
             user_id=current_user.id,
             org_id=org_id,

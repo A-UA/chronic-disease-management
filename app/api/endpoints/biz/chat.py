@@ -10,7 +10,7 @@ from uuid import UUID
 from app.api.deps import get_current_user, get_current_org, get_db, verify_quota
 from app.db.models import User, Message, UsageLog, Conversation
 from app.services.chat import retrieve_chunks, build_rag_prompt
-from app.services.quota import update_org_quota
+from app.services.quota import update_org_quota, check_quota_during_stream
 
 router = APIRouter()
 
@@ -26,7 +26,7 @@ async def mock_llm_stream(prompt: str) -> AsyncGenerator[str, None]:
         await asyncio.sleep(0.1)
         yield word
 
-@router.post("/chat")
+@router.post("")
 async def chat_endpoint(
     request: ChatRequest,
     current_user: User = Depends(get_current_user),
@@ -35,7 +35,7 @@ async def chat_endpoint(
     db: AsyncSession = Depends(get_db)
 ):
     # 1. Retrieve chunks
-    chunks = await retrieve_chunks(db, request.query, request.kb_id)
+    chunks = await retrieve_chunks(db, request.query, request.kb_id, org_id)
     
     # 2. Build prompt
     prompt, citations = build_rag_prompt(request.query, chunks)
@@ -70,6 +70,14 @@ async def chat_endpoint(
         # Stream chunks from LLM
         async for chunk_text in mock_llm_stream(prompt):
             full_response += chunk_text
+            
+            # 6. Check Quota (Fast path via Redis)
+            # Estimate tokens so far (rough estimate: 4 chars per token)
+            tokens_so_far = (len(prompt) + len(full_response)) // 4
+            if not await check_quota_during_stream(org_id, tokens_so_far):
+                yield f"event: error\ndata: {json.dumps({'detail': 'Quota exceeded. Response cut short.'})}\n\n"
+                break
+                
             yield f"event: chunk\ndata: {json.dumps({'text': chunk_text})}\n\n"
             
         # Dummy token counts

@@ -3,7 +3,7 @@ import json
 from uuid import uuid4
 from fastapi import FastAPI
 from httpx import AsyncClient, ASGITransport
-from app.api.endpoints.chat import router
+from app.api.endpoints.biz.chat import router
 
 app = FastAPI()
 app.include_router(router, prefix="/api/v1")
