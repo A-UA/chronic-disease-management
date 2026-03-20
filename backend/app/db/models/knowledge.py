@@ -1,4 +1,4 @@
-from sqlalchemy import String, ForeignKey, Integer, Text
+from sqlalchemy import String, ForeignKey, Integer, Text, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from pgvector.sqlalchemy import Vector
 from uuid import UUID
@@ -40,3 +40,7 @@ class Chunk(Base, UUIDMixin, TimestampMixin):
     
     # 1536 is standard for text-embedding-3-small and ada-002
     embedding: Mapped[list[float]] = mapped_column(Vector(1536), nullable=True)
+
+    __table_args__ = (
+        Index('idx_org_kb_chunk', 'org_id', 'kb_id'),
+    )

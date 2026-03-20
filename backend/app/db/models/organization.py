@@ -1,4 +1,4 @@
-from sqlalchemy import String, ForeignKey, BigInteger
+from sqlalchemy import String, ForeignKey, BigInteger, ForeignKeyConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from uuid import UUID
 from datetime import datetime
@@ -8,6 +8,7 @@ from .base import Base, UUIDMixin, TimestampMixin
 if TYPE_CHECKING:
     from .user import User
     from .patient import PatientProfile
+    from .rbac import Role
 
 class Organization(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "organizations"
@@ -29,13 +30,25 @@ class OrganizationUser(Base, TimestampMixin):
     
     # staff: admin/manager, patient: the actual patient user
     user_type: Mapped[str] = mapped_column(String(20), default='staff', server_default='staff') 
-    
-    # Standard RBAC - Only for 'staff' type
-    role_id: Mapped[UUID | None] = mapped_column(ForeignKey("roles.id", ondelete="SET NULL"), index=True)
 
     organization: Mapped["Organization"] = relationship(back_populates="users")
     user: Mapped["User"] = relationship(back_populates="organizations")
-    rbac_role: Mapped["Role"] = relationship()
+    rbac_roles: Mapped[list["Role"]] = relationship(secondary="organization_user_roles")
+
+class OrganizationUserRole(Base, TimestampMixin):
+    __tablename__ = "organization_user_roles"
+
+    org_id: Mapped[UUID] = mapped_column(primary_key=True)
+    user_id: Mapped[UUID] = mapped_column(primary_key=True)
+    role_id: Mapped[UUID] = mapped_column(ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True)
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['org_id', 'user_id'],
+            ['organization_users.org_id', 'organization_users.user_id'],
+            ondelete="CASCADE"
+        ),
+    )
 
 class OrganizationInvitation(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "organization_invitations"

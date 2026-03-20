@@ -11,3 +11,4 @@ class UUIDMixin:
 
 class TimestampMixin:
     created_at: Mapped[datetime] = mapped_column(default=func.now(), server_default=func.now())
+    deleted_at: Mapped[datetime | None] = mapped_column(nullable=True)

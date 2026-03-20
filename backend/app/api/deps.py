@@ -51,7 +51,7 @@ async def get_current_org_user(
     stmt = (
         select(OrganizationUser)
         .options(
-            selectinload(OrganizationUser.rbac_role).selectinload(Role.permissions)
+            selectinload(OrganizationUser.rbac_roles).selectinload(Role.permissions)
         )
         .where(
             OrganizationUser.org_id == org_uuid,
@@ -83,10 +83,10 @@ def check_permission(perm_code: str):
             raise HTTPException(status_code=403, detail="Access denied. Staff only.")
             
         # 2. Standard RBAC check
-        if not org_user.rbac_role:
-            raise HTTPException(status_code=403, detail="No role assigned to user")
+        if not org_user.rbac_roles:
+            raise HTTPException(status_code=403, detail="No roles assigned to user")
             
-        permissions = [p.code for p in org_user.rbac_role.permissions]
+        permissions = {p.code for role in org_user.rbac_roles for p in role.permissions}
         if perm_code not in permissions:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

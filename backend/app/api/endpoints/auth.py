@@ -9,7 +9,7 @@ from uuid import uuid4
 from app.api.deps import get_db
 from app.core import security
 from app.core.config import settings
-from app.db.models import User, Organization, OrganizationUser
+from app.db.models import User, Organization, OrganizationUser, OrganizationUserRole, Role
 from app.schemas.user import UserCreate, Token
 from pydantic import BaseModel, EmailStr
 
@@ -43,13 +43,24 @@ async def register(
     db.add(org)
     await db.flush() # Get org.id
 
-    # 4. Bind User to Org as Owner
+    # 4. Bind User to Org
     org_user = OrganizationUser(
         org_id=org.id,
-        user_id=user.id,
-        role="owner"
+        user_id=user.id
     )
     db.add(org_user)
+    
+    # 5. Assign owner role
+    stmt_role = select(Role).where(Role.code == "owner", Role.org_id.is_(None))
+    res = await db.execute(stmt_role)
+    owner_role = res.scalar_one_or_none()
+    if owner_role:
+        role_link = OrganizationUserRole(
+            org_id=org.id,
+            user_id=user.id,
+            role_id=owner_role.id
+        )
+        db.add(role_link)
     
     await db.commit()
     await db.refresh(user)

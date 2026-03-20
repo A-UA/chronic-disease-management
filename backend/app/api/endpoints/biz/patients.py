@@ -10,7 +10,9 @@ from app.schemas.patient import PatientProfileRead, PatientProfileUpdate
 from datetime import date
 
 from app.api.deps import get_db, get_current_user, get_current_org, require_patient_identity
-...
+
+router = APIRouter()
+
 @router.get("/me", response_model=PatientProfileRead)
 async def get_my_patient_profile(
     current_user: User = Depends(get_current_user),

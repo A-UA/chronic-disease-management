@@ -1,6 +1,6 @@
 from .base import Base
 from .user import User
-from .organization import Organization, OrganizationUser, OrganizationInvitation, PatientFamilyLink
+from .organization import Organization, OrganizationUser, OrganizationInvitation, PatientFamilyLink, OrganizationUserRole
 from .rbac import Role, Permission, RolePermission
 from .knowledge import KnowledgeBase, Document, Chunk
 from .chat import Conversation, Message, UsageLog
@@ -14,6 +14,7 @@ __all__ = [
     "User",
     "Organization",
     "OrganizationUser",
+    "OrganizationUserRole",
     "OrganizationInvitation",
     "PatientFamilyLink",
     "KnowledgeBase",
