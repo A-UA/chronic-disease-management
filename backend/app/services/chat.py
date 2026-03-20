@@ -3,14 +3,14 @@ import hashlib
 from typing import TypedDict
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from app.db.models import Chunk
 from app.services.quota import redis_client
 
 class Citation(TypedDict):
     doc_id: str
     ref: str
-    page: int
+    page: int | None
 
 # Mock embedding for now
 class MockEmbeddings:
@@ -26,10 +26,6 @@ async def retrieve_chunks(db: AsyncSession, query: str, kb_id: UUID, org_id: UUI
     
     cached_data = await redis_client.get(cache_key)
     if cached_data:
-        # Note: We return raw data or reconstruct objects. 
-        # For simplicity in this mock-heavy stage, we just log and continue to DB 
-        # but in a real app we'd return deserialized chunks.
-        # Let's implement actual retrieval from cache if it exists.
         try:
             chunk_ids = json.loads(cached_data)
             stmt = select(Chunk).where(Chunk.id.in_([UUID(cid) for cid in chunk_ids]))
@@ -38,29 +34,57 @@ async def retrieve_chunks(db: AsyncSession, query: str, kb_id: UUID, org_id: UUI
         except Exception:
             pass # Fallback to DB on cache error
 
-    # 2. Vector Search using pgvector cosine distance
+    # 2. Vector Search (Semantic)
     query_embedding = embeddings_model.embed_query(query)
-    
-    # Explicit filtering by org_id and kb_id
-    stmt = (
+    vector_stmt = (
         select(Chunk)
         .where(Chunk.org_id == org_id, Chunk.kb_id == kb_id)
         .order_by(Chunk.embedding.cosine_distance(query_embedding))
-        .limit(limit)
+        .limit(limit * 2)
     )
+    vector_res = await db.execute(vector_stmt)
+    vector_chunks = list(vector_res.scalars().all())
+
+    # 3. Keyword Search (BM25-like using TSVector)
+    keyword_stmt = (
+        select(Chunk)
+        .where(
+            Chunk.org_id == org_id, 
+            Chunk.kb_id == kb_id,
+            Chunk.tsv_content.op('@@')(func.plainto_tsquery('chinese', query))
+        )
+        .order_by(func.ts_rank(Chunk.tsv_content, func.plainto_tsquery('chinese', query)).desc())
+        .limit(limit * 2)
+    )
+    keyword_res = await db.execute(keyword_stmt)
+    keyword_chunks = list(keyword_res.scalars().all())
+
+    # 4. Reciprocal Rank Fusion (RRF)
+    k = 60
+    scores = {}
+    chunk_map = {}
+
+    for rank, chunk in enumerate(vector_chunks):
+        scores[chunk.id] = scores.get(chunk.id, 0) + 1.0 / (k + rank + 1)
+        chunk_map[chunk.id] = chunk
+        
+    for rank, chunk in enumerate(keyword_chunks):
+        scores[chunk.id] = scores.get(chunk.id, 0) + 1.0 / (k + rank + 1)
+        chunk_map[chunk.id] = chunk
+
+    # Sort by score
+    sorted_ids = sorted(scores.keys(), key=lambda x: scores[x], reverse=True)[:limit]
+    final_chunks = [chunk_map[cid] for cid in sorted_ids]
     
-    result = await db.execute(stmt)
-    chunks = list(result.scalars().all())
-    
-    # 3. Update Cache (TTL 1 hour)
-    if chunks:
+    # 5. Update Cache (TTL 1 hour)
+    if final_chunks:
         await redis_client.setex(
             cache_key, 
             3600, 
-            json.dumps([str(c.id) for c in chunks])
+            json.dumps([str(c.id) for c in final_chunks])
         )
     
-    return chunks
+    return final_chunks
 
 def build_rag_prompt(query: str, chunks: list[Chunk], patient_name: str | None = None) -> tuple[str, list[dict[str, Citation]]]:
     context_blocks = []

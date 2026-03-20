@@ -45,14 +45,13 @@ async def upload_document(
         
         # Trigger background processing
         # Note: We pass the bytes decoded as string for now as process_document expects string.
-        # In production, you'd need a real text extractor (PDF/Docx etc.)
         content = ""
         try:
             content = file_bytes.decode("utf-8")
         except:
             content = "[Non-text file or encoding error]"
             
-        background_tasks.add_task(process_document, db, document.id, content)
+        background_tasks.add_task(process_document, document.id, content)
         
         return {"id": document.id, "minio_url": document.minio_url, "status": document.status}
     except Exception as e:

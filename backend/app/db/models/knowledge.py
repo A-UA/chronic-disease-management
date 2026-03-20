@@ -1,7 +1,9 @@
 from sqlalchemy import String, ForeignKey, Integer, Text, Index
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from pgvector.sqlalchemy import Vector
 from uuid import UUID
+from typing import Any
 from .base import Base, UUIDMixin, TimestampMixin
 from .user import User
 from .organization import Organization
@@ -40,7 +42,11 @@ class Chunk(Base, UUIDMixin, TimestampMixin):
     
     # 1536 is standard for text-embedding-3-small and ada-002
     embedding: Mapped[list[float]] = mapped_column(Vector(1536), nullable=True)
+    
+    # Keyword search vector
+    tsv_content: Mapped[Any] = mapped_column(TSVECTOR, nullable=True)
 
     __table_args__ = (
         Index('idx_org_kb_chunk', 'org_id', 'kb_id'),
+        Index('idx_chunk_tsv', 'tsv_content', postgresql_using='gin'),
     )
