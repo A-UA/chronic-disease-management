@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     # Security
     JWT_SECRET: str = "supersecretkey"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7 # 7 days
+
+    # Embeddings
+    EMBEDDING_PROVIDER: str = "mock"
+    EMBEDDING_MODEL: str = "text-embedding-3-small"
+    OPENAI_API_KEY: str = ""
     
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 

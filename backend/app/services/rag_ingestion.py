@@ -1,14 +1,12 @@
-from uuid import UUID
+﻿from uuid import UUID
 
 from sqlalchemy import func
 
 from app.db.models import Chunk, Document, UsageLog
 from app.db.session import AsyncSessionLocal
-from app.services.embeddings import get_embedding_provider
+from app.services.embeddings import EmbeddingProvider, get_embedding_provider
 from app.services.quota import update_org_quota
 
-
-embeddings_model = get_embedding_provider()
 
 MEDICAL_HEADINGS = (
     "主诉:",
@@ -97,9 +95,10 @@ async def process_document(document_id: UUID, file_content: str):
             return
 
         texts = split_document_text(file_content)
+        embedding_provider: EmbeddingProvider = get_embedding_provider()
 
         try:
-            embeddings = embeddings_model.embed_documents(texts)
+            embeddings = embedding_provider.embed_documents(texts)
 
             for i, (text, emb) in enumerate(zip(texts, embeddings)):
                 chunk = Chunk(

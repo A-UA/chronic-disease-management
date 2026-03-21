@@ -18,17 +18,20 @@ async def test_process_document_marks_document_completed_on_success():
     mock_db.get.return_value = mock_doc
     mock_db.add = MagicMock()
 
+    provider = MagicMock()
+    provider.embed_documents.return_value = [[0.1] * 1536]
+
     with patch("app.services.rag_ingestion.AsyncSessionLocal") as mock_session_factory, patch(
-        "app.services.rag_ingestion.embeddings_model.embed_documents",
-        return_value=[[0.1] * 1536],
-    ) as mock_embed_documents:
+        "app.services.rag_ingestion.get_embedding_provider",
+        return_value=provider,
+    ):
         mock_session_factory.return_value.__aenter__.return_value = mock_db
 
         await process_document(mock_doc.id, "诊断:\n稳定样本")
 
     assert mock_db.get.called
     assert mock_db.add.called
-    assert mock_embed_documents.called
+    assert provider.embed_documents.called
     assert mock_doc.status == "completed"
     assert mock_doc.failed_reason is None
     assert mock_db.commit.called
@@ -48,9 +51,12 @@ async def test_process_document_marks_document_failed_on_embedding_error():
     mock_db.get.return_value = mock_doc
     mock_db.add = MagicMock()
 
+    provider = MagicMock()
+    provider.embed_documents.side_effect = RuntimeError("embedding failed")
+
     with patch("app.services.rag_ingestion.AsyncSessionLocal") as mock_session_factory, patch(
-        "app.services.rag_ingestion.embeddings_model.embed_documents",
-        side_effect=RuntimeError("embedding failed"),
+        "app.services.rag_ingestion.get_embedding_provider",
+        return_value=provider,
     ):
         mock_session_factory.return_value.__aenter__.return_value = mock_db
 
