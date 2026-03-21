@@ -1,14 +1,16 @@
 from uuid import UUID
+
 from sqlalchemy import func
+
+from app.db.models import Chunk, Document, UsageLog
 from app.db.session import AsyncSessionLocal
 from app.services.embeddings import get_embedding_provider
-from app.db.models import Document, Chunk, UsageLog
 from app.services.quota import update_org_quota
-from typing import List
+
 
 embeddings_model = get_embedding_provider()
 
-CLEAN_MEDICAL_HEADINGS = (
+MEDICAL_HEADINGS = (
     "主诉:",
     "主诉：",
     "现病史:",
@@ -29,19 +31,6 @@ CLEAN_MEDICAL_HEADINGS = (
     "处理意见：",
     "建议:",
     "建议：",
-)
-
-MEDICAL_HEADINGS = (
-    "主诉:",
-    "现病史:",
-    "既往史:",
-    "个人史:",
-    "过敏史:",
-    "查体:",
-    "辅助检查:",
-    "诊断:",
-    "处理意见:",
-    "建议:",
 )
 
 
@@ -65,7 +54,7 @@ def _merge_heading_paragraphs(paragraphs: list[str]) -> list[str]:
 
     while index < len(paragraphs):
         current = paragraphs[index].strip()
-        if current in CLEAN_MEDICAL_HEADINGS and index + 1 < len(paragraphs):
+        if current in MEDICAL_HEADINGS and index + 1 < len(paragraphs):
             merged.append(f"{current}\n{paragraphs[index + 1].strip()}")
             index += 2
             continue
@@ -90,7 +79,7 @@ def split_document_text(text: str, chunk_size: int = 800, chunk_overlap: int = 1
         if not lines:
             continue
 
-        if lines[0] in CLEAN_MEDICAL_HEADINGS:
+        if lines[0] in MEDICAL_HEADINGS:
             paragraph = "\n".join(lines)
 
         if len(paragraph) <= chunk_size:
@@ -100,22 +89,15 @@ def split_document_text(text: str, chunk_size: int = 800, chunk_overlap: int = 1
 
     return chunks
 
+
 async def process_document(document_id: UUID, file_content: str):
-    """
-    Independent background processing of documents.
-    Fetches its own DB session to avoid session closure from request scope.
-    """
     async with AsyncSessionLocal() as db:
-        # 1. Fetch document from DB
         document = await db.get(Document, document_id)
         if not document:
-            return # Log error in production
-            
-        # 2. Advanced Text splitting (Medical Aware)
-        # We use headers as separators to keep medical sections together
-        separators = ["\n\n", "\n", "。", "！", "？", "；", "主诉:", "现病史:", "既往史:", "诊断:", "建议:", " "]
+            return
+
         texts = split_document_text(file_content)
-        
+
         try:
             embeddings = embeddings_model.embed_documents(texts)
 
@@ -127,7 +109,7 @@ async def process_document(document_id: UUID, file_content: str):
                     content=text,
                     chunk_index=i,
                     embedding=emb,
-                    tsv_content=func.to_tsvector('chinese', text)
+                    tsv_content=func.to_tsvector("chinese", text),
                 )
                 db.add(chunk)
 
@@ -139,7 +121,7 @@ async def process_document(document_id: UUID, file_content: str):
                 prompt_tokens=total_tokens,
                 action_type="embedding",
                 resource_id=document.id,
-                cost=total_tokens * 0.00000002
+                cost=total_tokens * 0.00000002,
             )
             db.add(usage)
 
@@ -152,15 +134,3 @@ async def process_document(document_id: UUID, file_content: str):
             document.status = "failed"
             document.failed_reason = str(exc)[:500]
             await db.commit()
-
-
-from app.services import rag_ingestion as _rag_ingestion
-
-embeddings_model = _rag_ingestion.embeddings_model
-split_document_text = _rag_ingestion.split_document_text
-
-
-async def process_document(document_id: UUID, file_content: str):
-    _rag_ingestion.AsyncSessionLocal = AsyncSessionLocal
-    _rag_ingestion.embeddings_model = embeddings_model
-    return await _rag_ingestion.process_document(document_id, file_content)
