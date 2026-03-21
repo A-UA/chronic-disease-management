@@ -17,9 +17,12 @@ from app.services.reranker import get_reranker_provider
 
 class Citation(TypedDict):
     doc_id: str
+    chunk_id: str | None
     ref: str
     page: int | None
+    chunk_index: int | None
     snippet: str
+    source_span: dict[str, int]
 
 
 class RetrievalFilters(TypedDict, total=False):
@@ -212,13 +215,20 @@ def build_rag_prompt(query: str, chunks: list[Chunk], patient_name: str | None =
 
         doc_ref = f"Doc {i + 1}"
         snippet = _build_snippet(content)
+        span_start = content.find(snippet.rstrip("."))
+        if span_start < 0:
+            span_start = 0
+        span_end = span_start + len(snippet)
         context_blocks.append(f"[{doc_ref}] (page={chunk.page_number}): {content}")
         citations.append(
             {
                 "doc_id": str(chunk.document_id),
+                "chunk_id": str(chunk.id) if getattr(chunk, "id", None) is not None else None,
                 "ref": doc_ref,
                 "page": chunk.page_number,
+                "chunk_index": getattr(chunk, "chunk_index", None),
                 "snippet": snippet,
+                "source_span": {"start": span_start, "end": span_end},
             }
         )
 
