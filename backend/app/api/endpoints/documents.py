@@ -21,8 +21,9 @@ async def upload_document(
 ):
     try:
         file_bytes = await file.read()
-        
-        # Upload to MinIO
+
+        parsed = parse_document(file_bytes, file.filename, file.content_type)
+
         minio_url = storage_service.upload_file(
             file_bytes=file_bytes,
             filename=file.filename,
@@ -44,13 +45,12 @@ async def upload_document(
         await db.commit()
         await db.refresh(document)
         
-        try:
-            parsed = parse_document(file_bytes, file.filename, file.content_type)
-        except DocumentParseError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-            
         background_tasks.add_task(process_document, document.id, parsed.text)
         
         return {"id": document.id, "minio_url": document.minio_url, "status": document.status}
+    except DocumentParseError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
