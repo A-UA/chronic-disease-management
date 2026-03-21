@@ -79,21 +79,23 @@ async def test_process_document_uses_openai_provider_when_configured(monkeypatch
     mock_db.add = MagicMock()
 
     mock_client = MagicMock()
-    mock_client.embed_documents.return_value = [[0.8] * 3]
-    mock_openai_embeddings = MagicMock(return_value=mock_client)
+    mock_client.embeddings.create.return_value = MagicMock(data=[MagicMock(embedding=[0.8] * 3)])
+    mock_openai_client = MagicMock(return_value=mock_client)
 
     monkeypatch.setattr("app.services.embeddings.settings.EMBEDDING_PROVIDER", "openai")
     monkeypatch.setattr("app.services.embeddings.settings.OPENAI_API_KEY", "test-key")
     monkeypatch.setattr("app.services.embeddings.settings.EMBEDDING_MODEL", "text-embedding-3-small")
-    monkeypatch.setattr("app.services.embeddings.OpenAIEmbeddings", mock_openai_embeddings)
+    monkeypatch.setattr("app.services.embeddings.settings.EMBEDDING_BASE_URL", "")
+    monkeypatch.setattr("app.services.embeddings.settings.LLM_BASE_URL", "")
+    monkeypatch.setattr("app.services.embeddings.OpenAI", mock_openai_client)
 
     with patch("app.services.rag_ingestion.AsyncSessionLocal") as mock_session_factory:
         mock_session_factory.return_value.__aenter__.return_value = mock_db
 
         await process_document(mock_doc.id, "诊断:\n稳定样本")
 
-    mock_openai_embeddings.assert_called_once_with(
-        model="text-embedding-3-small",
+    mock_openai_client.assert_called_once_with(
         api_key="test-key",
+        base_url="",
     )
-    mock_client.embed_documents.assert_called_once()
+    mock_client.embeddings.create.assert_called_once()
