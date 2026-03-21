@@ -75,39 +75,37 @@ async def process_document(document_id: UUID, file_content: str):
         separators = ["\n\n", "\n", "。", "！", "？", "；", "主诉:", "现病史:", "既往史:", "诊断:", "建议:", " "]
         texts = split_document_text(file_content)
         
-        # 3. Generate embeddings
-        embeddings = embeddings_model.embed_documents(texts)
-        
-        # 4. Save Chunks with TSVector for Hybrid Search
-        for i, (text, emb) in enumerate(zip(texts, embeddings)):
-            chunk = Chunk(
-                kb_id=document.kb_id,
+        try:
+            embeddings = embeddings_model.embed_documents(texts)
+
+            for i, (text, emb) in enumerate(zip(texts, embeddings)):
+                chunk = Chunk(
+                    kb_id=document.kb_id,
+                    org_id=document.org_id,
+                    document_id=document.id,
+                    content=text,
+                    chunk_index=i,
+                    embedding=emb,
+                    tsv_content=func.to_tsvector('chinese', text)
+                )
+                db.add(chunk)
+
+            total_tokens = sum(len(t) // 4 for t in texts)
+            usage = UsageLog(
                 org_id=document.org_id,
-                document_id=document.id,
-                content=text,
-                chunk_index=i,
-                embedding=emb,
-                # In Postgres, we use to_tsvector for keyword indexing
-                tsv_content=func.to_tsvector('chinese', text)
+                user_id=document.uploader_id,
+                model="text-embedding-3-small",
+                prompt_tokens=total_tokens,
+                action_type="embedding",
+                resource_id=document.id,
+                cost=total_tokens * 0.00000002
             )
-            db.add(chunk)
-            
-        # 5. Track Usage (dummy tokens calculation for demo)
-        total_tokens = sum(len(t) // 4 for t in texts)
-        usage = UsageLog(
-            org_id=document.org_id,
-            user_id=document.uploader_id,
-            model="text-embedding-3-small",
-            prompt_tokens=total_tokens,
-            action_type="embedding",
-            resource_id=document.id,
-            cost=total_tokens * 0.00000002
-        )
-        db.add(usage)
-        
-        # 6. Update organization quota
-        await update_org_quota(db, document.org_id, total_tokens)
-        
-        # 7. Update document status
-        document.status = "completed"
-        await db.commit()
+            db.add(usage)
+
+            await update_org_quota(db, document.org_id, total_tokens)
+
+            document.status = "completed"
+            await db.commit()
+        except Exception:
+            document.status = "failed"
+            await db.commit()
