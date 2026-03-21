@@ -1,5 +1,5 @@
 ﻿import json
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
@@ -9,8 +9,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_org, get_current_user, get_db, verify_quota
 from app.db.models import Conversation, Message, UsageLog, User
-from app.services.chat import RetrievalFilters, build_rag_prompt, build_statement_citations, retrieve_chunks
+from app.services.chat import RetrievalFilters, build_rag_prompt, extract_statement_citations_structured, retrieve_chunks
+from app.services.conversation_context import build_contextual_retrieval_query
 from app.services.llm import get_llm_provider
+from app.services.query_rewrite import prepare_retrieval_query
 from app.services.quota import check_quota_during_stream, update_org_quota
 
 router = APIRouter()
@@ -38,7 +40,9 @@ async def chat_endpoint(
     if request.file_types:
         filters["file_types"] = request.file_types
 
-    chunks = await retrieve_chunks(db, request.query, request.kb_id, org_id, filters=filters or None)
+    retrieval_query = await build_contextual_retrieval_query(db, request.conversation_id, request.query)
+    prepared_query = prepare_retrieval_query(retrieval_query)
+    chunks = await retrieve_chunks(db, retrieval_query, request.kb_id, org_id, filters=filters or None)
     prompt, citations = build_rag_prompt(request.query, chunks)
 
     conversation = await db.get(Conversation, request.conversation_id)
@@ -70,7 +74,7 @@ async def chat_endpoint(
         async for chunk_text in llm_provider.stream_text(prompt):
             full_response += chunk_text
             tokens_so_far = (len(prompt) + len(full_response)) // 4
-            if not await check_quota_during_stream(org_id, tokens_so_far):
+            if not await check_quota_during_stream(org_id, tokens_so_far, db=db):
                 yield f"event: error\ndata: {json.dumps({'detail': 'Quota exceeded. Response cut short.'})}\n\n"
                 break
 
@@ -78,7 +82,7 @@ async def chat_endpoint(
 
         prompt_tokens = len(prompt) // 4
         completion_tokens = len(full_response) // 4
-        statement_citations = build_statement_citations(full_response, citations)
+        statement_citations = await extract_statement_citations_structured(full_response, citations, llm_provider)
         done_statement_citations = [
             {
                 "text": item["text"],
@@ -97,6 +101,15 @@ async def chat_endpoint(
                 "statement_citations": statement_citations,
                 "tokens": {"input": prompt_tokens, "output": completion_tokens},
                 "filters": filters or None,
+                "observability": {
+                    "raw_query": request.query,
+                    "retrieval_query": prepared_query.retrieval_query,
+                    "normalized_query": prepared_query.normalized_query,
+                    "retrieved_chunk_count": len(chunks),
+                    "citation_count": len(citations),
+                    "statement_count": len(statement_citations),
+                    "llm_model": llm_provider.model_name,
+                },
             },
         )
         db.add(assistant_msg)

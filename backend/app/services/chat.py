@@ -5,7 +5,7 @@ import json
 import logging
 import re
 from dataclasses import dataclass
-from typing import TypedDict
+from typing import TYPE_CHECKING, TypedDict
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -17,6 +17,9 @@ from app.services.embeddings import get_embedding_provider
 from app.services.query_rewrite import prepare_retrieval_query
 from app.services.quota import redis_client
 from app.services.reranker import get_reranker_provider
+
+if TYPE_CHECKING:
+    from app.services.llm import LLMProvider
 
 logger = logging.getLogger(__name__)
 _DOC_REF_PATTERN = re.compile(r"(?:\[\s*Doc\s*(\d+)\s*\]|\bDoc\s*(\d+)\b)", re.IGNORECASE)
@@ -123,6 +126,47 @@ def build_statement_citations(answer_text: str, citations: list[Citation]) -> li
         mapped = [ref_map[ref] for ref in refs if ref in ref_map]
         statements.append({"text": part, "citations": mapped})
     return statements
+
+
+async def extract_statement_citations_structured(
+    answer_text: str,
+    citations: list[Citation],
+    llm_provider: LLMProvider,
+) -> list[StatementCitation]:
+    if not answer_text.strip():
+        return []
+    if not citations:
+        return build_statement_citations(answer_text, citations)
+
+    citation_refs = [
+        {"ref": citation["ref"], "doc_id": citation["doc_id"], "chunk_id": citation.get("chunk_id"), "page": citation.get("page")}
+        for citation in citations
+    ]
+    prompt = (
+        "Map each statement in the answer to the most relevant citation refs. "
+        "Return strict JSON with shape {\"statements\":[{\"text\":\"...\",\"refs\":[\"Doc 1\"]}]}. "
+        "Do not invent refs outside the provided citation list.\n\n"
+        f"Available citations: {json.dumps(citation_refs, ensure_ascii=False)}\n"
+        f"Answer: {answer_text}"
+    )
+    try:
+        completion = await llm_provider.complete_text(prompt)
+        parsed = json.loads(completion or "{}")
+        items = parsed.get("statements", [])
+        ref_map = {citation["ref"].lower(): citation for citation in citations}
+        structured: list[StatementCitation] = []
+        for item in items:
+            text = (item.get("text") or "").strip()
+            refs = [str(ref).lower() for ref in item.get("refs", [])]
+            mapped = [ref_map[ref] for ref in refs if ref in ref_map]
+            if text:
+                structured.append({"text": text, "citations": mapped})
+        if structured:
+            return structured
+    except Exception:
+        logger.warning("Structured statement citation extraction failed; falling back to regex mapping", exc_info=True)
+
+    return build_statement_citations(answer_text, citations)
 
 
 def _serialize_ranked_results(results: list[RetrievedChunk]) -> str:
@@ -310,8 +354,8 @@ def build_rag_prompt(query: str, chunks: list[Chunk], patient_name: str | None =
         "You are a clinical knowledge assistant. Answer strictly from the provided context.\n"
         "If the context is insufficient or conflicting, state that explicitly and do not invent facts.\n"
         "Answer format:\n"
-        "1. Conclusion: one short answer to the user's question, and it must include at least one citation like [Doc 1].\n"
-        "2. Evidence: support the conclusion with document refs like [Doc 1], and every evidence sentence must include refs.\n"
+        "1. Conclusion: one short answer to the user's question.\n"
+        "2. Evidence: support the conclusion with the relevant source material.\n"
         "3. Uncertainty: explain what is missing or uncertain, or write 'None'.\n\n"
         f"Context:\n{context_str}\n\n"
         f"Question: {query}"

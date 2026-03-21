@@ -1,85 +1,153 @@
-# Multi-Tenant AI SaaS 项目指南 (GEMINI.md)
+﻿# Multi-Tenant AI SaaS 项目指南
 
-本项目是一个高性能的多租户 AI SaaS 平台，核心业务围绕 RAG（检索增强生成）展开，并深度集成了 **B2B2C 医疗健康管理架构**，支持多组织管理、用量计费、API 接入及标准 RBAC 权限控制。
+更新时间：2026-03-22
 
 ## 1. 项目概览
 
-- **后端架构**：基于 **FastAPI** 异步框架，使用 **SQLAlchemy 2.0** 进行数据库操作，配合 **pgvector** 实现向量检索。
-- **存储方案**：
-  - **关系型/向量数据**：PostgreSQL (ankane/pgvector)。
-  - **对象存储**：MinIO (S3 兼容)，用于原始文档存储。
-  - **缓存/限流**：Redis (用于配额实时拦截、RAG 缓存、频率限制)。
-- **核心特性**：
-  - **多租户隔离**：通过 `org_id` 进行逻辑隔离，并在数据库层面使用 RLS (Row-Level Security) 确保数据安全，严防跨租户数据泄露。
-  - **B2B2C 权限双轨制**：
-    - **职能侧 (Staff)**：基于标准 RBAC (Role-Based Access Control)，通过原子权限（如 `patient:view`, `suggestion:create`）进行功能管控。
-    - **用户侧 (Patient/Family)**：基于身份归属与 RLS 动态授权，严格隔离非本人/非授权数据。
-  - **RAG 引擎**：结合 LangChain 处理文档分块、向量化及流式问答响应（SSE），内置 PII 敏感信息脱敏与 RAG 语义缓存。
-  - **用量管控**：基于 Redis 实现 SSE 流式输出中的实时 Token 扣费与配额超限熔断。
-  - **审计合规**：全量业务操作自动记录 AuditLog，支持多维度合规性溯源。
+本项目是一个以 RAG 为核心能力的多租户 AI SaaS 后端，当前重点建设方向是“文档入库 -> 检索 -> 引用化问答 -> 评测闭环”。
 
-## 2. 目录结构说明
+当前技术栈：
 
-- `app/`: 后端核心代码。
-  - `api/`: API 路由定义及依赖注入。
-    - `endpoints/admin/`: 行政管理接口 (B端)，如机构设置、成员管控、知识库构建。
-    - `endpoints/biz/`: 业务交互接口 (C端/管理师)，如患者画像、咨询聊天、管理建议。
-    - `deps.py`: 核心依赖项（包含 RBAC 校验、RLS 注入、配额拦截）。
-  - `core/`: 全局配置、安全性设置 (JWT, Argon2)。
-  - `db/`: 数据库模型 (`models/`) 及异步会话管理。
-    - `models/rbac.py`: 存储权限、角色、中间表等标准 RBAC 实体。
-  - `services/`: 业务逻辑层（RAG 管道、用量统计、审计服务、存储等）。
-- `alembic/`: 数据库迁移脚本。所有多租户表均强制启用 RLS。
-- `docs/superpowers/`: 包含详细的设计规格 (`specs/`) 和实施方案 (`plans/`)。
-- `tests/`: 涵盖 API 和服务的异步测试套件 (`pytest-asyncio`)。
+- 后端框架：FastAPI
+- ORM：SQLAlchemy 2.x Async
+- 数据库：PostgreSQL + pgvector
+- 缓存与限流：Redis
+- 对象存储：MinIO
+- 测试：pytest / pytest-asyncio
 
-## 3. 构建与运行指南
+当前 RAG 主链路：
 
-### 3.1 基础设施启动 (Docker)
-项目依赖的外部服务可通过 Docker 快速启动：
+- 文档解析：`backend/app/services/document_parser.py`
+- 文档切块与入库：`backend/app/services/rag_ingestion.py`
+- 检索与 Prompt：`backend/app/services/chat.py`
+- 对话上下文处理：`backend/app/services/conversation_context.py`
+- LLM provider：`backend/app/services/llm.py`
+- Embedding provider：`backend/app/services/embeddings.py`
+- Reranker provider：`backend/app/services/reranker.py`
+- 离线评测：`backend/app/services/rag_evaluation.py`
+
+## 2. 当前已落地的 RAG 能力
+
+### 文档入库
+
+- 支持 `txt`、基础 `docx`、基础文本型 `pdf`
+- 上传链路已改为“先解析，再上传，再入库”
+- 文档处理失败会写入 `failed_reason`
+- `rag.py` 已降为兼容层，真实入库实现位于 `rag_ingestion.py`
+
+### 检索链路
+
+- 已支持 query 规范化和基础 rewrite
+- 已支持基于最近会话消息构造 contextual retrieval query
+- 已支持 hybrid retrieval + reranker 接口壳层
+- 检索缓存已升级为结构化缓存，保留排序与分数
+- 已支持 `document_ids`、`file_types` 两类 metadata filter
+
+### 回答与引用
+
+- 聊天接口已通过 provider 方式接入 LLM
+- Prompt 已采用 `Conclusion / Evidence / Uncertainty` 结构
+- citation 已包含 `doc_id`、`chunk_id`、`chunk_index`、`page`、`snippet`、`source_span`
+- 已支持 `statement_citations`
+- 已增加结构化 statement-citation 抽取，降低对模型内联 `[Doc n]` 的依赖
+
+### 工程能力
+
+- Storage 已改为延迟初始化：`get_storage_service()`
+- Redis 已改为延迟初始化：`get_redis_client()`
+- 流式配额检查在 Redis miss 时会回退数据库
+- assistant message metadata 已增加 `observability`
+- 离线评测已支持：
+  - `recall_at_k`
+  - `answer_match_rate`
+  - `citation_hit_rate`
+  - `refusal_match_rate`
+  - `avg_latency_ms`
+  - `avg_total_tokens`
+
+## 3. 目录说明
+
+- `backend/app/api/`: API 路由与依赖
+- `backend/app/core/`: 配置与安全设置
+- `backend/app/db/`: 数据库模型、会话、迁移
+- `backend/app/services/`: 主要业务服务层
+- `backend/alembic/`: Alembic 迁移
+- `backend/tests/`: 自动化测试
+- `backend/scripts/`: 辅助脚本
+- `docs/`: 项目文档
+
+重点文档：
+
+- `docs/rag专项整改清单.md`
+
+## 4. 本地开发
+
+### 启动依赖
+
 ```bash
 docker compose up -d
 ```
-这将启动 PostgreSQL (5432), Redis (6379) 和 MinIO (9000/9001)。
 
-### 3.2 后端开发环境
-1. **安装依赖** (使用 `uv` 管理包):
-   ```bash
-   uv sync
-   ```
-2. **数据库初始化** (迁移 + RBAC 种子数据):
-   ```bash
-   uv run alembic upgrade head
-   uv run python app/db/seed_rbac.py
-   ```
-3. **启动应用**:
-   ```bash
-   uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-   ```
-   API 文档访问：`http://localhost:8000/docs`。
+### 安装依赖
 
-### 3.3 运行测试
-执行完整的异步集成测试与单元测试：
+```bash
+cd backend
+uv sync
+```
+
+### 初始化数据库
+
+```bash
+uv run alembic upgrade head
+```
+
+### 启动服务
+
+```bash
+uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### 运行测试
+
 ```bash
 uv run python -m pytest
 ```
 
-## 4. 开发约定与最佳实践
+## 5. 配置约定
 
-- **多租户上下文与 RLS**：
-  - 后端请求通常需要 `X-Organization-Id` 请求头。
-  - 在 `app/api/deps.py` 中通过 `get_current_org_user` 解析上下文，并自动注入 `app.current_org_id` (RLS) 和 `app.current_user_id` (Cross-org Access)。
-- **权限校验 (RBAC vs Identity)**：
-  - **管理端操作**: 使用 `Depends(check_permission("perm_code"))`。
-  - **患者端操作**: 使用 `Depends(require_patient_identity)`。
-- **数据库操作**：
-  - 始终使用异步 Session (`AsyncSession`)。
-  - 高频过滤字段（如 `org_id` 与业务主键）必须通过 Alembic 手动添加复合索引以优化 RLS 扫描性能。
-- **流式响应**：所有的流式响应（如 RAG 聊天）应使用 SSE (Server-Sent Events) 实现，且必须接入 `check_quota_during_stream` 实时拦截器。
+主要环境变量位于 `backend/.env`，参考模板位于 `backend/.env.example`。
 
-## 5. TODO 与待办事项
-- [x] 接入真实的标准 RBAC 权限体系。
-- [x] 实现 API 命名空间物理拆分 (Admin vs Biz)。
-- [ ] 实现针对家属和管理师的消息推送与提醒机制。
-- [ ] 增加详细的各模型 Token 计费阶梯配置和计费中心看板。
-- [ ] 完善组织邀请功能的邮件模板发送。
+当前推荐配置方向：
+
+- 聊天 / reranker：可使用 Xiaomi MiMo 的 OpenAI 兼容网关
+- embeddings：MiMo 当前不支持本项目所需 embeddings 路径，需接真实可用的 embedding 服务
+
+关键配置项：
+
+- `LLM_PROVIDER`
+- `CHAT_MODEL`
+- `LLM_API_KEY`
+- `LLM_BASE_URL`
+- `RERANKER_PROVIDER`
+- `RERANKER_MODEL`
+- `RERANKER_API_KEY`
+- `RERANKER_BASE_URL`
+- `EMBEDDING_PROVIDER`
+- `EMBEDDING_MODEL`
+- `EMBEDDING_API_KEY`
+- `EMBEDDING_BASE_URL`
+
+## 6. 当前剩余重点
+
+- 接入真实可用的 embedding provider
+- 扩充离线评测样本并接入 CI
+- 增加更细粒度的业务 filter
+- 增强多轮对话压缩与专项评测
+- 统一 LLM / embedding provider 生命周期管理
+
+## 7. 开发约定
+
+- 新增功能优先走 provider / service 抽象，不直接把外部依赖写死在 endpoint
+- 检索行为变更优先补测试，再改实现
+- 涉及 RAG 质量变更时，同步更新 `docs/rag专项整改清单.md`
+- 不要在导入阶段初始化外部服务

@@ -1,5 +1,6 @@
 from io import BytesIO
 from uuid import uuid4
+from unittest.mock import MagicMock
 from zipfile import ZipFile
 
 import pytest
@@ -101,7 +102,9 @@ async def test_upload_document_rejects_unsupported_file_before_storage(monkeypat
         calls["upload"] += 1
         return "http://minio/documents/test"
 
-    monkeypatch.setattr("app.api.endpoints.documents.storage_service.upload_file", fake_upload_file)
+    storage_service = MagicMock()
+    storage_service.upload_file = fake_upload_file
+    monkeypatch.setattr("app.api.endpoints.documents.get_storage_service", lambda: storage_service)
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         response = await ac.post(
@@ -130,7 +133,9 @@ async def test_upload_document_accepts_docx_and_stores_after_parse(monkeypatch):
     async def fake_process_document(*args, **kwargs):
         calls["background"] += 1
 
-    monkeypatch.setattr("app.api.endpoints.documents.storage_service.upload_file", fake_upload_file)
+    storage_service = MagicMock()
+    storage_service.upload_file = fake_upload_file
+    monkeypatch.setattr("app.api.endpoints.documents.get_storage_service", lambda: storage_service)
     monkeypatch.setattr("app.api.endpoints.documents.process_document", fake_process_document)
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
@@ -167,7 +172,9 @@ async def test_upload_document_accepts_pdf_and_stores_after_parse(monkeypatch):
     async def fake_process_document(*args, **kwargs):
         return None
 
-    monkeypatch.setattr("app.api.endpoints.documents.storage_service.upload_file", fake_upload_file)
+    storage_service = MagicMock()
+    storage_service.upload_file = fake_upload_file
+    monkeypatch.setattr("app.api.endpoints.documents.get_storage_service", lambda: storage_service)
     monkeypatch.setattr("app.api.endpoints.documents.process_document", fake_process_document)
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:

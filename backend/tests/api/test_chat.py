@@ -89,10 +89,13 @@ async def test_chat_stream_forwards_filters_and_streams_events(monkeypatch):
     provider = MagicMock()
 
     async def stream_text(prompt: str):
-        for token in ["Conclusion: 建议复查[Doc 1]", "\nEvidence: 两周后复查[Doc 1]"]:
+        for token in ["Conclusion: 建议复查。", "\nEvidence: 两周后复查。"]:
             yield token
 
     provider.stream_text = stream_text
+    provider.complete_text = AsyncMock(
+        return_value='{"statements":[{"text":"Conclusion: 建议复查。","refs":["Doc 1"]},{"text":"Evidence: 两周后复查。","refs":["Doc 1"]}]}'
+    )
     monkeypatch.setattr("app.api.endpoints.biz.chat.get_llm_provider", lambda: provider)
     monkeypatch.setattr("app.api.endpoints.biz.chat.check_quota_during_stream", AsyncMock(return_value=True))
     monkeypatch.setattr("app.api.endpoints.biz.chat.update_org_quota", AsyncMock(return_value=None))
@@ -120,7 +123,7 @@ async def test_chat_stream_forwards_filters_and_streams_events(monkeypatch):
     retrieve_chunks.assert_awaited_once()
     _, called_query, called_kb_id, called_org_id = retrieve_chunks.await_args.args[:4]
     called_filters = retrieve_chunks.await_args.kwargs["filters"]
-    assert called_query == "血糖高怎么办？"
+    assert called_query == "血糖高怎么办?"
     assert called_kb_id == kb_id
     assert called_org_id == current_org
     assert called_filters == {"document_ids": [document_id], "file_types": ["pdf"]}
@@ -129,4 +132,7 @@ async def test_chat_stream_forwards_filters_and_streams_events(monkeypatch):
     usage_log = dummy_db.added[-1]
     assert assistant_message.metadata_["citations"][0]["page"] == 2
     assert assistant_message.metadata_["statement_citations"][0]["citations"][0]["doc_id"] == str(document_id)
+    assert assistant_message.metadata_["observability"]["raw_query"] == "血糖高怎么办？"
+    assert assistant_message.metadata_["observability"]["retrieval_query"] == "血糖高怎么办?"
+    assert assistant_message.metadata_["observability"]["retrieved_chunk_count"] == 1
     assert usage_log.model == provider.model_name

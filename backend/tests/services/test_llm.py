@@ -60,6 +60,25 @@ async def test_openai_compatible_llm_provider_streams_delta_text():
     )
 
 
+@pytest.mark.asyncio
+async def test_openai_compatible_llm_provider_completes_text():
+    response = SimpleNamespace(
+        choices=[SimpleNamespace(message=SimpleNamespace(content='{"ok":true}'))],
+    )
+    mock_client = MagicMock()
+    mock_client.chat.completions.create = AsyncMock(return_value=response)
+
+    provider = OpenAICompatibleLLMProvider(mock_client, model_name="mimo-v2-flash")
+    text = await provider.complete_text("prompt-text")
+
+    assert text == '{"ok":true}'
+    mock_client.chat.completions.create.assert_awaited_once_with(
+        model="mimo-v2-flash",
+        messages=[{"role": "user", "content": "prompt-text"}],
+        stream=False,
+    )
+
+
 def test_get_llm_provider_requires_api_key_for_openai_compatible(monkeypatch):
     monkeypatch.setattr("app.services.llm.settings.LLM_PROVIDER", "openai_compatible")
     monkeypatch.setattr("app.services.llm.settings.LLM_API_KEY", "")

@@ -11,6 +11,7 @@ class LLMProvider(Protocol):
     model_name: str
 
     async def stream_text(self, prompt: str) -> AsyncGenerator[str, None]: ...
+    async def complete_text(self, prompt: str) -> str: ...
 
 
 class MockLLMProvider:
@@ -21,6 +22,9 @@ class MockLLMProvider:
         for word in words:
             await asyncio.sleep(0.1)
             yield word
+
+    async def complete_text(self, prompt: str) -> str:
+        return '{"statements":[]}'
 
 
 class OpenAICompatibleLLMProvider:
@@ -40,6 +44,16 @@ class OpenAICompatibleLLMProvider:
                 text = chunk.choices[0].delta.content
             if text:
                 yield text
+
+    async def complete_text(self, prompt: str) -> str:
+        response = await self.client.chat.completions.create(
+            model=self.model_name,
+            messages=[{"role": "user", "content": prompt}],
+            stream=False,
+        )
+        if not response.choices:
+            return ""
+        return response.choices[0].message.content or ""
 
 
 def get_llm_provider() -> LLMProvider:
