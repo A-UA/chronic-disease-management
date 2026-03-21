@@ -27,6 +27,12 @@ class Settings(BaseSettings):
 
     # Reranker
     RERANKER_PROVIDER: str = "noop"
+
+    # Chat LLM
+    LLM_PROVIDER: str = "mock"
+    CHAT_MODEL: str = "gpt-4o-mini"
+    LLM_API_KEY: str = ""
+    LLM_BASE_URL: str = ""
     
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 

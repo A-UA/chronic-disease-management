@@ -1,46 +1,46 @@
-import json
-import asyncio
+﻿import json
 from typing import AsyncGenerator
-from fastapi import APIRouter, Depends, HTTPException
+from uuid import UUID
+
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from uuid import UUID
 
-from app.api.deps import get_current_user, get_current_org, get_db, verify_quota
-from app.db.models import User, Message, UsageLog, Conversation
-from app.services.chat import retrieve_chunks, build_rag_prompt
-from app.services.quota import update_org_quota, check_quota_during_stream
+from app.api.deps import get_current_org, get_current_user, get_db, verify_quota
+from app.db.models import Conversation, Message, UsageLog, User
+from app.services.chat import RetrievalFilters, build_rag_prompt, retrieve_chunks
+from app.services.llm import get_llm_provider
+from app.services.quota import check_quota_during_stream, update_org_quota
 
 router = APIRouter()
+
 
 class ChatRequest(BaseModel):
     kb_id: UUID
     conversation_id: UUID
     query: str
+    document_ids: list[UUID] | None = None
+    file_types: list[str] | None = None
 
-async def mock_llm_stream(prompt: str) -> AsyncGenerator[str, None]:
-    # Mock LLM stream generator
-    words = ["Here", " is", " a", " mocked", " response", " to", " your", " query."]
-    for word in words:
-        await asyncio.sleep(0.1)
-        yield word
 
 @router.post("")
 async def chat_endpoint(
     request: ChatRequest,
     current_user: User = Depends(get_current_user),
     org_id: UUID = Depends(get_current_org),
-    _ = Depends(verify_quota),
-    db: AsyncSession = Depends(get_db)
+    _=Depends(verify_quota),
+    db: AsyncSession = Depends(get_db),
 ):
-    # 1. Retrieve chunks
-    chunks = await retrieve_chunks(db, request.query, request.kb_id, org_id)
-    
-    # 2. Build prompt
+    filters: RetrievalFilters = {}
+    if request.document_ids:
+        filters["document_ids"] = request.document_ids
+    if request.file_types:
+        filters["file_types"] = request.file_types
+
+    chunks = await retrieve_chunks(db, request.query, request.kb_id, org_id, filters=filters or None)
     prompt, citations = build_rag_prompt(request.query, chunks)
-    
-    # 3. Create conversation if not exists
+
     conversation = await db.get(Conversation, request.conversation_id)
     if not conversation:
         conversation = Conversation(
@@ -48,68 +48,62 @@ async def chat_endpoint(
             kb_id=request.kb_id,
             org_id=org_id,
             user_id=current_user.id,
-            title=request.query[:50]
+            title=request.query[:50],
         )
         db.add(conversation)
-        
-    # 4. Save User Message
+
     user_msg = Message(
         conversation_id=conversation.id,
         role="user",
-        content=request.query
+        content=request.query,
+        metadata_={"filters": filters or None},
     )
     db.add(user_msg)
     await db.commit()
 
-    # 5. Generator for SSE
+    llm_provider = get_llm_provider()
+
     async def generate() -> AsyncGenerator[str, None]:
-        # Yield metadata (citations)
         yield f"event: meta\ndata: {json.dumps({'citations': citations})}\n\n"
-        
+
         full_response = ""
-        # Stream chunks from LLM
-        async for chunk_text in mock_llm_stream(prompt):
+        async for chunk_text in llm_provider.stream_text(prompt):
             full_response += chunk_text
-            
-            # 6. Check Quota (Fast path via Redis)
-            # Estimate tokens so far (rough estimate: 4 chars per token)
             tokens_so_far = (len(prompt) + len(full_response)) // 4
             if not await check_quota_during_stream(org_id, tokens_so_far):
                 yield f"event: error\ndata: {json.dumps({'detail': 'Quota exceeded. Response cut short.'})}\n\n"
                 break
-                
+
             yield f"event: chunk\ndata: {json.dumps({'text': chunk_text})}\n\n"
-            
-        # Dummy token counts
+
         prompt_tokens = len(prompt) // 4
         completion_tokens = len(full_response) // 4
-        
-        # Save Assistant Message
+
         assistant_msg = Message(
             conversation_id=conversation.id,
             role="assistant",
             content=full_response,
-            metadata_={"citations": citations, "tokens": {"input": prompt_tokens, "output": completion_tokens}}
+            metadata_={
+                "citations": citations,
+                "tokens": {"input": prompt_tokens, "output": completion_tokens},
+                "filters": filters or None,
+            },
         )
         db.add(assistant_msg)
-        
-        # Save Usage
+
         usage = UsageLog(
             org_id=org_id,
             user_id=current_user.id,
-            model="gpt-4o-mock",
+            model=llm_provider.model_name,
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
             action_type="chat",
-            resource_id=conversation.id
+            resource_id=conversation.id,
         )
         db.add(usage)
         await db.commit()
-        
-        # Deduct quota from Organization
+
         await update_org_quota(db, org_id, usage.total_tokens)
-        
-        # Yield done
         yield f"event: done\ndata: {json.dumps({'tokens': usage.total_tokens})}\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")
