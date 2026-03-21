@@ -1,0 +1,22 @@
+[
+  {
+    "id": "demo-case-1",
+    "query": "血糖高怎么办？",
+    "expected_chunk_ids": ["chunk-a"],
+    "retrieved_chunk_ids": ["chunk-a", "chunk-b"],
+    "expected_answer_keywords": ["复查", "饮食"],
+    "answer_text": "建议复查，并继续控制饮食。",
+    "expected_citation_doc_ids": ["doc-1"],
+    "citation_doc_ids": ["doc-1"]
+  },
+  {
+    "id": "demo-case-2",
+    "query": "资料里有没有明确说明胰岛素剂量？",
+    "expected_chunk_ids": ["chunk-x"],
+    "retrieved_chunk_ids": ["chunk-y"],
+    "expected_answer_keywords": ["不知道"],
+    "answer_text": "不知道，现有资料没有明确说明。",
+    "expected_citation_doc_ids": ["doc-9"],
+    "citation_doc_ids": []
+  }
+]
