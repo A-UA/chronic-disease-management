@@ -1,5 +1,6 @@
 ﻿import hashlib
 import json
+from dataclasses import dataclass
 from typing import TypedDict
 from uuid import UUID
 
@@ -10,6 +11,7 @@ from app.db.models import Chunk
 from app.services.embeddings import get_embedding_provider
 from app.services.query_rewrite import prepare_retrieval_query
 from app.services.quota import redis_client
+from app.services.reranker import get_reranker_provider
 
 
 class Citation(TypedDict):
@@ -18,12 +20,38 @@ class Citation(TypedDict):
     page: int | None
 
 
-async def retrieve_chunks(db: AsyncSession, query: str, kb_id: UUID, org_id: UUID, limit: int = 5) -> list[Chunk]:
+@dataclass(slots=True)
+class RetrievedChunk:
+    chunk: Chunk
+    fused_score: float
+    final_score: float
+    sources: tuple[str, ...]
+    vector_rank: int | None = None
+    keyword_rank: int | None = None
+    rerank_score: float | None = None
+
+
+def _build_cache_key(query: str, kb_id: UUID, org_id: UUID) -> str:
+    query_hash = hashlib.sha256(query.lower().encode()).hexdigest()
+    return f"rag_cache:{org_id}:{kb_id}:{query_hash}"
+
+
+def _dedupe_sources(existing: tuple[str, ...], source: str) -> tuple[str, ...]:
+    if source in existing:
+        return existing
+    return existing + (source,)
+
+
+async def retrieve_ranked_chunks(
+    db: AsyncSession,
+    query: str,
+    kb_id: UUID,
+    org_id: UUID,
+    limit: int = 5,
+) -> list[RetrievedChunk]:
     prepared_query = prepare_retrieval_query(query)
     retrieval_query = prepared_query.retrieval_query
-
-    query_hash = hashlib.sha256(retrieval_query.lower().encode()).hexdigest()
-    cache_key = f"rag_cache:{org_id}:{kb_id}:{query_hash}"
+    cache_key = _build_cache_key(retrieval_query, kb_id, org_id)
 
     cached_data = await redis_client.get(cache_key)
     if cached_data:
@@ -31,7 +59,16 @@ async def retrieve_chunks(db: AsyncSession, query: str, kb_id: UUID, org_id: UUI
             chunk_ids = json.loads(cached_data)
             stmt = select(Chunk).where(Chunk.id.in_([UUID(cid) for cid in chunk_ids]))
             result = await db.execute(stmt)
-            return list(result.scalars().all())
+            cached_chunks = list(result.scalars().all())
+            return [
+                RetrievedChunk(
+                    chunk=chunk,
+                    fused_score=0.0,
+                    final_score=0.0,
+                    sources=("cache",),
+                )
+                for chunk in cached_chunks
+            ]
         except Exception:
             pass
 
@@ -60,28 +97,62 @@ async def retrieve_chunks(db: AsyncSession, query: str, kb_id: UUID, org_id: UUI
     keyword_chunks = list(keyword_res.scalars().all())
 
     k = 60
-    scores: dict[UUID, float] = {}
-    chunk_map: dict[UUID, Chunk] = {}
+    retrieved_by_id: dict[UUID, RetrievedChunk] = {}
 
     for rank, chunk in enumerate(vector_chunks):
-        scores[chunk.id] = scores.get(chunk.id, 0) + 1.0 / (k + rank + 1)
-        chunk_map[chunk.id] = chunk
+        retrieved = retrieved_by_id.get(chunk.id)
+        if retrieved is None:
+            retrieved = RetrievedChunk(
+                chunk=chunk,
+                fused_score=0.0,
+                final_score=0.0,
+                sources=(),
+            )
+            retrieved_by_id[chunk.id] = retrieved
+
+        retrieved.fused_score += 1.0 / (k + rank + 1)
+        retrieved.final_score = retrieved.fused_score
+        retrieved.vector_rank = rank + 1
+        retrieved.sources = _dedupe_sources(retrieved.sources, "vector")
 
     for rank, chunk in enumerate(keyword_chunks):
-        scores[chunk.id] = scores.get(chunk.id, 0) + 1.0 / (k + rank + 1)
-        chunk_map[chunk.id] = chunk
+        retrieved = retrieved_by_id.get(chunk.id)
+        if retrieved is None:
+            retrieved = RetrievedChunk(
+                chunk=chunk,
+                fused_score=0.0,
+                final_score=0.0,
+                sources=(),
+            )
+            retrieved_by_id[chunk.id] = retrieved
 
-    sorted_ids = sorted(scores.keys(), key=lambda x: scores[x], reverse=True)[:limit]
-    final_chunks = [chunk_map[cid] for cid in sorted_ids]
+        retrieved.fused_score += 1.0 / (k + rank + 1)
+        retrieved.final_score = retrieved.fused_score
+        retrieved.keyword_rank = rank + 1
+        retrieved.sources = _dedupe_sources(retrieved.sources, "keyword")
 
-    if final_chunks:
+    fused_results = sorted(
+        retrieved_by_id.values(),
+        key=lambda item: item.fused_score,
+        reverse=True,
+    )
+
+    reranker = get_reranker_provider()
+    reranked_results = await reranker.rerank(retrieval_query, fused_results, limit)
+
+    if reranked_results:
         await redis_client.setex(
             cache_key,
             3600,
-            json.dumps([str(c.id) for c in final_chunks]),
+            json.dumps([str(result.chunk.id) for result in reranked_results]),
         )
 
-    return final_chunks
+    return reranked_results
+
+
+async def retrieve_chunks(db: AsyncSession, query: str, kb_id: UUID, org_id: UUID, limit: int = 5) -> list[Chunk]:
+    ranked_results = await retrieve_ranked_chunks(db, query, kb_id, org_id, limit=limit)
+    return [result.chunk for result in ranked_results]
 
 
 def build_rag_prompt(query: str, chunks: list[Chunk], patient_name: str | None = None) -> tuple[str, list[dict[str, Citation]]]:
