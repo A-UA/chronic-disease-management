@@ -1,4 +1,4 @@
-from uuid import uuid4
+﻿from uuid import uuid4
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -91,3 +91,54 @@ async def test_retrieve_ranked_chunks_calls_reranker_with_retrieval_query():
     assert len(rerank_results) == 1
     assert rerank_results[0].sources == ("vector",)
     assert rerank_limit == 5
+
+
+@pytest.mark.asyncio
+async def test_retrieve_ranked_chunks_applies_metadata_filters_to_queries():
+    kb_id = uuid4()
+    org_id = uuid4()
+    document_id = uuid4()
+
+    vector_result = MagicMock()
+    vector_result.scalars.return_value.all.return_value = []
+
+    keyword_result = MagicMock()
+    keyword_result.scalars.return_value.all.return_value = []
+
+    statements = []
+
+    async def execute(stmt):
+        statements.append(stmt)
+        if len(statements) == 1:
+            return vector_result
+        return keyword_result
+
+    mock_db = AsyncMock()
+    mock_db.execute = AsyncMock(side_effect=execute)
+
+    provider = MagicMock()
+    provider.embed_query.return_value = [0.1] * 3
+
+    reranker = AsyncMock()
+    reranker.rerank = AsyncMock(return_value=[])
+
+    with patch("app.services.chat.get_embedding_provider", return_value=provider), patch(
+        "app.services.chat.get_reranker_provider",
+        return_value=reranker,
+    ), patch("app.services.chat.redis_client.get", AsyncMock(return_value=None)), patch(
+        "app.services.chat.redis_client.setex",
+        AsyncMock(return_value=True),
+    ):
+        await retrieve_ranked_chunks(
+            mock_db,
+            "血糖高怎么办？",
+            kb_id,
+            org_id,
+            filters={"document_ids": [document_id], "file_types": ["pdf"]},
+        )
+
+    assert len(statements) == 2
+    assert "documents.file_type" in str(statements[0])
+    assert "chunks.document_id" in str(statements[0])
+    assert "documents.file_type" in str(statements[1])
+    assert "chunks.document_id" in str(statements[1])

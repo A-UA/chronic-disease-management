@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     EMBEDDING_PROVIDER: str = "mock"
     EMBEDDING_MODEL: str = "text-embedding-3-small"
     OPENAI_API_KEY: str = ""
+
+    # Reranker
+    RERANKER_PROVIDER: str = "noop"
     
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 

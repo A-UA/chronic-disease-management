@@ -6,8 +6,9 @@ from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql import Select
 
-from app.db.models import Chunk
+from app.db.models import Chunk, Document
 from app.services.embeddings import get_embedding_provider
 from app.services.query_rewrite import prepare_retrieval_query
 from app.services.quota import redis_client
@@ -18,6 +19,11 @@ class Citation(TypedDict):
     doc_id: str
     ref: str
     page: int | None
+
+
+class RetrievalFilters(TypedDict, total=False):
+    document_ids: list[UUID]
+    file_types: list[str]
 
 
 @dataclass(slots=True)
@@ -31,8 +37,15 @@ class RetrievedChunk:
     rerank_score: float | None = None
 
 
-def _build_cache_key(query: str, kb_id: UUID, org_id: UUID) -> str:
-    query_hash = hashlib.sha256(query.lower().encode()).hexdigest()
+def _build_cache_key(query: str, kb_id: UUID, org_id: UUID, filters: RetrievalFilters | None = None) -> str:
+    payload = {
+        "query": query.lower(),
+        "filters": {
+            "document_ids": sorted(str(item) for item in filters.get("document_ids", [])) if filters else [],
+            "file_types": sorted(filters.get("file_types", [])) if filters else [],
+        },
+    }
+    query_hash = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
     return f"rag_cache:{org_id}:{kb_id}:{query_hash}"
 
 
@@ -42,16 +55,32 @@ def _dedupe_sources(existing: tuple[str, ...], source: str) -> tuple[str, ...]:
     return existing + (source,)
 
 
+def _apply_retrieval_filters(stmt: Select, filters: RetrievalFilters | None) -> Select:
+    if not filters:
+        return stmt
+
+    document_ids = filters.get("document_ids") or []
+    if document_ids:
+        stmt = stmt.where(Chunk.document_id.in_(document_ids))
+
+    file_types = filters.get("file_types") or []
+    if file_types:
+        stmt = stmt.join(Document, Document.id == Chunk.document_id).where(Document.file_type.in_(file_types))
+
+    return stmt
+
+
 async def retrieve_ranked_chunks(
     db: AsyncSession,
     query: str,
     kb_id: UUID,
     org_id: UUID,
     limit: int = 5,
+    filters: RetrievalFilters | None = None,
 ) -> list[RetrievedChunk]:
     prepared_query = prepare_retrieval_query(query)
     retrieval_query = prepared_query.retrieval_query
-    cache_key = _build_cache_key(retrieval_query, kb_id, org_id)
+    cache_key = _build_cache_key(retrieval_query, kb_id, org_id, filters)
 
     cached_data = await redis_client.get(cache_key)
     if cached_data:
@@ -80,6 +109,7 @@ async def retrieve_ranked_chunks(
         .order_by(Chunk.embedding.cosine_distance(query_embedding))
         .limit(limit * 2)
     )
+    vector_stmt = _apply_retrieval_filters(vector_stmt, filters)
     vector_res = await db.execute(vector_stmt)
     vector_chunks = list(vector_res.scalars().all())
 
@@ -93,6 +123,7 @@ async def retrieve_ranked_chunks(
         .order_by(func.ts_rank(Chunk.tsv_content, func.plainto_tsquery("chinese", retrieval_query)).desc())
         .limit(limit * 2)
     )
+    keyword_stmt = _apply_retrieval_filters(keyword_stmt, filters)
     keyword_res = await db.execute(keyword_stmt)
     keyword_chunks = list(keyword_res.scalars().all())
 
@@ -150,8 +181,15 @@ async def retrieve_ranked_chunks(
     return reranked_results
 
 
-async def retrieve_chunks(db: AsyncSession, query: str, kb_id: UUID, org_id: UUID, limit: int = 5) -> list[Chunk]:
-    ranked_results = await retrieve_ranked_chunks(db, query, kb_id, org_id, limit=limit)
+async def retrieve_chunks(
+    db: AsyncSession,
+    query: str,
+    kb_id: UUID,
+    org_id: UUID,
+    limit: int = 5,
+    filters: RetrievalFilters | None = None,
+) -> list[Chunk]:
+    ranked_results = await retrieve_ranked_chunks(db, query, kb_id, org_id, limit=limit, filters=filters)
     return [result.chunk for result in ranked_results]
 
 
