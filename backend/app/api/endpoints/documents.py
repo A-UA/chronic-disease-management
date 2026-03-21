@@ -4,6 +4,7 @@ from uuid import UUID
 
 from app.api.deps import get_current_user, get_current_org, get_db
 from app.db.models import User, Document
+from app.services.document_parser import DocumentParseError, parse_document
 from app.services.storage import storage_service
 from app.services.rag import process_document
 
@@ -43,15 +44,12 @@ async def upload_document(
         await db.commit()
         await db.refresh(document)
         
-        # Trigger background processing
-        # Note: We pass the bytes decoded as string for now as process_document expects string.
-        content = ""
         try:
-            content = file_bytes.decode("utf-8")
-        except:
-            content = "[Non-text file or encoding error]"
+            parsed = parse_document(file_bytes, file.filename, file.content_type)
+        except DocumentParseError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
             
-        background_tasks.add_task(process_document, document.id, content)
+        background_tasks.add_task(process_document, document.id, parsed.text)
         
         return {"id": document.id, "minio_url": document.minio_url, "status": document.status}
     except Exception as e:

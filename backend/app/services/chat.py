@@ -5,6 +5,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from app.db.models import Chunk
+from app.services.embeddings import get_embedding_provider
 from app.services.quota import redis_client
 
 class Citation(TypedDict):
@@ -12,12 +13,7 @@ class Citation(TypedDict):
     ref: str
     page: int | None
 
-# Mock embedding for now
-class MockEmbeddings:
-    def embed_query(self, text: str) -> list[float]:
-        return [0.1] * 1536
-
-embeddings_model = MockEmbeddings()
+embeddings_model = get_embedding_provider()
 
 async def retrieve_chunks(db: AsyncSession, query: str, kb_id: UUID, org_id: UUID, limit: int = 5) -> list[Chunk]:
     # 1. Try Cache (Exact query match for now)

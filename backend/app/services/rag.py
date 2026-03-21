@@ -1,22 +1,63 @@
-import io
-import asyncio
 from uuid import UUID
-from sqlalchemy import func, select
-from langchain_core.documents import Document as LCDocument
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import func
 from app.db.session import AsyncSessionLocal
+from app.services.embeddings import get_embedding_provider
 from app.db.models import Document, Chunk, UsageLog
 from app.services.quota import update_org_quota
 from typing import List
 
-# Mock embedding for now, usually you'd use langchain_openai.OpenAIEmbeddings
-class MockEmbeddings:
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        # Return dummy 1536-dimensional vectors
-        return [[0.1] * 1536 for _ in texts]
+embeddings_model = get_embedding_provider()
 
-embeddings_model = MockEmbeddings()
+MEDICAL_HEADINGS = (
+    "主诉:",
+    "现病史:",
+    "既往史:",
+    "个人史:",
+    "过敏史:",
+    "查体:",
+    "辅助检查:",
+    "诊断:",
+    "处理意见:",
+    "建议:",
+)
+
+
+def _split_long_text(text: str, chunk_size: int, chunk_overlap: int) -> list[str]:
+    chunks: list[str] = []
+    start = 0
+
+    while start < len(text):
+        end = min(start + chunk_size, len(text))
+        chunks.append(text[start:end])
+        if end >= len(text):
+            break
+        start = max(end - chunk_overlap, start + 1)
+
+    return chunks
+
+
+def split_document_text(text: str, chunk_size: int = 800, chunk_overlap: int = 150) -> list[str]:
+    normalized = text.replace("\r\n", "\n").replace("\r", "\n").strip()
+    if not normalized:
+        return []
+
+    paragraphs = [paragraph.strip() for paragraph in normalized.split("\n\n") if paragraph.strip()]
+    chunks: list[str] = []
+
+    for paragraph in paragraphs:
+        lines = [line.strip() for line in paragraph.split("\n") if line.strip()]
+        if not lines:
+            continue
+
+        if lines[0] in MEDICAL_HEADINGS:
+            paragraph = "\n".join(lines)
+
+        if len(paragraph) <= chunk_size:
+            chunks.append(paragraph)
+        else:
+            chunks.extend(_split_long_text(paragraph, chunk_size=chunk_size, chunk_overlap=chunk_overlap))
+
+    return chunks
 
 async def process_document(document_id: UUID, file_content: str):
     """
@@ -32,13 +73,7 @@ async def process_document(document_id: UUID, file_content: str):
         # 2. Advanced Text splitting (Medical Aware)
         # We use headers as separators to keep medical sections together
         separators = ["\n\n", "\n", "。", "！", "？", "；", "主诉:", "现病史:", "既往史:", "诊断:", "建议:", " "]
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=800,
-            chunk_overlap=150,
-            length_function=len,
-            separators=separators
-        )
-        texts = text_splitter.split_text(file_content)
+        texts = split_document_text(file_content)
         
         # 3. Generate embeddings
         embeddings = embeddings_model.embed_documents(texts)
