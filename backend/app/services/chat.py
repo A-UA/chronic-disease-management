@@ -1,5 +1,8 @@
-﻿import hashlib
+﻿from __future__ import annotations
+
+import hashlib
 import json
+import logging
 import re
 from dataclasses import dataclass
 from typing import TypedDict
@@ -14,6 +17,10 @@ from app.services.embeddings import get_embedding_provider
 from app.services.query_rewrite import prepare_retrieval_query
 from app.services.quota import redis_client
 from app.services.reranker import get_reranker_provider
+
+logger = logging.getLogger(__name__)
+_DOC_REF_PATTERN = re.compile(r"(?:\[\s*Doc\s*(\d+)\s*\]|\bDoc\s*(\d+)\b)", re.IGNORECASE)
+_STATEMENT_BOUNDARY_PATTERN = re.compile(r"\n+|(?<=[。！？.!?])(?=\s*(?:Conclusion:|Evidence:|Uncertainty:))")
 
 
 class Citation(TypedDict):
@@ -80,24 +87,94 @@ def _apply_retrieval_filters(stmt: Select, filters: RetrievalFilters | None) -> 
     return stmt
 
 
-def _build_snippet(content: str, max_length: int = 120) -> str:
-    collapsed = " ".join(content.split())
-    if len(collapsed) <= max_length:
-        return collapsed
-    return collapsed[: max_length - 3] + "..."
+def _build_snippet_and_span(content: str, max_length: int = 120) -> tuple[str, dict[str, int]]:
+    if not content:
+        return "", {"start": 0, "end": 0}
+
+    start = 0
+    while start < len(content) and content[start].isspace():
+        start += 1
+
+    end = len(content)
+    while end > start and content[end - 1].isspace():
+        end -= 1
+
+    span_end = min(end, start + max_length)
+    raw_snippet = content[start:span_end]
+    if span_end < end:
+        snippet = raw_snippet.rstrip() + "..."
+    else:
+        snippet = raw_snippet
+    return snippet, {"start": start, "end": span_end}
 
 
 def build_statement_citations(answer_text: str, citations: list[Citation]) -> list[StatementCitation]:
-    ref_map = {citation["ref"]: citation for citation in citations}
+    ref_map = {citation["ref"].lower(): citation for citation in citations}
     statements: list[StatementCitation] = []
-    for raw_part in re.split(r"[\n]+", answer_text):
+    for raw_part in _STATEMENT_BOUNDARY_PATTERN.split(answer_text):
         part = raw_part.strip()
         if not part:
             continue
-        refs = re.findall(r"\[(Doc \d+)\]", part)
+        refs: list[str] = []
+        for match in _DOC_REF_PATTERN.finditer(part):
+            doc_number = match.group(1) or match.group(2)
+            if doc_number is not None:
+                refs.append(f"doc {doc_number}")
         mapped = [ref_map[ref] for ref in refs if ref in ref_map]
         statements.append({"text": part, "citations": mapped})
     return statements
+
+
+def _serialize_ranked_results(results: list[RetrievedChunk]) -> str:
+    payload = []
+    for result in results:
+        payload.append(
+            {
+                "chunk_id": str(result.chunk.id),
+                "fused_score": result.fused_score,
+                "final_score": result.final_score,
+                "sources": list(result.sources),
+                "vector_rank": result.vector_rank,
+                "keyword_rank": result.keyword_rank,
+                "rerank_score": result.rerank_score,
+            }
+        )
+    return json.dumps(payload)
+
+
+async def _load_cached_ranked_results(db: AsyncSession, cached_data: str) -> list[RetrievedChunk] | None:
+    cached_payload = json.loads(cached_data)
+    if not cached_payload:
+        return []
+
+    if isinstance(cached_payload[0], str):
+        chunk_ids = [UUID(cid) for cid in cached_payload]
+        cached_meta = [{"chunk_id": cid} for cid in cached_payload]
+    else:
+        chunk_ids = [UUID(item["chunk_id"]) for item in cached_payload]
+        cached_meta = cached_payload
+
+    stmt = select(Chunk).where(Chunk.id.in_(chunk_ids))
+    result = await db.execute(stmt)
+    chunk_by_id = {str(chunk.id): chunk for chunk in result.scalars().all()}
+
+    ranked_results: list[RetrievedChunk] = []
+    for item in cached_meta:
+        chunk = chunk_by_id.get(item["chunk_id"])
+        if chunk is None:
+            continue
+        ranked_results.append(
+            RetrievedChunk(
+                chunk=chunk,
+                fused_score=float(item.get("fused_score", 0.0)),
+                final_score=float(item.get("final_score", item.get("fused_score", 0.0))),
+                sources=tuple(item.get("sources", ["cache"])),
+                vector_rank=item.get("vector_rank"),
+                keyword_rank=item.get("keyword_rank"),
+                rerank_score=item.get("rerank_score"),
+            )
+        )
+    return ranked_results
 
 
 async def retrieve_ranked_chunks(
@@ -115,21 +192,11 @@ async def retrieve_ranked_chunks(
     cached_data = await redis_client.get(cache_key)
     if cached_data:
         try:
-            chunk_ids = json.loads(cached_data)
-            stmt = select(Chunk).where(Chunk.id.in_([UUID(cid) for cid in chunk_ids]))
-            result = await db.execute(stmt)
-            cached_chunks = list(result.scalars().all())
-            return [
-                RetrievedChunk(
-                    chunk=chunk,
-                    fused_score=0.0,
-                    final_score=0.0,
-                    sources=("cache",),
-                )
-                for chunk in cached_chunks
-            ]
+            cached_results = await _load_cached_ranked_results(db, cached_data)
+            if cached_results is not None:
+                return cached_results
         except Exception:
-            pass
+            logger.warning("Failed to load cached ranked results", exc_info=True)
 
     embedding_provider = get_embedding_provider()
     query_embedding = embedding_provider.embed_query(retrieval_query)
@@ -163,14 +230,8 @@ async def retrieve_ranked_chunks(
     for rank, chunk in enumerate(vector_chunks):
         retrieved = retrieved_by_id.get(chunk.id)
         if retrieved is None:
-            retrieved = RetrievedChunk(
-                chunk=chunk,
-                fused_score=0.0,
-                final_score=0.0,
-                sources=(),
-            )
+            retrieved = RetrievedChunk(chunk=chunk, fused_score=0.0, final_score=0.0, sources=())
             retrieved_by_id[chunk.id] = retrieved
-
         retrieved.fused_score += 1.0 / (k + rank + 1)
         retrieved.final_score = retrieved.fused_score
         retrieved.vector_rank = rank + 1
@@ -179,34 +240,27 @@ async def retrieve_ranked_chunks(
     for rank, chunk in enumerate(keyword_chunks):
         retrieved = retrieved_by_id.get(chunk.id)
         if retrieved is None:
-            retrieved = RetrievedChunk(
-                chunk=chunk,
-                fused_score=0.0,
-                final_score=0.0,
-                sources=(),
-            )
+            retrieved = RetrievedChunk(chunk=chunk, fused_score=0.0, final_score=0.0, sources=())
             retrieved_by_id[chunk.id] = retrieved
-
         retrieved.fused_score += 1.0 / (k + rank + 1)
         retrieved.final_score = retrieved.fused_score
         retrieved.keyword_rank = rank + 1
         retrieved.sources = _dedupe_sources(retrieved.sources, "keyword")
 
-    fused_results = sorted(
-        retrieved_by_id.values(),
-        key=lambda item: item.fused_score,
-        reverse=True,
-    )
+    fused_results = sorted(retrieved_by_id.values(), key=lambda item: item.fused_score, reverse=True)
 
-    reranker = get_reranker_provider()
-    reranked_results = await reranker.rerank(retrieval_query, fused_results, limit)
+    try:
+        reranker = get_reranker_provider()
+        reranked_results = await reranker.rerank(retrieval_query, fused_results, limit)
+    except Exception:
+        logger.warning("Reranker failed; falling back to fused ranking", exc_info=True)
+        reranked_results = fused_results[:limit]
+        for result in reranked_results:
+            result.final_score = result.fused_score
+            result.rerank_score = None
 
     if reranked_results:
-        await redis_client.setex(
-            cache_key,
-            3600,
-            json.dumps([str(result.chunk.id) for result in reranked_results]),
-        )
+        await redis_client.setex(cache_key, 3600, _serialize_ranked_results(reranked_results))
 
     return reranked_results
 
@@ -233,11 +287,7 @@ def build_rag_prompt(query: str, chunks: list[Chunk], patient_name: str | None =
             content = content.replace(patient_name, "[PATIENT]")
 
         doc_ref = f"Doc {i + 1}"
-        snippet = _build_snippet(content)
-        span_start = content.find(snippet.rstrip("."))
-        if span_start < 0:
-            span_start = 0
-        span_end = span_start + len(snippet)
+        snippet, source_span = _build_snippet_and_span(content)
         context_blocks.append(f"[{doc_ref}] (page={chunk.page_number}): {content}")
         citations.append(
             {
@@ -247,7 +297,7 @@ def build_rag_prompt(query: str, chunks: list[Chunk], patient_name: str | None =
                 "page": chunk.page_number,
                 "chunk_index": getattr(chunk, "chunk_index", None),
                 "snippet": snippet,
-                "source_span": {"start": span_start, "end": span_end},
+                "source_span": source_span,
             }
         )
 

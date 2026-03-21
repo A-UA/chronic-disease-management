@@ -15,3 +15,15 @@ def test_build_statement_citations_maps_doc_refs_to_citations():
     assert statements[0]["text"].startswith("Conclusion:")
     assert statements[0]["citations"][0]["doc_id"] == "doc-1"
     assert statements[1]["citations"][0]["chunk_id"] == "chunk-2"
+
+
+def test_build_statement_citations_accepts_relaxed_doc_ref_formats():
+    citations = [
+        {"ref": "Doc 1", "doc_id": "doc-1", "chunk_id": "chunk-1", "page": 2, "chunk_index": 0, "snippet": "诊断：血糖升高。", "source_span": {"start": 0, "end": 8}},
+    ]
+
+    statements = build_statement_citations("Conclusion: 建议复查 Doc 1。Evidence: 继续监测[Doc1]。", citations)
+
+    assert len(statements) == 2
+    assert statements[0]["citations"][0]["doc_id"] == "doc-1"
+    assert statements[1]["citations"][0]["chunk_id"] == "chunk-1"

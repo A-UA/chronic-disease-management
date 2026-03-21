@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from typing import Any
 
@@ -28,7 +28,7 @@ def evaluate_rag_cases(cases: list[dict[str, Any]], k: int = 5) -> dict[str, Any
 
         expected_citation_doc_ids = set(case.get("expected_citation_doc_ids", []))
         citation_doc_ids = set(case.get("citation_doc_ids", []))
-        citation_hit = not expected_citation_doc_ids or bool(expected_citation_doc_ids.intersection(citation_doc_ids))
+        citation_hit = citation_doc_ids == expected_citation_doc_ids
         if citation_hit:
             citation_hits += 1
 

@@ -28,6 +28,7 @@ def test_evaluate_rag_cases_returns_basic_metrics():
     assert summary["case_count"] == 2
     assert summary["metrics"]["recall_at_k"] == 0.5
     assert summary["metrics"]["answer_match_rate"] == 1.0
-    assert summary["metrics"]["citation_hit_rate"] == 0.5
+    assert summary["metrics"]["citation_hit_rate"] == 0.0
     assert summary["cases"][0]["retrieval_hit"] is True
+    assert summary["cases"][0]["citation_hit"] is False
     assert summary["cases"][1]["citation_hit"] is False

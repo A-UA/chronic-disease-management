@@ -79,6 +79,14 @@ async def chat_endpoint(
         prompt_tokens = len(prompt) // 4
         completion_tokens = len(full_response) // 4
         statement_citations = build_statement_citations(full_response, citations)
+        done_statement_citations = [
+            {
+                "text": item["text"],
+                "citation_refs": [citation["ref"] for citation in item["citations"]],
+                "chunk_ids": [citation.get("chunk_id") for citation in item["citations"]],
+            }
+            for item in statement_citations
+        ]
 
         assistant_msg = Message(
             conversation_id=conversation.id,
@@ -106,6 +114,6 @@ async def chat_endpoint(
         await db.commit()
 
         await update_org_quota(db, org_id, usage.total_tokens)
-        yield f"event: done\ndata: {json.dumps({'tokens': usage.total_tokens, 'statement_citations': statement_citations})}\n\n"
+        yield f"event: done\ndata: {json.dumps({'tokens': usage.total_tokens, 'statement_citations': done_statement_citations})}\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")
