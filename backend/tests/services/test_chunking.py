@@ -1,4 +1,4 @@
-from app.services.rag import split_document_text
+from app.services.rag_ingestion import split_document_text
 
 
 def test_split_document_text_keeps_medical_heading_with_content():

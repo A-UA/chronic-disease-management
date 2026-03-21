@@ -5,8 +5,8 @@ from uuid import UUID
 from app.api.deps import get_current_user, get_current_org, get_db
 from app.db.models import User, Document
 from app.services.document_parser import DocumentParseError, parse_document
+from app.services.rag_ingestion import process_document
 from app.services.storage import storage_service
-from app.services.rag import process_document
 
 router = APIRouter()
 

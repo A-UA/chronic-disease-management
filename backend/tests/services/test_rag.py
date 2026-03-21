@@ -2,7 +2,7 @@ import pytest
 from uuid import uuid4
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from app.services.rag import process_document
+from app.services.rag_ingestion import process_document
 
 @pytest.mark.asyncio
 async def test_process_document_marks_document_completed_on_success():
@@ -17,8 +17,8 @@ async def test_process_document_marks_document_completed_on_success():
     mock_db.get.return_value = mock_doc
     mock_db.add = MagicMock()
 
-    with patch("app.services.rag.AsyncSessionLocal") as mock_session_factory, patch(
-        "app.services.rag.embeddings_model.embed_documents",
+    with patch("app.services.rag_ingestion.AsyncSessionLocal") as mock_session_factory, patch(
+        "app.services.rag_ingestion.embeddings_model.embed_documents",
         return_value=[[0.1] * 1536],
     ) as mock_embed_documents:
         mock_session_factory.return_value.__aenter__.return_value = mock_db
@@ -47,8 +47,8 @@ async def test_process_document_marks_document_failed_when_embedding_raises():
     mock_db.get.return_value = mock_doc
     mock_db.add = MagicMock()
 
-    with patch("app.services.rag.AsyncSessionLocal") as mock_session_factory, patch(
-        "app.services.rag.embeddings_model.embed_documents",
+    with patch("app.services.rag_ingestion.AsyncSessionLocal") as mock_session_factory, patch(
+        "app.services.rag_ingestion.embeddings_model.embed_documents",
         side_effect=RuntimeError("embedding failed"),
     ):
         mock_session_factory.return_value.__aenter__.return_value = mock_db
