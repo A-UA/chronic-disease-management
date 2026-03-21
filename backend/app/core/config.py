@@ -27,6 +27,9 @@ class Settings(BaseSettings):
 
     # Reranker
     RERANKER_PROVIDER: str = "noop"
+    RERANKER_MODEL: str = ""
+    RERANKER_API_KEY: str = ""
+    RERANKER_BASE_URL: str = ""
 
     # Chat LLM
     LLM_PROVIDER: str = "mock"

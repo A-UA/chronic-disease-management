@@ -19,6 +19,7 @@ class Citation(TypedDict):
     doc_id: str
     ref: str
     page: int | None
+    snippet: str
 
 
 class RetrievalFilters(TypedDict, total=False):
@@ -68,6 +69,13 @@ def _apply_retrieval_filters(stmt: Select, filters: RetrievalFilters | None) -> 
         stmt = stmt.join(Document, Document.id == Chunk.document_id).where(Document.file_type.in_(file_types))
 
     return stmt
+
+
+def _build_snippet(content: str, max_length: int = 120) -> str:
+    collapsed = " ".join(content.split())
+    if len(collapsed) <= max_length:
+        return collapsed
+    return collapsed[: max_length - 3] + "..."
 
 
 async def retrieve_ranked_chunks(
@@ -203,12 +211,14 @@ def build_rag_prompt(query: str, chunks: list[Chunk], patient_name: str | None =
             content = content.replace(patient_name, "[PATIENT]")
 
         doc_ref = f"Doc {i + 1}"
-        context_blocks.append(f"[{doc_ref}]: {content}")
+        snippet = _build_snippet(content)
+        context_blocks.append(f"[{doc_ref}] (page={chunk.page_number}): {content}")
         citations.append(
             {
                 "doc_id": str(chunk.document_id),
                 "ref": doc_ref,
                 "page": chunk.page_number,
+                "snippet": snippet,
             }
         )
 
@@ -218,9 +228,12 @@ def build_rag_prompt(query: str, chunks: list[Chunk], patient_name: str | None =
         query = query.replace(patient_name, "[PATIENT]")
 
     prompt = (
-        "You are a helpful AI assistant. Answer the user's question based strictly on the following context. "
-        "The context belongs to a patient (referred to as [PATIENT]).\n"
-        "If the answer is not in the context, say you don't know.\n\n"
+        "You are a clinical knowledge assistant. Answer strictly from the provided context.\n"
+        "If the context is insufficient or conflicting, state that explicitly and do not invent facts.\n"
+        "Answer format:\n"
+        "1. Conclusion: one short answer to the user's question.\n"
+        "2. Evidence: cite the supporting document refs like [Doc 1].\n"
+        "3. Uncertainty: explain what is missing or uncertain, or write 'None'.\n\n"
         f"Context:\n{context_str}\n\n"
         f"Question: {query}"
     )
