@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_org, get_current_user, get_db, verify_quota
 from app.db.models import Conversation, Message, UsageLog, User
-from app.services.chat import RetrievalFilters, build_rag_prompt, retrieve_chunks
+from app.services.chat import RetrievalFilters, build_rag_prompt, build_statement_citations, retrieve_chunks
 from app.services.llm import get_llm_provider
 from app.services.quota import check_quota_during_stream, update_org_quota
 
@@ -78,6 +78,7 @@ async def chat_endpoint(
 
         prompt_tokens = len(prompt) // 4
         completion_tokens = len(full_response) // 4
+        statement_citations = build_statement_citations(full_response, citations)
 
         assistant_msg = Message(
             conversation_id=conversation.id,
@@ -85,6 +86,7 @@ async def chat_endpoint(
             content=full_response,
             metadata_={
                 "citations": citations,
+                "statement_citations": statement_citations,
                 "tokens": {"input": prompt_tokens, "output": completion_tokens},
                 "filters": filters or None,
             },
@@ -104,6 +106,6 @@ async def chat_endpoint(
         await db.commit()
 
         await update_org_quota(db, org_id, usage.total_tokens)
-        yield f"event: done\ndata: {json.dumps({'tokens': usage.total_tokens})}\n\n"
+        yield f"event: done\ndata: {json.dumps({'tokens': usage.total_tokens, 'statement_citations': statement_citations})}\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")

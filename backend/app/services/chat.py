@@ -1,5 +1,6 @@
 ﻿import hashlib
 import json
+import re
 from dataclasses import dataclass
 from typing import TypedDict
 from uuid import UUID
@@ -28,6 +29,11 @@ class Citation(TypedDict):
 class RetrievalFilters(TypedDict, total=False):
     document_ids: list[UUID]
     file_types: list[str]
+
+
+class StatementCitation(TypedDict):
+    text: str
+    citations: list[Citation]
 
 
 @dataclass(slots=True)
@@ -79,6 +85,19 @@ def _build_snippet(content: str, max_length: int = 120) -> str:
     if len(collapsed) <= max_length:
         return collapsed
     return collapsed[: max_length - 3] + "..."
+
+
+def build_statement_citations(answer_text: str, citations: list[Citation]) -> list[StatementCitation]:
+    ref_map = {citation["ref"]: citation for citation in citations}
+    statements: list[StatementCitation] = []
+    for raw_part in re.split(r"[\n]+", answer_text):
+        part = raw_part.strip()
+        if not part:
+            continue
+        refs = re.findall(r"\[(Doc \d+)\]", part)
+        mapped = [ref_map[ref] for ref in refs if ref in ref_map]
+        statements.append({"text": part, "citations": mapped})
+    return statements
 
 
 async def retrieve_ranked_chunks(
@@ -241,8 +260,8 @@ def build_rag_prompt(query: str, chunks: list[Chunk], patient_name: str | None =
         "You are a clinical knowledge assistant. Answer strictly from the provided context.\n"
         "If the context is insufficient or conflicting, state that explicitly and do not invent facts.\n"
         "Answer format:\n"
-        "1. Conclusion: one short answer to the user's question.\n"
-        "2. Evidence: cite the supporting document refs like [Doc 1].\n"
+        "1. Conclusion: one short answer to the user's question, and it must include at least one citation like [Doc 1].\n"
+        "2. Evidence: support the conclusion with document refs like [Doc 1], and every evidence sentence must include refs.\n"
         "3. Uncertainty: explain what is missing or uncertain, or write 'None'.\n\n"
         f"Context:\n{context_str}\n\n"
         f"Question: {query}"

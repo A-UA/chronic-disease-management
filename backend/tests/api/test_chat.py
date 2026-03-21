@@ -89,7 +89,7 @@ async def test_chat_stream_forwards_filters_and_streams_events(monkeypatch):
     provider = MagicMock()
 
     async def stream_text(prompt: str):
-        for token in ["结论", "：建议复查"]:
+        for token in ["Conclusion: 建议复查[Doc 1]", "\nEvidence: 两周后复查[Doc 1]"]:
             yield token
 
     provider.stream_text = stream_text
@@ -115,6 +115,7 @@ async def test_chat_stream_forwards_filters_and_streams_events(monkeypatch):
     assert "event: chunk" in body
     assert "event: done" in body
     assert "\\u5efa\\u8bae\\u590d\\u67e5" in body
+    assert "statement_citations" in body
 
     retrieve_chunks.assert_awaited_once()
     _, called_query, called_kb_id, called_org_id = retrieve_chunks.await_args.args[:4]
@@ -127,4 +128,5 @@ async def test_chat_stream_forwards_filters_and_streams_events(monkeypatch):
     assistant_message = dummy_db.added[-2]
     usage_log = dummy_db.added[-1]
     assert assistant_message.metadata_["citations"][0]["page"] == 2
+    assert assistant_message.metadata_["statement_citations"][0]["citations"][0]["doc_id"] == str(document_id)
     assert usage_log.model == provider.model_name
