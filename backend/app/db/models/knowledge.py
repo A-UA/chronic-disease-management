@@ -28,6 +28,7 @@ class Document(Base, UUIDMixin, TimestampMixin):
     file_size: Mapped[int] = mapped_column(Integer, nullable=True)
     minio_url: Mapped[str] = mapped_column(String(1024), nullable=False)
     status: Mapped[str] = mapped_column(String(50), default='processing', server_default='processing')
+    failed_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 class Chunk(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "chunks"

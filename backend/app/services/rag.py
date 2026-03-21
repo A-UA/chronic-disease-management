@@ -105,7 +105,9 @@ async def process_document(document_id: UUID, file_content: str):
             await update_org_quota(db, document.org_id, total_tokens)
 
             document.status = "completed"
+            document.failed_reason = None
             await db.commit()
-        except Exception:
+        except Exception as exc:
             document.status = "failed"
+            document.failed_reason = str(exc)[:500]
             await db.commit()
