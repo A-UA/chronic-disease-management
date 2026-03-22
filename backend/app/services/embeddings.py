@@ -34,7 +34,8 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
 
 
 def get_embedding_provider() -> EmbeddingProvider:
-    if settings.EMBEDDING_PROVIDER == "openai":
+    provider_name = settings.EMBEDDING_PROVIDER.lower().strip()
+    if provider_name == "openai":
         api_key = settings.EMBEDDING_API_KEY or settings.OPENAI_API_KEY or settings.LLM_API_KEY
         base_url = settings.EMBEDDING_BASE_URL or settings.LLM_BASE_URL
         if not api_key:
@@ -44,6 +45,20 @@ def get_embedding_provider() -> EmbeddingProvider:
             api_key=api_key,
             base_url=base_url,
         )
+        return OpenAIEmbeddingProvider(client, model_name=settings.EMBEDDING_MODEL)
+
+    if provider_name == "zhipu":
+        api_key = settings.EMBEDDING_API_KEY or settings.OPENAI_API_KEY or settings.LLM_API_KEY
+        # 默认智谱 base_url，若用户未配置则使用此默认值
+        base_url = settings.EMBEDDING_BASE_URL or "https://open.bigmodel.cn/api/paas/v4/"
+        if not api_key:
+            raise ValueError("EMBEDDING_API_KEY is required when EMBEDDING_PROVIDER=zhipu")
+
+        client = OpenAI(
+            api_key=api_key,
+            base_url=base_url,
+        )
+        # 智谱嵌入模型通常为 embedding-2 或 embedding-3
         return OpenAIEmbeddingProvider(client, model_name=settings.EMBEDDING_MODEL)
 
     return MockEmbeddingProvider()
