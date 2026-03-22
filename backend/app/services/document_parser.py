@@ -1,10 +1,13 @@
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
-import re
 from xml.etree import ElementTree
 from zipfile import BadZipFile, ZipFile
 
+import fitz  # PyMuPDF
+import logging
+
+logger = logging.getLogger(__name__)
 
 @dataclass(slots=True)
 class ParsedDocument:
@@ -54,39 +57,30 @@ def _parse_docx_document(file_bytes: bytes) -> ParsedDocument:
     return ParsedDocument(text=text, pages=[text] if text else [])
 
 
-def _decode_pdf_literal_string(raw: str) -> str:
-    return (
-        raw.replace(r"\(", "(")
-        .replace(r"\)", ")")
-        .replace(r"\n", "\n")
-        .replace(r"\r", "\r")
-        .replace(r"\t", "\t")
-        .replace(r"\\", "\\")
-    )
-
-
 def _parse_pdf_document(file_bytes: bytes) -> ParsedDocument:
-    text = file_bytes.decode("latin-1", errors="ignore")
-    streams = re.findall(r"stream\s*(.*?)\s*endstream", text, flags=re.DOTALL)
-
-    pages: list[str] = []
-    for stream in streams:
-        blocks = re.findall(r"BT(.*?)ET", stream, flags=re.DOTALL)
-        for block in blocks:
-            lines: list[str] = []
-            for raw_text in re.findall(r"\((.*?)(?<!\\)\)\s*Tj", block, flags=re.DOTALL):
-                decoded = _decode_pdf_literal_string(raw_text).strip()
-                if decoded:
-                    lines.append(decoded)
-
-            if lines:
-                pages.append("\n".join(lines))
-
-    if not pages:
-        raise DocumentParseError("PDF document contains no extractable text")
-
-    combined = _normalize_text("\n\n".join(pages))
-    return ParsedDocument(text=combined, pages=pages)
+    """专业 PDF 解析：使用 PyMuPDF (fitz) 处理排版与编码"""
+    try:
+        pages: list[str] = []
+        with fitz.open(stream=file_bytes, filetype="pdf") as doc:
+            if doc.is_encrypted:
+                raise DocumentParseError("PDF document is encrypted")
+                
+            for page in doc:
+                # 获取纯文本，支持 CMAP 和各种编码
+                text = page.get_text("text").strip()
+                if text:
+                    pages.append(text)
+        
+        if not pages:
+            raise DocumentParseError("PDF document contains no extractable text")
+            
+        combined = _normalize_text("\n\n".join(pages))
+        return ParsedDocument(text=combined, pages=pages)
+    except Exception as e:
+        if isinstance(e, DocumentParseError):
+            raise
+        logger.error(f"Failed to parse PDF: {str(e)}")
+        raise DocumentParseError(f"PDF parsing error: {str(e)}")
 
 
 def parse_document(file_bytes: bytes, filename: str, content_type: str | None) -> ParsedDocument:

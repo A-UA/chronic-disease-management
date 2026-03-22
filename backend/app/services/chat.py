@@ -1,11 +1,11 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import hashlib
 import json
 import logging
 import re
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, TypedDict, Any
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -59,16 +59,53 @@ class RetrievedChunk:
     rerank_score: float | None = None
 
 
-def _build_cache_key(query: str, kb_id: UUID, org_id: UUID, filters: RetrievalFilters | None = None) -> str:
+def _build_cache_key(
+    query: str, 
+    kb_id: UUID, 
+    org_id: UUID, 
+    user_id: UUID,
+    filters: RetrievalFilters | None = None
+) -> str:
+    """增强版 Cache Key：包含用户 ID 和更细粒度的过滤条件，防止越权缓存命中"""
     payload = {
         "query": query.lower(),
+        "user_id": str(user_id),
         "filters": {
             "document_ids": sorted(str(item) for item in filters.get("document_ids", [])) if filters else [],
             "file_types": sorted(filters.get("file_types", [])) if filters else [],
+            "patient_id": str(filters.get("patient_id")) if filters and filters.get("patient_id") else None,
+            "metadata": filters.get("metadata") if filters else {},
         },
     }
     query_hash = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
     return f"rag_cache:{org_id}:{kb_id}:{query_hash}"
+
+
+async def condense_query(
+    query: str, 
+    history: list[dict[str, str]], 
+    llm_provider: LLMProvider
+) -> str:
+    """将对话历史与当前问题压缩为一个独立的检索词（Query Condensing）"""
+    if not history:
+        return query
+        
+    history_str = "\n".join([f"{m['role']}: {m['content']}" for m in history[-5:]])
+    prompt = (
+        "Given the following conversation and a follow-up question, rephrase the follow-up "
+        "question to be a standalone question that can be used for search. "
+        "Do not answer the question, just return the standalone question.\n\n"
+        f"Chat History:\n{history_str}\n"
+        f"Follow-up Question: {query}\n"
+        "Standalone Question:"
+    )
+    
+    try:
+        condensed = await llm_provider.complete_text(prompt)
+        return condensed.strip() if condensed else query
+    except Exception:
+        logger.warning("Query condensation failed; using raw query")
+        return query
 
 
 def _dedupe_sources(existing: tuple[str, ...], source: str) -> tuple[str, ...]:
@@ -81,29 +118,22 @@ def _apply_retrieval_filters(stmt: Select, filters: RetrievalFilters | None) -> 
     if not filters:
         return stmt
 
-    # 1. 基础字段过滤
     document_ids = filters.get("document_ids") or []
     if document_ids:
         stmt = stmt.where(Chunk.document_id.in_(document_ids))
 
     file_types = filters.get("file_types") or []
     if file_types:
-        # 如果有文件类型过滤，需要关联 Document 表
         stmt = stmt.join(Document, Document.id == Chunk.document_id).where(Document.file_type.in_(file_types))
 
-    # 2. 医疗业务特有字段：患者 ID 过滤
     patient_id = filters.get("patient_id")
     if patient_id:
-        # 假设 Chunk 或 Document 关联了 patient_id，这里需要根据实际模型调整
-        # 这里假设通过 Document 关联
         if Document not in [entity.class_ for entity in stmt.get_final_froms() if hasattr(entity, "class_")]:
              stmt = stmt.join(Document, Document.id == Chunk.document_id)
         stmt = stmt.where(Document.patient_id == patient_id)
 
-    # 3. 通用 Metadata JSONB 过滤
     metadata_filters = filters.get("metadata") or {}
     for key, value in metadata_filters.items():
-        # 利用 PostgreSQL 的 JSONB 包含操作符
         stmt = stmt.where(Chunk.metadata.contains({key: value}))
 
     return stmt
@@ -189,7 +219,6 @@ async def extract_statement_citations_structured(
 
 
 def _serialize_ranked_results(results: list[RetrievedChunk]) -> str:
-    """仅序列化关键 ID 和排名元数据，不存储 Chunk 的内容"""
     payload = []
     for result in results:
         payload.append(
@@ -207,15 +236,12 @@ def _serialize_ranked_results(results: list[RetrievedChunk]) -> str:
 
 
 async def _load_cached_ranked_results(db: AsyncSession, cached_data: str) -> list[RetrievedChunk] | None:
-    """从缓存中恢复排名，但从数据库重新加载 Chunk 以确保内容是最新的"""
     try:
         cached_meta = json.loads(cached_data)
         if not cached_meta:
             return []
 
         chunk_ids = [UUID(item["chunk_id"]) for item in cached_meta]
-        
-        # 批量获取 Chunk 实体
         stmt = select(Chunk).where(Chunk.id.in_(chunk_ids))
         result = await db.execute(stmt)
         chunk_by_id = {str(chunk.id): chunk for chunk in result.scalars().all()}
@@ -224,9 +250,7 @@ async def _load_cached_ranked_results(db: AsyncSession, cached_data: str) -> lis
         for item in cached_meta:
             chunk = chunk_by_id.get(item["chunk_id"])
             if chunk is None:
-                # 如果缓存里的 Chunk 在数据库中找不到了，说明缓存已失效，返回 None 触发重新检索
                 return None
-            
             ranked_results.append(
                 RetrievedChunk(
                     chunk=chunk,
@@ -239,8 +263,7 @@ async def _load_cached_ranked_results(db: AsyncSession, cached_data: str) -> lis
                 )
             )
         return ranked_results
-    except Exception as e:
-        logger.warning(f"Failed to load cached results: {str(e)}")
+    except Exception:
         return None
 
 
@@ -249,82 +272,63 @@ async def retrieve_ranked_chunks(
     query: str,
     kb_id: UUID,
     org_id: UUID,
+    user_id: UUID,
     limit: int = 5,
     filters: RetrievalFilters | None = None,
+    history: list[dict[str, str]] | None = None,
+    llm_provider: LLMProvider | None = None,
 ) -> list[RetrievedChunk]:
-    prepared_query = prepare_retrieval_query(query)
-    retrieval_query = prepared_query.retrieval_query
-    cache_key = _build_cache_key(retrieval_query, kb_id, org_id, filters)
+    # 1. 对话压缩
+    search_query = query
+    if history and llm_provider:
+        search_query = await condense_query(query, history, llm_provider)
 
+    prepared_query = prepare_retrieval_query(search_query)
+    retrieval_query = prepared_query.retrieval_query
+    
+    # 2. 缓存检查
+    cache_key = _build_cache_key(retrieval_query, kb_id, org_id, user_id, filters)
     cached_data = await redis_client.get(cache_key)
     if cached_data:
-        try:
-            cached_results = await _load_cached_ranked_results(db, cached_data)
-            if cached_results is not None:
-                return cached_results
-        except Exception:
-            logger.warning("Failed to load cached ranked results", exc_info=True)
+        cached_results = await _load_cached_ranked_results(db, cached_data)
+        if cached_results:
+            return cached_results
 
+    # 3. 检索
     embedding_provider = get_embedding_provider()
     query_embedding = embedding_provider.embed_query(retrieval_query)
-    vector_stmt = (
-        select(Chunk)
-        .where(Chunk.org_id == org_id, Chunk.kb_id == kb_id)
-        .order_by(Chunk.embedding.cosine_distance(query_embedding))
-        .limit(limit * 2)
-    )
+    
+    vector_stmt = select(Chunk).where(Chunk.org_id == org_id, Chunk.kb_id == kb_id).order_by(Chunk.embedding.cosine_distance(query_embedding)).limit(limit * 2)
     vector_stmt = _apply_retrieval_filters(vector_stmt, filters)
-    vector_res = await db.execute(vector_stmt)
-    vector_chunks = list(vector_res.scalars().all())
+    vector_chunks = list((await db.execute(vector_stmt)).scalars().all())
 
-    keyword_stmt = (
-        select(Chunk)
-        .where(
-            Chunk.org_id == org_id,
-            Chunk.kb_id == kb_id,
-            Chunk.tsv_content.op("@@")(func.plainto_tsquery("chinese", retrieval_query)),
-        )
-        .order_by(func.ts_rank(Chunk.tsv_content, func.plainto_tsquery("chinese", retrieval_query)).desc())
-        .limit(limit * 2)
-    )
+    keyword_stmt = select(Chunk).where(Chunk.org_id == org_id, Chunk.kb_id == kb_id, Chunk.tsv_content.op("@@")(func.plainto_tsquery("chinese", retrieval_query))).order_by(func.ts_rank(Chunk.tsv_content, func.plainto_tsquery("chinese", retrieval_query)).desc()).limit(limit * 2)
     keyword_stmt = _apply_retrieval_filters(keyword_stmt, filters)
-    keyword_res = await db.execute(keyword_stmt)
-    keyword_chunks = list(keyword_res.scalars().all())
+    keyword_chunks = list((await db.execute(keyword_stmt)).scalars().all())
 
+    # 4. 融合与重排
     k = 60
     retrieved_by_id: dict[UUID, RetrievedChunk] = {}
-
     for rank, chunk in enumerate(vector_chunks):
-        retrieved = retrieved_by_id.get(chunk.id)
-        if retrieved is None:
-            retrieved = RetrievedChunk(chunk=chunk, fused_score=0.0, final_score=0.0, sources=())
-            retrieved_by_id[chunk.id] = retrieved
-        retrieved.fused_score += 1.0 / (k + rank + 1)
-        retrieved.final_score = retrieved.fused_score
-        retrieved.vector_rank = rank + 1
-        retrieved.sources = _dedupe_sources(retrieved.sources, "vector")
+        item = retrieved_by_id.setdefault(chunk.id, RetrievedChunk(chunk=chunk, fused_score=0.0, final_score=0.0, sources=()))
+        item.fused_score += 1.0 / (k + rank + 1)
+        item.vector_rank = rank + 1
+        item.sources = _dedupe_sources(item.sources, "vector")
 
     for rank, chunk in enumerate(keyword_chunks):
-        retrieved = retrieved_by_id.get(chunk.id)
-        if retrieved is None:
-            retrieved = RetrievedChunk(chunk=chunk, fused_score=0.0, final_score=0.0, sources=())
-            retrieved_by_id[chunk.id] = retrieved
-        retrieved.fused_score += 1.0 / (k + rank + 1)
-        retrieved.final_score = retrieved.fused_score
-        retrieved.keyword_rank = rank + 1
-        retrieved.sources = _dedupe_sources(retrieved.sources, "keyword")
+        item = retrieved_by_id.setdefault(chunk.id, RetrievedChunk(chunk=chunk, fused_score=0.0, final_score=0.0, sources=()))
+        item.fused_score += 1.0 / (k + rank + 1)
+        item.keyword_rank = rank + 1
+        item.sources = _dedupe_sources(item.sources, "keyword")
 
-    fused_results = sorted(retrieved_by_id.values(), key=lambda item: item.fused_score, reverse=True)
+    fused_results = sorted(retrieved_by_id.values(), key=lambda x: x.fused_score, reverse=True)
 
     try:
         reranker = get_reranker_provider()
         reranked_results = await reranker.rerank(retrieval_query, fused_results, limit)
     except Exception:
-        logger.warning("Reranker failed; falling back to fused ranking", exc_info=True)
         reranked_results = fused_results[:limit]
-        for result in reranked_results:
-            result.final_score = result.fused_score
-            result.rerank_score = None
+        for r in reranked_results: r.final_score = r.fused_score
 
     if reranked_results:
         await redis_client.setex(cache_key, 3600, _serialize_ranked_results(reranked_results))
@@ -337,51 +341,33 @@ async def retrieve_chunks(
     query: str,
     kb_id: UUID,
     org_id: UUID,
+    user_id: UUID,
     limit: int = 5,
     filters: RetrievalFilters | None = None,
+    history: list[dict[str, str]] | None = None,
+    llm_provider: LLMProvider | None = None,
 ) -> list[Chunk]:
-    ranked_results = await retrieve_ranked_chunks(db, query, kb_id, org_id, limit=limit, filters=filters)
-    return [result.chunk for result in ranked_results]
+    ranked = await retrieve_ranked_chunks(db, query, kb_id, org_id, user_id, limit, filters, history, llm_provider)
+    return [r.chunk for r in ranked]
 
 
 def build_rag_prompt(query: str, chunks: list[Chunk], patient_name: str | None = None) -> tuple[str, list[dict[str, Citation]]]:
     context_blocks = []
     citations = []
-
     for i, chunk in enumerate(chunks):
         content = chunk.content
-        if patient_name:
-            content = content.replace(patient_name, "[PATIENT]")
-
+        if patient_name: content = content.replace(patient_name, "[PATIENT]")
         doc_ref = f"Doc {i + 1}"
-        snippet, source_span = _build_snippet_and_span(content)
+        snippet, span = _build_snippet_and_span(content)
         context_blocks.append(f"[{doc_ref}] (page={chunk.page_number}): {content}")
-        citations.append(
-            {
-                "doc_id": str(chunk.document_id),
-                "chunk_id": str(chunk.id) if getattr(chunk, "id", None) is not None else None,
-                "ref": doc_ref,
-                "page": chunk.page_number,
-                "chunk_index": getattr(chunk, "chunk_index", None),
-                "snippet": snippet,
-                "source_span": source_span,
-            }
-        )
+        citations.append({"doc_id": str(chunk.document_id), "chunk_id": str(chunk.id), "ref": doc_ref, "page": chunk.page_number, "snippet": snippet, "source_span": span})
 
     context_str = "\n\n".join(context_blocks)
-
-    if patient_name:
-        query = query.replace(patient_name, "[PATIENT]")
+    if patient_name: query = query.replace(patient_name, "[PATIENT]")
 
     prompt = (
         "You are a clinical knowledge assistant. Answer strictly from the provided context.\n"
-        "If the context is insufficient or conflicting, state that explicitly and do not invent facts.\n"
-        "Answer format:\n"
-        "1. Conclusion: one short answer to the user's question.\n"
-        "2. Evidence: support the conclusion with the relevant source material.\n"
-        "3. Uncertainty: explain what is missing or uncertain, or write 'None'.\n\n"
-        f"Context:\n{context_str}\n\n"
-        f"Question: {query}"
+        "Format: 1. Conclusion: short answer. 2. Evidence: supporting material. 3. Uncertainty: what is missing.\n\n"
+        f"Context:\n{context_str}\n\nQuestion: {query}"
     )
-
     return prompt, citations

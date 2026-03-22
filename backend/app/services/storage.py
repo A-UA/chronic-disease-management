@@ -1,48 +1,47 @@
-import uuid
+import asyncio
+import logging
+from io import BytesIO
+from typing import Optional
 
-import boto3
-from botocore.exceptions import ClientError
-
+import aioboto3
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class StorageService:
+    """异步存储服务，避免 IO 阻塞"""
     def __init__(self):
-        self.s3_client = boto3.client(
+        self.session = aioboto3.Session()
+        self.endpoint_url = settings.MINIO_URL
+        self.access_key = settings.MINIO_ACCESS_KEY
+        self.secret_key = settings.MINIO_SECRET_KEY
+        self.bucket_name = settings.MINIO_BUCKET_NAME
+
+    async def upload_file(self, file_bytes: bytes, filename: str, org_id: str) -> str:
+        async with self.session.client(
             "s3",
-            endpoint_url=settings.MINIO_URL,
-            aws_access_key_id=settings.MINIO_ACCESS_KEY,
-            aws_secret_access_key=settings.MINIO_SECRET_KEY,
-        )
-        self.bucket = settings.MINIO_BUCKET_NAME
-        self._ensure_bucket()
+            endpoint_url=self.endpoint_url,
+            aws_access_key_id=self.access_key,
+            aws_secret_access_key=self.secret_key,
+        ) as s3:
+            object_name = f"{org_id}/{filename}"
+            try:
+                await s3.put_object(
+                    Bucket=self.bucket_name,
+                    Key=object_name,
+                    Body=file_bytes,
+                )
+                # 构造并返回持久化访问链接（根据实际 MinIO 路径策略）
+                return f"{self.endpoint_url}/{self.bucket_name}/{object_name}"
+            except Exception as e:
+                logger.error(f"Failed to upload to MinIO: {str(e)}")
+                raise
 
-    def _ensure_bucket(self):
-        try:
-            self.s3_client.head_bucket(Bucket=self.bucket)
-        except ClientError:
-            self.s3_client.create_bucket(Bucket=self.bucket)
-
-    def upload_file(self, file_bytes: bytes, filename: str, org_id: str) -> str:
-        unique_filename = f"{org_id}/{uuid.uuid4()}_{filename}"
-        self.s3_client.put_object(
-            Bucket=self.bucket,
-            Key=unique_filename,
-            Body=file_bytes,
-        )
-        return f"{settings.MINIO_URL}/{self.bucket}/{unique_filename}"
-
-
-_storage_service: StorageService | None = None
-
+_storage_service: Optional[StorageService] = None
 
 def get_storage_service() -> StorageService:
     global _storage_service
     if _storage_service is None:
         _storage_service = StorageService()
     return _storage_service
-
-
-def reset_storage_service():
-    global _storage_service
-    _storage_service = None

@@ -41,8 +41,9 @@ class Chunk(Base, UUIDMixin, TimestampMixin):
     page_number: Mapped[int] = mapped_column(Integer, nullable=True)
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=True)
     
-    # 1536 is standard for text-embedding-3-small and ada-002
-    embedding: Mapped[list[float]] = mapped_column(Vector(1536), nullable=True)
+    # Dynamic dimension support (e.g. 1536 for OpenAI, 2048 for Zhipu)
+    # The actual dimension is enforced at the database column level via migrations.
+    embedding: Mapped[list[float]] = mapped_column(Vector, nullable=True)
     
     # Keyword search vector
     tsv_content: Mapped[Any] = mapped_column(TSVECTOR, nullable=True)
