@@ -1,4 +1,6 @@
-﻿from uuid import UUID
+import re
+import logging
+from uuid import UUID
 
 from sqlalchemy import func
 
@@ -7,86 +9,66 @@ from app.db.session import AsyncSessionLocal
 from app.services.embeddings import EmbeddingProvider, get_embedding_provider
 from app.services.quota import update_org_quota
 
+logger = logging.getLogger(__name__)
 
-MEDICAL_HEADINGS = (
-    "主诉:",
-    "主诉：",
-    "现病史:",
-    "现病史：",
-    "既往史:",
-    "既往史：",
-    "个人史:",
-    "个人史：",
-    "过敏史:",
-    "过敏史：",
-    "查体:",
-    "查体：",
-    "辅助检查:",
-    "辅助检查：",
-    "诊断:",
-    "诊断：",
-    "处理意见:",
-    "处理意见：",
-    "建议:",
-    "建议：",
+# 更全的医疗标题正则
+MEDICAL_HEADING_RE = re.compile(
+    r"^(主诉|现病史|既往史|个人史|家族史|过敏史|查体|辅助检查|初步诊断|诊断依据|鉴别诊断|治疗计划|处理意见|建议|医嘱)[:：\s]*$",
+    re.MULTILINE
 )
 
-
-def _split_long_text(text: str, chunk_size: int, chunk_overlap: int) -> list[str]:
+def _split_with_context(text: str, chunk_size: int, chunk_overlap: int, context_prefix: str = "") -> list[str]:
+    """带有上下文前缀的物理切块"""
+    effective_chunk_size = chunk_size - len(context_prefix) - 5
+    if effective_chunk_size <= 100: # 前缀太长了
+        effective_chunk_size = chunk_size // 2
+        
     chunks: list[str] = []
     start = 0
-
     while start < len(text):
-        end = min(start + chunk_size, len(text))
-        chunks.append(text[start:end])
+        end = min(start + effective_chunk_size, len(text))
+        chunk_content = text[start:end]
+        
+        # 拼装前缀
+        final_content = f"{context_prefix}\n{chunk_content}" if context_prefix else chunk_content
+        chunks.append(final_content)
+        
         if end >= len(text):
             break
         start = max(end - chunk_overlap, start + 1)
-
     return chunks
 
-
-def _merge_heading_paragraphs(paragraphs: list[str]) -> list[str]:
-    merged: list[str] = []
-    index = 0
-
-    while index < len(paragraphs):
-        current = paragraphs[index].strip()
-        if current in MEDICAL_HEADINGS and index + 1 < len(paragraphs):
-            merged.append(f"{current}\n{paragraphs[index + 1].strip()}")
-            index += 2
-            continue
-
-        merged.append(current)
-        index += 1
-
-    return merged
-
-
 def split_document_text(text: str, chunk_size: int = 800, chunk_overlap: int = 150) -> list[str]:
+    """增强版切块：识别医疗章节并保留上下文"""
     normalized = text.replace("\r\n", "\n").replace("\r", "\n").strip()
     if not normalized:
         return []
 
-    paragraphs = [paragraph.strip() for paragraph in normalized.split("\n\n") if paragraph.strip()]
-    paragraphs = _merge_heading_paragraphs(paragraphs)
-    chunks: list[str] = []
+    # 1. 识别所有章节位置
+    matches = list(MEDICAL_HEADING_RE.finditer(normalized))
+    if not matches:
+        # 没有识别到章节，退化为普通物理切块
+        return _split_with_context(normalized, chunk_size, chunk_overlap)
 
-    for paragraph in paragraphs:
-        lines = [line.strip() for line in paragraph.split("\n") if line.strip()]
-        if not lines:
-            continue
-
-        if lines[0] in MEDICAL_HEADINGS:
-            paragraph = "\n".join(lines)
-
-        if len(paragraph) <= chunk_size:
-            chunks.append(paragraph)
+    final_chunks: list[str] = []
+    
+    # 2. 按章节切割
+    for i in range(len(matches)):
+        start_pos = matches[i].start()
+        heading = matches[i].group(1).strip()
+        
+        # 确定本章节结束位置
+        end_pos = matches[i+1].start() if i + 1 < len(matches) else len(normalized)
+        section_content = normalized[start_pos:end_pos].strip()
+        
+        if len(section_content) <= chunk_size:
+            final_chunks.append(section_content)
         else:
-            chunks.extend(_split_long_text(paragraph, chunk_size=chunk_size, chunk_overlap=chunk_overlap))
-
-    return chunks
-
+            # 章节内部进行带前缀的切割，前缀包含当前章节标题
+            prefix = f"[章节: {heading}]"
+            final_chunks.extend(_split_with_context(section_content, chunk_size, chunk_overlap, context_prefix=prefix))
+            
+    return final_chunks
 
 async def process_document(document_id: UUID, file_content: str):
     async with AsyncSessionLocal() as db:
@@ -99,6 +81,11 @@ async def process_document(document_id: UUID, file_content: str):
 
         try:
             embeddings = embedding_provider.embed_documents(texts)
+            
+            # 记录维度校检（可选，基于 1.1 的 get_dimension）
+            actual_dim = embedding_provider.get_dimension()
+            if actual_dim:
+                logger.info(f"Processing document {document_id} with embedding dimension: {actual_dim}")
 
             for i, (text, emb) in enumerate(zip(texts, embeddings)):
                 chunk = Chunk(
@@ -109,18 +96,25 @@ async def process_document(document_id: UUID, file_content: str):
                     chunk_index=i,
                     embedding=emb,
                     tsv_content=func.to_tsvector("chinese", text),
+                    # metadata 字段用于存储结构化信息，支持我们刚在 chat.py 写的 dynamic filter
+                    metadata={
+                        "heading_aware": True,
+                        "source": str(document.file_name) if document.file_name else "unknown"
+                    }
                 )
                 db.add(chunk)
 
-            total_tokens = sum(len(t) // 4 for t in texts)
+            # Token 统计改进（使用 tiktoken 如果可用，或者估算）
+            total_tokens = sum(len(t) // 2 for t in texts) # 简单估算，中文约 2 字节/token
+            
             usage = UsageLog(
                 org_id=document.org_id,
                 user_id=document.uploader_id,
-                model="text-embedding-3-small",
+                model=getattr(embedding_provider, "model_name", "unknown"),
                 prompt_tokens=total_tokens,
                 action_type="embedding",
                 resource_id=document.id,
-                cost=total_tokens * 0.00000002,
+                cost=0.0 # 实际成本由结算系统计算
             )
             db.add(usage)
 
@@ -130,6 +124,7 @@ async def process_document(document_id: UUID, file_content: str):
             document.failed_reason = None
             await db.commit()
         except Exception as exc:
+            logger.exception(f"Failed to process document {document_id}")
             document.status = "failed"
             document.failed_reason = str(exc)[:500]
             await db.commit()

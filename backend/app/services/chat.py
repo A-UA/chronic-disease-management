@@ -39,6 +39,8 @@ class Citation(TypedDict):
 class RetrievalFilters(TypedDict, total=False):
     document_ids: list[UUID]
     file_types: list[str]
+    patient_id: UUID | None
+    metadata: dict[str, Any]
 
 
 class StatementCitation(TypedDict):
@@ -79,13 +81,30 @@ def _apply_retrieval_filters(stmt: Select, filters: RetrievalFilters | None) -> 
     if not filters:
         return stmt
 
+    # 1. 基础字段过滤
     document_ids = filters.get("document_ids") or []
     if document_ids:
         stmt = stmt.where(Chunk.document_id.in_(document_ids))
 
     file_types = filters.get("file_types") or []
     if file_types:
+        # 如果有文件类型过滤，需要关联 Document 表
         stmt = stmt.join(Document, Document.id == Chunk.document_id).where(Document.file_type.in_(file_types))
+
+    # 2. 医疗业务特有字段：患者 ID 过滤
+    patient_id = filters.get("patient_id")
+    if patient_id:
+        # 假设 Chunk 或 Document 关联了 patient_id，这里需要根据实际模型调整
+        # 这里假设通过 Document 关联
+        if Document not in [entity.class_ for entity in stmt.get_final_froms() if hasattr(entity, "class_")]:
+             stmt = stmt.join(Document, Document.id == Chunk.document_id)
+        stmt = stmt.where(Document.patient_id == patient_id)
+
+    # 3. 通用 Metadata JSONB 过滤
+    metadata_filters = filters.get("metadata") or {}
+    for key, value in metadata_filters.items():
+        # 利用 PostgreSQL 的 JSONB 包含操作符
+        stmt = stmt.where(Chunk.metadata.contains({key: value}))
 
     return stmt
 
@@ -170,6 +189,7 @@ async def extract_statement_citations_structured(
 
 
 def _serialize_ranked_results(results: list[RetrievedChunk]) -> str:
+    """仅序列化关键 ID 和排名元数据，不存储 Chunk 的内容"""
     payload = []
     for result in results:
         payload.append(
@@ -187,38 +207,41 @@ def _serialize_ranked_results(results: list[RetrievedChunk]) -> str:
 
 
 async def _load_cached_ranked_results(db: AsyncSession, cached_data: str) -> list[RetrievedChunk] | None:
-    cached_payload = json.loads(cached_data)
-    if not cached_payload:
-        return []
+    """从缓存中恢复排名，但从数据库重新加载 Chunk 以确保内容是最新的"""
+    try:
+        cached_meta = json.loads(cached_data)
+        if not cached_meta:
+            return []
 
-    if isinstance(cached_payload[0], str):
-        chunk_ids = [UUID(cid) for cid in cached_payload]
-        cached_meta = [{"chunk_id": cid} for cid in cached_payload]
-    else:
-        chunk_ids = [UUID(item["chunk_id"]) for item in cached_payload]
-        cached_meta = cached_payload
+        chunk_ids = [UUID(item["chunk_id"]) for item in cached_meta]
+        
+        # 批量获取 Chunk 实体
+        stmt = select(Chunk).where(Chunk.id.in_(chunk_ids))
+        result = await db.execute(stmt)
+        chunk_by_id = {str(chunk.id): chunk for chunk in result.scalars().all()}
 
-    stmt = select(Chunk).where(Chunk.id.in_(chunk_ids))
-    result = await db.execute(stmt)
-    chunk_by_id = {str(chunk.id): chunk for chunk in result.scalars().all()}
-
-    ranked_results: list[RetrievedChunk] = []
-    for item in cached_meta:
-        chunk = chunk_by_id.get(item["chunk_id"])
-        if chunk is None:
-            continue
-        ranked_results.append(
-            RetrievedChunk(
-                chunk=chunk,
-                fused_score=float(item.get("fused_score", 0.0)),
-                final_score=float(item.get("final_score", item.get("fused_score", 0.0))),
-                sources=tuple(item.get("sources", ["cache"])),
-                vector_rank=item.get("vector_rank"),
-                keyword_rank=item.get("keyword_rank"),
-                rerank_score=item.get("rerank_score"),
+        ranked_results: list[RetrievedChunk] = []
+        for item in cached_meta:
+            chunk = chunk_by_id.get(item["chunk_id"])
+            if chunk is None:
+                # 如果缓存里的 Chunk 在数据库中找不到了，说明缓存已失效，返回 None 触发重新检索
+                return None
+            
+            ranked_results.append(
+                RetrievedChunk(
+                    chunk=chunk,
+                    fused_score=float(item.get("fused_score", 0.0)),
+                    final_score=float(item.get("final_score", 0.0)),
+                    sources=tuple(item.get("sources", ["cache"])),
+                    vector_rank=item.get("vector_rank"),
+                    keyword_rank=item.get("keyword_rank"),
+                    rerank_score=item.get("rerank_score"),
+                )
             )
-        )
-    return ranked_results
+        return ranked_results
+    except Exception as e:
+        logger.warning(f"Failed to load cached results: {str(e)}")
+        return None
 
 
 async def retrieve_ranked_chunks(
