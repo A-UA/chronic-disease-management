@@ -3,15 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from app.services.llm import MockLLMProvider, OpenAICompatibleLLMProvider, get_llm_provider
-
-
-def test_get_llm_provider_returns_mock_by_default(monkeypatch):
-    monkeypatch.setattr("app.services.llm.settings.LLM_PROVIDER", "mock")
-
-    provider = get_llm_provider()
-
-    assert isinstance(provider, MockLLMProvider)
+from app.services.llm import OpenAICompatibleLLMProvider, get_llm_provider
 
 
 def test_get_llm_provider_returns_openai_compatible_provider(monkeypatch):

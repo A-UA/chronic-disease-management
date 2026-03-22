@@ -39,8 +39,8 @@ async def test_retrieve_ranked_chunks_returns_structured_scores_and_sources():
     reranker = AsyncMock()
     reranker.rerank = AsyncMock(side_effect=lambda query, results, limit: results[:limit])
 
-    with patch("app.services.chat.get_embedding_provider", return_value=provider), patch(
-        "app.services.chat.get_reranker_provider",
+    with patch("app.services.chat.registry.get_embedding", return_value=provider), patch(
+        "app.services.chat.registry.get_reranker",
         return_value=reranker,
     ), patch("app.services.chat.redis_client.get", AsyncMock(return_value=None)), patch(
         "app.services.chat.redis_client.setex",
@@ -77,8 +77,8 @@ async def test_retrieve_ranked_chunks_calls_reranker_with_retrieval_query():
     reranker = AsyncMock()
     reranker.rerank = AsyncMock(side_effect=lambda query, results, limit: results[:limit])
 
-    with patch("app.services.chat.get_embedding_provider", return_value=provider), patch(
-        "app.services.chat.get_reranker_provider",
+    with patch("app.services.chat.registry.get_embedding", return_value=provider), patch(
+        "app.services.chat.registry.get_reranker",
         return_value=reranker,
     ), patch("app.services.chat.redis_client.get", AsyncMock(return_value=None)), patch(
         "app.services.chat.redis_client.setex",
@@ -123,8 +123,8 @@ async def test_retrieve_ranked_chunks_applies_metadata_filters_to_queries():
     reranker = AsyncMock()
     reranker.rerank = AsyncMock(return_value=[])
 
-    with patch("app.services.chat.get_embedding_provider", return_value=provider), patch(
-        "app.services.chat.get_reranker_provider",
+    with patch("app.services.chat.registry.get_embedding", return_value=provider), patch(
+        "app.services.chat.registry.get_reranker",
         return_value=reranker,
     ), patch("app.services.chat.redis_client.get", AsyncMock(return_value=None)), patch(
         "app.services.chat.redis_client.setex",
@@ -208,8 +208,8 @@ async def test_retrieve_ranked_chunks_falls_back_when_reranker_raises():
     reranker = AsyncMock()
     reranker.rerank = AsyncMock(side_effect=RuntimeError("reranker down"))
 
-    with patch("app.services.chat.get_embedding_provider", return_value=provider), patch(
-        "app.services.chat.get_reranker_provider",
+    with patch("app.services.chat.registry.get_embedding", return_value=provider), patch(
+        "app.services.chat.registry.get_reranker",
         return_value=reranker,
     ), patch("app.services.chat.redis_client.get", AsyncMock(return_value=None)), patch(
         "app.services.chat.redis_client.setex",

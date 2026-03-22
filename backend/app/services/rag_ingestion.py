@@ -7,7 +7,8 @@ from sqlalchemy import func
 
 from app.db.models import Chunk, Document, UsageLog
 from app.db.session import AsyncSessionLocal
-from app.services.embeddings import EmbeddingProvider, get_embedding_provider
+from app.services.provider_registry import registry
+from app.services.embeddings import EmbeddingProvider
 from app.services.quota import update_org_quota
 
 logger = logging.getLogger(__name__)
@@ -75,7 +76,7 @@ async def process_document(document_id: UUID, file_content: str):
             return
 
         texts = split_document_text(file_content)
-        embedding_provider: EmbeddingProvider = get_embedding_provider()
+        embedding_provider: EmbeddingProvider = registry.get_embedding()
         model_name = getattr(embedding_provider, "model_name", "gpt-4o")
 
         try:

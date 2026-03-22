@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7 # 7 days
 
     # Embeddings
-    EMBEDDING_PROVIDER: str = "mock"
+    EMBEDDING_PROVIDER: str = "openai"
     EMBEDDING_MODEL: str = "text-embedding-3-small"
     OPENAI_API_KEY: str = ""
     EMBEDDING_API_KEY: str = ""
@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     RERANKER_BASE_URL: str = ""
 
     # Chat LLM
-    LLM_PROVIDER: str = "mock"
+    LLM_PROVIDER: str = "openai_compatible"
     CHAT_MODEL: str = "gpt-4o-mini"
     LLM_API_KEY: str = ""
     LLM_BASE_URL: str = ""

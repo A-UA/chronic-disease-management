@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Select
 
 from app.db.models import Chunk, Document
-from app.services.embeddings import get_embedding_provider
+from app.services.provider_registry import registry
 from app.services.query_rewrite import prepare_retrieval_query
 from app.services.quota import redis_client
 from app.services.reranker import get_reranker_provider
@@ -134,7 +134,21 @@ def _apply_retrieval_filters(stmt: Select, filters: RetrievalFilters | None) -> 
 
     metadata_filters = filters.get("metadata") or {}
     for key, value in metadata_filters.items():
-        stmt = stmt.where(Chunk.metadata.contains({key: value}))
+        if key.endswith("__in") and isinstance(value, list):
+            base_key = key[:-4]
+            # Since JSONB does not have a direct IN operator easily in SQLAlchemy without raw SQL,
+            # we can use multiple ORs or jsonb ?| array
+            # A simple approach for now is to use text cast and IN, or just multiple exact matches.
+            # Using contains with OR is complex, let's use op("?|") for arrays if strings.
+            # But the simplest is:
+            from sqlalchemy import or_
+            stmt = stmt.where(or_(*(Chunk.metadata.contains({base_key: v}) for v in value)))
+        elif key.endswith("__gt"):
+            base_key = key[:-4]
+            # Assumes integer or float values
+            stmt = stmt.where(func.cast(Chunk.metadata[base_key].astext, func.float) > value)
+        else:
+            stmt = stmt.where(Chunk.metadata.contains({key: value}))
 
     return stmt
 
@@ -295,7 +309,7 @@ async def retrieve_ranked_chunks(
             return cached_results
 
     # 3. 检索
-    embedding_provider = get_embedding_provider()
+    embedding_provider = registry.get_embedding()
     query_embedding = embedding_provider.embed_query(retrieval_query)
     
     vector_stmt = select(Chunk).where(Chunk.org_id == org_id, Chunk.kb_id == kb_id).order_by(Chunk.embedding.cosine_distance(query_embedding)).limit(limit * 2)
@@ -324,7 +338,7 @@ async def retrieve_ranked_chunks(
     fused_results = sorted(retrieved_by_id.values(), key=lambda x: x.fused_score, reverse=True)
 
     try:
-        reranker = get_reranker_provider()
+        reranker = registry.get_reranker()
         reranked_results = await reranker.rerank(retrieval_query, fused_results, limit)
     except Exception:
         reranked_results = fused_results[:limit]

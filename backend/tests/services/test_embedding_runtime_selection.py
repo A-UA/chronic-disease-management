@@ -25,7 +25,7 @@ async def test_process_document_uses_runtime_embedding_provider():
     provider.embed_documents.return_value = [[0.9] * 3]
 
     with patch("app.services.rag_ingestion.AsyncSessionLocal") as mock_session_factory, patch(
-        "app.services.rag_ingestion.get_embedding_provider",
+        "app.services.rag_ingestion.registry.get_embedding",
         return_value=provider,
     ):
         mock_session_factory.return_value.__aenter__.return_value = mock_db
@@ -49,7 +49,7 @@ async def test_retrieve_chunks_uses_runtime_embedding_provider():
     provider = MagicMock()
     provider.embed_query.return_value = [0.9] * 3
 
-    with patch("app.services.chat.get_embedding_provider", return_value=provider), patch(
+    with patch("app.services.chat.registry.get_embedding", return_value=provider), patch(
         "app.services.chat.redis_client.get",
         AsyncMock(return_value=None),
     ) as mock_cache_get, patch(

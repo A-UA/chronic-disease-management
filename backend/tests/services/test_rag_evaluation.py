@@ -1,7 +1,8 @@
+import pytest
 from app.services.rag_evaluation import evaluate_rag_cases
 
-
-def test_evaluate_rag_cases_returns_basic_metrics():
+@pytest.mark.asyncio
+async def test_evaluate_rag_cases_returns_basic_metrics():
     cases = [
         {
             "id": "case-1",
@@ -23,7 +24,7 @@ def test_evaluate_rag_cases_returns_basic_metrics():
         },
     ]
 
-    summary = evaluate_rag_cases(cases, k=2)
+    summary = await evaluate_rag_cases(cases, k=2)
 
     assert summary["case_count"] == 2
     assert summary["metrics"]["recall_at_k"] == 0.5

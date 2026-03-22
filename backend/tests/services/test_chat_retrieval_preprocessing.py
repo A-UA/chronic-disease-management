@@ -21,7 +21,7 @@ async def test_retrieve_chunks_uses_normalized_query_for_embedding_and_cache():
     provider = MagicMock()
     provider.embed_query.return_value = [0.1] * 3
 
-    with patch("app.services.chat.get_embedding_provider", return_value=provider), patch(
+    with patch("app.services.chat.registry.get_embedding", return_value=provider), patch(
         "app.services.chat.redis_client.get",
         AsyncMock(return_value=None),
     ) as mock_cache_get, patch(

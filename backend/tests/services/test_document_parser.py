@@ -73,7 +73,7 @@ def test_parse_pdf_document_extracts_text_from_simple_pdf():
         b"2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n"
         b"3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 300 144] /Contents 4 0 R >> endobj\n"
         b"4 0 obj << /Length 55 >> stream\n"
-        b"BT /F1 12 Tf 72 100 Td (PDF first line) Tj T* (PDF second line) Tj ET\n"
+        b"BT /F1 12 Tf 72 100 Td (PDF first line. This is a longer text string to bypass the OCR fallback threshold. We need more than fifty characters to ensure PyMuPDF result is accepted.) Tj T* (PDF second line) Tj ET\n"
         b"endstream endobj\n"
         b"trailer << /Root 1 0 R >>\n"
         b"%%EOF"
@@ -85,5 +85,5 @@ def test_parse_pdf_document_extracts_text_from_simple_pdf():
         content_type="application/pdf",
     )
 
-    assert parsed.text == "PDF first line\nPDF second line"
-    assert parsed.pages == ["PDF first line\nPDF second line"]
+    assert parsed.text == "PDF first line. This is a longer text string to bypass the OCR fallback threshold. We need more than fifty characters to ensure PyMuPDF result is accepted.\nPDF second line"
+    assert parsed.pages == ["PDF first line. This is a longer text string to bypass the OCR fallback threshold. We need more than fifty characters to ensure PyMuPDF result is accepted.\nPDF second line"]

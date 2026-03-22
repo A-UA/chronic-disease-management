@@ -25,17 +25,6 @@ class EmbeddingProvider:
         return None
 
 
-class MockEmbeddingProvider(EmbeddingProvider):
-    def embed_documents(self, texts: list[str]) -> list[list[float]]:
-        return [[0.1] * 1536 for _ in texts]
-
-    def embed_query(self, text: str) -> list[float]:
-        return [0.1] * 1536
-
-    def get_dimension(self) -> int:
-        return 1536
-
-
 class OpenAIEmbeddingProvider(EmbeddingProvider):
     def __init__(self, client: OpenAI, model_name: str):
         self.client = client
@@ -102,4 +91,4 @@ def get_embedding_provider() -> EmbeddingProvider:
         client = OpenAI(api_key=api_key, base_url=base_url or "https://open.bigmodel.cn/api/paas/v4/")
         return OpenAIEmbeddingProvider(client, model_name=settings.EMBEDDING_MODEL)
 
-    return MockEmbeddingProvider()
+    raise ValueError(f"Unsupported embedding provider: {settings.EMBEDDING_PROVIDER}")

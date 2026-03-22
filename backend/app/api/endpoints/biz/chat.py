@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_current_org, get_current_user, get_db, verify_quota
 from app.db.models import Conversation, Message, UsageLog, User
 from app.services.chat import RetrievalFilters, build_rag_prompt, extract_statement_citations_structured, retrieve_chunks
-from app.services.llm import get_llm_provider
+from app.services.provider_registry import registry
 from app.services.quota import check_quota_during_stream, update_org_quota
 
 router = APIRouter()
@@ -54,7 +54,7 @@ async def chat_endpoint(
     history_msgs = history_res.scalars().all()[::-1] # 恢复正序
     history_list = [{"role": m.role, "content": m.content} for m in history_msgs]
 
-    llm_provider = get_llm_provider()
+    llm_provider = registry.get_llm()
 
     # 3. 增强版检索（包含对话压缩和安全缓存）
     chunks = await retrieve_chunks(

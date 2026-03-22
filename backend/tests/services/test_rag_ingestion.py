@@ -22,7 +22,7 @@ async def test_process_document_marks_document_completed_on_success():
     provider.embed_documents.return_value = [[0.1] * 1536]
 
     with patch("app.services.rag_ingestion.AsyncSessionLocal") as mock_session_factory, patch(
-        "app.services.rag_ingestion.get_embedding_provider",
+        "app.services.rag_ingestion.registry.get_embedding",
         return_value=provider,
     ):
         mock_session_factory.return_value.__aenter__.return_value = mock_db
@@ -55,7 +55,7 @@ async def test_process_document_marks_document_failed_on_embedding_error():
     provider.embed_documents.side_effect = RuntimeError("embedding failed")
 
     with patch("app.services.rag_ingestion.AsyncSessionLocal") as mock_session_factory, patch(
-        "app.services.rag_ingestion.get_embedding_provider",
+        "app.services.rag_ingestion.registry.get_embedding",
         return_value=provider,
     ):
         mock_session_factory.return_value.__aenter__.return_value = mock_db

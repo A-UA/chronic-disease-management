@@ -23,19 +23,6 @@ class LLMProvider(Protocol):
     async def complete_text(self, prompt: str) -> str: ...
 
 
-class MockLLMProvider:
-    model_name = "gpt-4o-mock"
-
-    async def stream_text(self, prompt: str) -> AsyncGenerator[str, None]:
-        words = ["Here", " is", " a", " mocked", " response", " to", " your", " query."]
-        for word in words:
-            await asyncio.sleep(0.1)
-            yield word
-
-    async def complete_text(self, prompt: str) -> str:
-        return '{"statements":[]}'
-
-
 class OpenAICompatibleLLMProvider:
     def __init__(self, client: AsyncOpenAI, model_name: str):
         self.client = client
@@ -88,8 +75,6 @@ class OpenAICompatibleLLMProvider:
 
 def get_llm_provider() -> LLMProvider:
     provider_name = settings.LLM_PROVIDER.lower().strip()
-    if provider_name in {"", "mock"}:
-        return MockLLMProvider()
 
     if provider_name in {"openai_compatible", "xiaomi_mimo"}:
         if not settings.LLM_API_KEY:

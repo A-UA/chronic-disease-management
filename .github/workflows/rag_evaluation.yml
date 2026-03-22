@@ -1,0 +1,41 @@
+name: RAG Evaluation
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'backend/app/services/**'
+      - 'backend/tests/fixtures/rag_cases.json'
+
+jobs:
+  evaluate-rag:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install uv
+      run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      
+    - name: Install dependencies
+      working-directory: ./backend
+      run: uv sync
+
+    - name: Run RAG Evaluation
+      working-directory: ./backend
+      env:
+        LLM_PROVIDER: "mock" # In CI, use mock unless providing real API keys via secrets
+        EMBEDDING_PROVIDER: "mock"
+      run: uv run python scripts/evaluate_rag.py --output rag_eval_results.json
+      
+    - name: Upload results
+      uses: actions/upload-artifact@v3
+      with:
+        name: rag-eval-results
+        path: backend/rag_eval_results.json

@@ -2,7 +2,7 @@ from __future__ import annotations
 import json
 import logging
 from typing import Any
-from app.services.llm import get_llm_provider
+from app.services.provider_registry import registry
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +13,7 @@ def _has_keyword_match(answer_text: str, expected_keywords: list[str]) -> bool:
 
 async def _llm_judge_correctness(query: str, answer: str, expected_answer: str) -> bool:
     """使用 LLM 作为裁判，判断回答是否与参考答案一致"""
-    llm = get_llm_provider()
+    llm = registry.get_llm()
     prompt = (
         "You are an expert medical auditor. Compare the generated answer with the reference answer for the given query.\n"
         "Judge if the generated answer is factually correct and consistent with the reference.\n"
@@ -80,7 +80,14 @@ async def evaluate_rag_cases(cases: list[dict[str, Any]], k: int = 5) -> dict[st
         refusal_hit = expected_refusal == actual_refusal if expected_refusal is not None else True
         if refusal_hit:
             refusal_hits += 1
-
+            
+        # 6. Query Condensation
+        expected_condensed = case.get("expected_condensed_query")
+        actual_condensed = case.get("condensed_query")
+        condensation_hit = True
+        if expected_condensed:
+            condensation_hit = (expected_condensed.lower() == (actual_condensed or "").lower())
+        
         latency_ms = case.get("latency_ms")
         if latency_ms is not None:
             latency_values.append(float(latency_ms))
@@ -97,6 +104,7 @@ async def evaluate_rag_cases(cases: list[dict[str, Any]], k: int = 5) -> dict[st
                 "llm_judge_hit": judge_hit,
                 "citation_hit": citation_hit,
                 "refusal_hit": refusal_hit,
+                "condensation_hit": condensation_hit,
             }
         )
 
@@ -107,6 +115,8 @@ async def evaluate_rag_cases(cases: list[dict[str, Any]], k: int = 5) -> dict[st
             "metrics": {},
             "cases": [],
         }
+        
+    condensation_hits = sum(1 for c in evaluated_cases if c["condensation_hit"])
 
     return {
         "case_count": case_count,
@@ -116,6 +126,7 @@ async def evaluate_rag_cases(cases: list[dict[str, Any]], k: int = 5) -> dict[st
             "llm_judge_accuracy": round(llm_judge_hits / case_count, 4),
             "citation_hit_rate": round(citation_hits / case_count, 4),
             "refusal_match_rate": round(refusal_hits / case_count, 4),
+            "query_condensation_score": round(condensation_hits / case_count, 4),
             "avg_latency_ms": round(sum(latency_values) / len(latency_values), 4) if latency_values else 0.0,
             "avg_total_tokens": round(sum(total_token_values) / len(total_token_values), 4) if total_token_values else 0.0,
         },

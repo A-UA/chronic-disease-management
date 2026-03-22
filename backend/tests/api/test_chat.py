@@ -96,7 +96,7 @@ async def test_chat_stream_forwards_filters_and_streams_events(monkeypatch):
     provider.complete_text = AsyncMock(
         return_value='{"statements":[{"text":"Conclusion: 建议复查。","refs":["Doc 1"]},{"text":"Evidence: 两周后复查。","refs":["Doc 1"]}]}'
     )
-    monkeypatch.setattr("app.api.endpoints.biz.chat.get_llm_provider", lambda: provider)
+    monkeypatch.setattr("app.api.endpoints.biz.chat.registry.get_llm", lambda: provider)
     monkeypatch.setattr("app.api.endpoints.biz.chat.check_quota_during_stream", AsyncMock(return_value=True))
     monkeypatch.setattr("app.api.endpoints.biz.chat.update_org_quota", AsyncMock(return_value=None))
 

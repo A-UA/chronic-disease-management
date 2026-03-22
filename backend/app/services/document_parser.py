@@ -5,6 +5,9 @@ from xml.etree import ElementTree
 from zipfile import BadZipFile, ZipFile
 
 import fitz  # PyMuPDF
+import pdfplumber
+import pytesseract
+from PIL import Image
 import logging
 
 logger = logging.getLogger(__name__)
@@ -58,19 +61,39 @@ def _parse_docx_document(file_bytes: bytes) -> ParsedDocument:
 
 
 def _parse_pdf_document(file_bytes: bytes) -> ParsedDocument:
-    """专业 PDF 解析：使用 PyMuPDF (fitz) 处理排版与编码"""
+    """专业 PDF 解析：使用 PyMuPDF (fitz) 处理排版与编码，低文字时回退到 OCR"""
     try:
         pages: list[str] = []
+        total_text_length = 0
+        
         with fitz.open(stream=file_bytes, filetype="pdf") as doc:
             if doc.is_encrypted:
                 raise DocumentParseError("PDF document is encrypted")
                 
             for page in doc:
-                # 获取纯文本，支持 CMAP 和各种编码
                 text = page.get_text("text").strip()
-                if text:
-                    pages.append(text)
-        
+                pages.append(text)
+                total_text_length += len(text)
+                
+        # If very little text was extracted, it might be a scanned PDF. Fallback to OCR.
+        if total_text_length < 50 and len(pages) > 0:
+            logger.info("PDF has very little text, falling back to OCR")
+            pages = []
+            with pdfplumber.open(BytesIO(file_bytes)) as pdf:
+                for page in pdf.pages:
+                    # Try layout-aware text extraction first
+                    text = page.extract_text()
+                    
+                    if not text or len(text.strip()) < 50:
+                        # Fallback to image OCR
+                        pil_image = page.to_image(resolution=300).original
+                        text = pytesseract.image_to_string(pil_image, lang="chi_sim+eng")
+                        
+                    pages.append(text.strip() if text else "")
+
+        # Remove completely empty pages
+        pages = [p for p in pages if p]
+
         if not pages:
             raise DocumentParseError("PDF document contains no extractable text")
             
