@@ -25,7 +25,7 @@ async def upload_document(
 
         parsed = parse_document(file_bytes, file.filename, file.content_type)
 
-        minio_url = get_storage_service().upload_file(
+        minio_url = await get_storage_service().upload_file(
             file_bytes=file_bytes,
             filename=file.filename,
             org_id=str(org_id),
@@ -45,7 +45,7 @@ async def upload_document(
         await db.commit()
         await db.refresh(document)
 
-        background_tasks.add_task(process_document, document.id, parsed.text)
+        background_tasks.add_task(process_document, document.id, parsed.text, parsed.pages)
 
         return {"id": document.id, "minio_url": document.minio_url, "status": document.status}
     except DocumentParseError as exc:

@@ -1,6 +1,7 @@
 import re
 import logging
 import tiktoken
+from dataclasses import dataclass
 from uuid import UUID
 
 from sqlalchemy import func
@@ -13,11 +14,23 @@ from app.services.quota import update_org_quota
 
 logger = logging.getLogger(__name__)
 
-# 更全的医疗标题正则
+# 扩展后的医疗标题正则：覆盖常见病历、检验、影像、手术等文档节
 MEDICAL_HEADING_RE = re.compile(
-    r"^(主诉|现病史|既往史|个人史|家族史|过敏史|查体|辅助检查|初步诊断|诊断依据|鉴别诊断|治疗计划|处理意见|建议|医嘱)[:：\s]*$",
-    re.MULTILINE
+    r"^("
+    r"主诉|现病史|既往史|个人史|家族史|过敏史|婚育史|月经史"
+    r"|查体|体格检查|专科检查|神经系统检查"
+    r"|辅助检查|实验室检查|化验结果|影像学检查|心电图|超声"
+    r"|初步诊断|入院诊断|出院诊断|诊断依据|鉴别诊断"
+    r"|治疗计划|治疗方案|治疗经过|处理意见|建议|医嘱|出院医嘱"
+    r"|手术记录|手术名称|术中所见|术后处理"
+    r"|护理记录|病程记录|会诊意见|病理报告"
+    r")[:：\s]*$",
+    re.MULTILINE,
 )
+
+# 中文句子边界正则：句号、问号、叹号、分号后跟空白或换行
+_SENTENCE_BOUNDARY_RE = re.compile(r"(?<=[。！？；\n])\s*")
+
 
 def count_tokens(text: str, model_name: str = "gpt-4o") -> int:
     """使用 tiktoken 精准计算 Token 数量"""
@@ -27,83 +40,239 @@ def count_tokens(text: str, model_name: str = "gpt-4o") -> int:
         encoding = tiktoken.get_encoding("cl100k_base")
     return len(encoding.encode(text))
 
-def _split_with_context(text: str, chunk_size: int, chunk_overlap: int, context_prefix: str = "") -> list[str]:
-    """带有上下文前缀的物理切块"""
-    effective_chunk_size = chunk_size - len(context_prefix) - 5
-    if effective_chunk_size <= 100:
-        effective_chunk_size = chunk_size // 2
+
+@dataclass(slots=True)
+class ChunkWithMeta:
+    """切块结果，携带页码和章节信息"""
+    content: str
+    page_number: int | None
+    section_title: str | None
+    char_start: int  # 在原文中的起始字符偏移量
+    char_end: int    # 在原文中的结束字符偏移量
+
+
+def _find_page_number(char_offset: int, page_boundaries: list[int]) -> int:
+    """根据字符偏移量确定所在页码（1-indexed）"""
+    for i, boundary in enumerate(page_boundaries):
+        if char_offset < boundary:
+            return i + 1
+    return len(page_boundaries)
+
+
+def _build_page_boundaries(pages: list[str]) -> list[int]:
+    """构建每页文本的累积字符偏移量边界表
+    
+    当多页文本通过 '\\n\\n' 拼接后，根据每页长度 + 分隔符长度
+    计算每页结束的累积字符位置。
+    """
+    boundaries: list[int] = []
+    cumulative = 0
+    for i, page_text in enumerate(pages):
+        cumulative += len(page_text)
+        if i < len(pages) - 1:
+            cumulative += 2  # '\n\n' 分隔符
+        boundaries.append(cumulative)
+    return boundaries
+
+
+def _split_by_sentences(text: str, max_tokens: int, overlap_tokens: int, 
+                         model_name: str, context_prefix: str = "",
+                         page_boundaries: list[int] | None = None,
+                         text_offset: int = 0) -> list[ChunkWithMeta]:
+    """按句子边界切块，使用 token 数控制块大小
+    
+    改进点：
+    1. 按句子边界切块，避免在中文句子中间断开
+    2. 使用 token 数而非字符数控制块大小
+    3. 保留页码信息
+    """
+    sentences = _SENTENCE_BOUNDARY_RE.split(text)
+    sentences = [s for s in sentences if s.strip()]
+    
+    if not sentences:
+        return []
+    
+    chunks: list[ChunkWithMeta] = []
+    current_sentences: list[str] = []
+    current_tokens = 0
+    prefix_tokens = count_tokens(context_prefix + "\n", model_name) if context_prefix else 0
+    effective_max = max_tokens - prefix_tokens
+    
+    # 计算每个句子在 text 中的起始偏移量
+    sentence_offsets: list[int] = []
+    search_start = 0
+    for sent in sentences:
+        idx = text.find(sent, search_start)
+        sentence_offsets.append(idx if idx >= 0 else search_start)
+        search_start = (idx if idx >= 0 else search_start) + len(sent)
+    
+    def _flush_chunk(sents: list[str], first_sent_idx: int) -> ChunkWithMeta:
+        raw_content = "".join(sents)
+        final_content = f"{context_prefix}\n{raw_content}" if context_prefix else raw_content
+        char_start = text_offset + sentence_offsets[first_sent_idx]
+        last_sent_idx = first_sent_idx + len(sents) - 1
+        char_end = text_offset + sentence_offsets[last_sent_idx] + len(sents[-1])
         
-    chunks: list[str] = []
-    start = 0
-    while start < len(text):
-        end = min(start + effective_chunk_size, len(text))
-        chunk_content = text[start:end]
-        final_content = f"{context_prefix}\n{chunk_content}" if context_prefix else chunk_content
-        chunks.append(final_content)
-        if end >= len(text):
-            break
-        start = max(end - chunk_overlap, start + 1)
+        page_num = None
+        if page_boundaries:
+            page_num = _find_page_number(char_start, page_boundaries)
+        
+        section = context_prefix.replace("[章节: ", "").replace("]", "") if context_prefix else None
+        
+        return ChunkWithMeta(
+            content=final_content,
+            page_number=page_num,
+            section_title=section,
+            char_start=char_start,
+            char_end=char_end,
+        )
+    
+    first_sent_idx = 0
+    for i, sent in enumerate(sentences):
+        sent_tokens = count_tokens(sent, model_name)
+        
+        # 如果单个句子就超过 max_tokens，强制作为独立 chunk
+        if sent_tokens >= effective_max:
+            if current_sentences:
+                chunks.append(_flush_chunk(current_sentences, first_sent_idx))
+                current_sentences = []
+                current_tokens = 0
+            chunks.append(_flush_chunk([sent], i))
+            first_sent_idx = i + 1
+            continue
+        
+        if current_tokens + sent_tokens > effective_max and current_sentences:
+            chunks.append(_flush_chunk(current_sentences, first_sent_idx))
+            
+            # 重叠：从末尾保留 overlap_tokens 对应的句子
+            overlap_sents: list[str] = []
+            overlap_tok_count = 0
+            for j in range(len(current_sentences) - 1, -1, -1):
+                ot = count_tokens(current_sentences[j], model_name)
+                if overlap_tok_count + ot > overlap_tokens:
+                    break
+                overlap_sents.insert(0, current_sentences[j])
+                overlap_tok_count += ot
+            
+            overlap_start = first_sent_idx + len(current_sentences) - len(overlap_sents)
+            current_sentences = overlap_sents
+            current_tokens = overlap_tok_count
+            first_sent_idx = overlap_start
+        
+        if not current_sentences:
+            first_sent_idx = i
+        current_sentences.append(sent)
+        current_tokens += sent_tokens
+    
+    if current_sentences:
+        chunks.append(_flush_chunk(current_sentences, first_sent_idx))
+    
     return chunks
 
-def split_document_text(text: str, chunk_size: int = 800, chunk_overlap: int = 150) -> list[str]:
-    """增强版切块：识别医疗章节并保留上下文"""
+
+def split_document_text(text: str, pages: list[str] | None = None,
+                         chunk_size: int = 800, chunk_overlap: int = 150) -> list[ChunkWithMeta]:
+    """增强版切块：
+    1. 识别医疗章节并保留上下文
+    2. 按句子边界切块
+    3. 保留页码信息
+    4. 使用 token 数控制块大小（chunk_size 参数现在表示字符数阈值，
+       内部换算为 token 数）
+    """
     normalized = text.replace("\r\n", "\n").replace("\r", "\n").strip()
     if not normalized:
         return []
 
+    # 构建页面边界
+    page_boundaries = _build_page_boundaries(pages) if pages else None
+    
+    # 粗略换算：中文约 1 字符 ≈ 1-2 token，取中间值
+    # 建议后续直接传 token 数
+    max_tokens = chunk_size // 2  # ~400 tokens（适合中文文档）
+    overlap_tokens = chunk_overlap // 3  # ~50 tokens
+    model_name = "gpt-4o"
+
     matches = list(MEDICAL_HEADING_RE.finditer(normalized))
     if not matches:
-        return _split_with_context(normalized, chunk_size, chunk_overlap)
+        return _split_by_sentences(normalized, max_tokens, overlap_tokens, model_name,
+                                    page_boundaries=page_boundaries)
 
-    final_chunks: list[str] = []
+    final_chunks: list[ChunkWithMeta] = []
     for i in range(len(matches)):
         start_pos = matches[i].start()
         heading = matches[i].group(1).strip()
-        end_pos = matches[i+1].start() if i + 1 < len(matches) else len(normalized)
+        end_pos = matches[i + 1].start() if i + 1 < len(matches) else len(normalized)
         section_content = normalized[start_pos:end_pos].strip()
-        
-        if len(section_content) <= chunk_size:
-            final_chunks.append(section_content)
+
+        section_tokens = count_tokens(section_content, model_name)
+        if section_tokens <= max_tokens:
+            page_num = None
+            if page_boundaries:
+                page_num = _find_page_number(start_pos, page_boundaries)
+            final_chunks.append(ChunkWithMeta(
+                content=section_content,
+                page_number=page_num,
+                section_title=heading,
+                char_start=start_pos,
+                char_end=end_pos,
+            ))
         else:
             prefix = f"[章节: {heading}]"
-            final_chunks.extend(_split_with_context(section_content, chunk_size, chunk_overlap, context_prefix=prefix))
+            final_chunks.extend(_split_by_sentences(
+                section_content, max_tokens, overlap_tokens, model_name,
+                context_prefix=prefix, page_boundaries=page_boundaries,
+                text_offset=start_pos,
+            ))
     return final_chunks
 
-async def process_document(document_id: UUID, file_content: str):
+
+async def process_document(document_id: UUID, file_content: str, pages: list[str] | None = None):
+    """处理文档入库：切块、生成 embedding、写入数据库
+    
+    参数:
+        document_id: 文档 ID
+        file_content: 文档全文
+        pages: 按页分割的文本列表（来自 ParsedDocument.pages），用于计算页码
+    """
     async with AsyncSessionLocal() as db:
         document = await db.get(Document, document_id)
         if not document:
             return
 
-        texts = split_document_text(file_content)
+        chunk_metas = split_document_text(file_content, pages=pages)
+        texts = [cm.content for cm in chunk_metas]
         embedding_provider: EmbeddingProvider = registry.get_embedding()
         model_name = getattr(embedding_provider, "model_name", "gpt-4o")
 
         try:
-            embeddings = embedding_provider.embed_documents(texts)
-            
+            embeddings = await embedding_provider.embed_documents(texts)
+
             actual_dim = embedding_provider.get_dimension()
             if actual_dim:
                 logger.info(f"Processing document {document_id} with dimension {actual_dim}")
 
             total_tokens = 0
-            for i, (text, emb) in enumerate(zip(texts, embeddings)):
-                num_tokens = count_tokens(text, model_name)
+            for i, (cm, emb) in enumerate(zip(chunk_metas, embeddings)):
+                num_tokens = count_tokens(cm.content, model_name)
                 total_tokens += num_tokens
-                
+
                 chunk = Chunk(
                     kb_id=document.kb_id,
                     org_id=document.org_id,
                     document_id=document.id,
-                    content=text,
+                    content=cm.content,
+                    page_number=cm.page_number,  # 保留页码信息
                     chunk_index=i,
                     embedding=emb,
-                    tsv_content=func.to_tsvector("chinese", text),
+                    tsv_content=func.to_tsvector("chinese", cm.content),
                     metadata={
                         "heading_aware": True,
+                        "section_title": cm.section_title,
                         "source": str(document.file_name) if document.file_name else "unknown",
-                        "token_count": num_tokens
-                    }
+                        "token_count": num_tokens,
+                        "char_start": cm.char_start,
+                        "char_end": cm.char_end,
+                    },
                 )
                 db.add(chunk)
 
@@ -114,7 +283,7 @@ async def process_document(document_id: UUID, file_content: str):
                 prompt_tokens=total_tokens,
                 action_type="embedding",
                 resource_id=document.id,
-                cost=0.0
+                cost=0.0,
             )
             db.add(usage)
 

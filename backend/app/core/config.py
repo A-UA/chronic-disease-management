@@ -16,9 +16,9 @@ class Settings(BaseSettings):
     MINIO_SECRET_KEY: str = "minioadmin"
     MINIO_BUCKET_NAME: str = "documents"
     
-    # Security
-    JWT_SECRET: str = "supersecretkey"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7 # 7 days
+    # Security — 必须通过 .env 或环境变量显式设置，禁止使用默认值
+    JWT_SECRET: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
 
     # Embeddings
     EMBEDDING_PROVIDER: str = "openai"
@@ -38,6 +38,13 @@ class Settings(BaseSettings):
     CHAT_MODEL: str = "gpt-4o-mini"
     LLM_API_KEY: str = ""
     LLM_BASE_URL: str = ""
+
+    # RAG 检索参数
+    RAG_VECTOR_WEIGHT: float = 0.7       # 向量检索在 RRF 融合中的权重
+    RAG_KEYWORD_WEIGHT: float = 0.3      # 关键词检索在 RRF 融合中的权重
+    RAG_RRF_K: int = 60                  # RRF 融合参数 k
+    RAG_MIN_SCORE_THRESHOLD: float = 0.0 # 检索结果最低分数阈值
+    RAG_CACHE_TTL: int = 3600            # 检索缓存 TTL（秒）
     
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 

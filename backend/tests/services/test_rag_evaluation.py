@@ -1,35 +1,67 @@
+"""RAG 评测测试"""
 import pytest
+from unittest.mock import AsyncMock, MagicMock, patch
+
 from app.services.rag_evaluation import evaluate_rag_cases
 
+
 @pytest.mark.asyncio
-async def test_evaluate_rag_cases_returns_basic_metrics():
+async def test_evaluate_empty():
+    r = await evaluate_rag_cases([])
+    assert r["case_count"] == 0
+    assert r["metrics"] == {}
+
+
+@pytest.mark.asyncio
+async def test_evaluate_basic_metrics():
     cases = [
         {
-            "id": "case-1",
-            "expected_chunk_ids": ["a", "b"],
-            "retrieved_chunk_ids": ["b", "c"],
-            "expected_answer_keywords": ["复查", "饮食"],
-            "answer_text": "建议复查，并继续控制饮食。",
-            "expected_citation_doc_ids": ["doc-1"],
-            "citation_doc_ids": ["doc-1", "doc-2"],
-        },
-        {
-            "id": "case-2",
-            "expected_chunk_ids": ["x"],
-            "retrieved_chunk_ids": ["y"],
-            "expected_answer_keywords": ["不知道"],
-            "answer_text": "不知道。",
-            "expected_citation_doc_ids": ["doc-9"],
-            "citation_doc_ids": [],
-        },
+            "id": "c1",
+            "query": "血糖高怎么办",
+            "answer_text": "建议复查空腹血糖",
+            "expected_answer": "",
+            "expected_chunk_ids": ["ch1", "ch2"],
+            "retrieved_chunk_ids": ["ch1", "ch3"],
+            "expected_answer_keywords": ["复查"],
+            "expected_citation_doc_ids": ["d1"],
+            "citation_doc_ids": ["d1"],
+            "latency_ms": 200,
+            "total_tokens": 500,
+        }
     ]
 
-    summary = await evaluate_rag_cases(cases, k=2)
+    with patch("app.services.rag_evaluation.registry.get_llm") as mock_get_llm:
+        llm = MagicMock()
+        llm.complete_text = AsyncMock(return_value='{"correct": true}')
+        mock_get_llm.return_value = llm
+        r = await evaluate_rag_cases(cases)
 
-    assert summary["case_count"] == 2
-    assert summary["metrics"]["recall_at_k"] == 0.5
-    assert summary["metrics"]["answer_match_rate"] == 1.0
-    assert summary["metrics"]["citation_hit_rate"] == 0.0
-    assert summary["cases"][0]["retrieval_hit"] is True
-    assert summary["cases"][0]["citation_hit"] is False
-    assert summary["cases"][1]["citation_hit"] is False
+    assert r["case_count"] == 1
+    m = r["metrics"]
+    assert m["recall_at_k"] == 1.0
+    assert m["keyword_match_rate"] == 1.0
+    assert m["citation_hit_rate"] == 1.0
+    assert m["avg_latency_ms"] == 200.0
+
+
+@pytest.mark.asyncio
+async def test_evaluate_refusal_match():
+    cases = [
+        {
+            "id": "c1",
+            "query": "q",
+            "answer_text": "a",
+            "expected_answer": "",
+            "expected_chunk_ids": [],
+            "retrieved_chunk_ids": [],
+            "expected_refusal": True,
+            "refusal": True,
+        }
+    ]
+    with patch("app.services.rag_evaluation.registry.get_llm") as mock_get_llm:
+        llm = MagicMock()
+        llm.complete_text = AsyncMock(return_value='{"correct": false}')
+        mock_get_llm.return_value = llm
+        r = await evaluate_rag_cases(cases)
+
+    assert r["metrics"]["refusal_match_rate"] == 1.0

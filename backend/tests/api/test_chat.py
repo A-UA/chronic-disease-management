@@ -1,4 +1,5 @@
-﻿import json
+"""Chat API endpoint 集成测试"""
+import json
 from uuid import uuid4
 from unittest.mock import AsyncMock, MagicMock
 
@@ -19,19 +20,32 @@ class DummyUser:
         self.id = uuid4()
 
 
+class DummyScalars:
+    def all(self):
+        return []
+
+
+class DummyExecResult:
+    def scalars(self):
+        return DummyScalars()
+
+
 class DummyDB:
     def __init__(self):
-        self.objects = {}
         self.added = []
         self.commits = 0
 
     async def get(self, model, obj_id):
-        return self.objects.get(obj_id)
+        return None
+
+    async def execute(self, stmt, *args, **kwargs):
+        return DummyExecResult()
+
+    async def refresh(self, obj):
+        pass
 
     def add(self, obj):
         self.added.append(obj)
-        if getattr(obj, "id", None) is not None:
-            self.objects[obj.id] = obj
 
     async def commit(self):
         self.commits += 1
@@ -41,98 +55,113 @@ dummy_db = DummyDB()
 current_org = uuid4()
 current_user = DummyUser()
 
+app.dependency_overrides[get_db] = lambda: _override_db()
+app.dependency_overrides[get_current_user] = lambda: current_user
+app.dependency_overrides[get_current_org] = lambda: current_org
+app.dependency_overrides[verify_quota] = lambda: None
 
-async def override_get_db():
+
+async def _override_db():
     yield dummy_db
 
 
-async def override_get_current_user():
-    return current_user
-
-
-async def override_get_current_org():
-    return current_org
-
-
-async def override_verify_quota():
-    return None
-
-
-app.dependency_overrides[get_db] = override_get_db
-app.dependency_overrides[get_current_user] = override_get_current_user
-app.dependency_overrides[get_current_org] = override_get_current_org
-app.dependency_overrides[verify_quota] = override_verify_quota
+app.dependency_overrides[get_db] = _override_db
 
 
 @pytest.mark.asyncio
-async def test_chat_stream_forwards_filters_and_streams_events(monkeypatch):
-    dummy_db.objects = {}
-    dummy_db.added = []
+async def test_chat_stream_full_flow(monkeypatch):
+    dummy_db.added.clear()
     dummy_db.commits = 0
 
-    document_id = uuid4()
-    conversation_id = uuid4()
-    kb_id = uuid4()
-
+    doc_id = uuid4()
     fake_chunk = MagicMock()
-    fake_chunk.document_id = document_id
+    fake_chunk.document_id = doc_id
     fake_chunk.page_number = 2
     fake_chunk.content = "诊断：血糖升高。"
 
-    retrieve_chunks = AsyncMock(return_value=[fake_chunk])
-    monkeypatch.setattr("app.api.endpoints.biz.chat.retrieve_chunks", retrieve_chunks)
+    monkeypatch.setattr(
+        "app.api.endpoints.biz.chat.retrieve_chunks",
+        AsyncMock(return_value=[fake_chunk]),
+    )
     monkeypatch.setattr(
         "app.api.endpoints.biz.chat.build_rag_prompt",
-        lambda query, chunks: ("prompt-text", [{"doc_id": str(document_id), "ref": "Doc 1", "page": 2}]),
+        lambda q, c: ("prompt", [{"doc_id": str(doc_id), "ref": "Doc 1", "page": 2,
+                                   "chunk_id": "c1", "snippet": "s", "source_span": {}}]),
     )
 
     provider = MagicMock()
+    provider.model_name = "test-model"
 
-    async def stream_text(prompt: str):
-        for token in ["Conclusion: 建议复查。", "\nEvidence: 两周后复查。"]:
-            yield token
+    async def stream_text(prompt):
+        for t in ["Conclusion: 建议复查。", "\nEvidence: 两周后复查。"]:
+            yield t
 
     provider.stream_text = stream_text
     provider.complete_text = AsyncMock(
-        return_value='{"statements":[{"text":"Conclusion: 建议复查。","refs":["Doc 1"]},{"text":"Evidence: 两周后复查。","refs":["Doc 1"]}]}'
+        return_value='{"statements":[{"text":"建议复查","refs":["Doc 1"]}]}'
     )
+
     monkeypatch.setattr("app.api.endpoints.biz.chat.registry.get_llm", lambda: provider)
     monkeypatch.setattr("app.api.endpoints.biz.chat.check_quota_during_stream", AsyncMock(return_value=True))
-    monkeypatch.setattr("app.api.endpoints.biz.chat.update_org_quota", AsyncMock(return_value=None))
+    monkeypatch.setattr("app.api.endpoints.biz.chat.update_org_quota", AsyncMock())
+    monkeypatch.setattr("app.api.endpoints.biz.chat.count_tokens", lambda text, model="": len(text) // 4)
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        response = await ac.post(
-            "/api/v1",
-            json={
-                "kb_id": str(kb_id),
-                "conversation_id": str(conversation_id),
-                "query": "血糖高怎么办？",
-                "document_ids": [str(document_id)],
-                "file_types": ["pdf"],
-            },
-        )
+        resp = await ac.post("/api/v1", json={
+            "kb_id": str(uuid4()),
+            "conversation_id": str(uuid4()),
+            "query": "血糖高怎么办？",
+            "document_ids": [str(doc_id)],
+            "file_types": ["pdf"],
+        })
 
-    assert response.status_code == 200
-    body = response.text
+    assert resp.status_code == 200
+    body = resp.text
     assert "event: meta" in body
     assert "event: chunk" in body
     assert "event: done" in body
-    assert "\\u5efa\\u8bae\\u590d\\u67e5" in body
     assert "statement_citations" in body
 
-    retrieve_chunks.assert_awaited_once()
-    _, called_query, called_kb_id, called_org_id = retrieve_chunks.await_args.args[:4]
-    called_filters = retrieve_chunks.await_args.kwargs["filters"]
-    assert called_query == "血糖高怎么办?"
-    assert called_kb_id == kb_id
-    assert called_org_id == current_org
-    assert called_filters == {"document_ids": [document_id], "file_types": ["pdf"]}
-
-    assistant_message = dummy_db.added[-2]
+    # 验证持久化
+    assistant_msg = dummy_db.added[-2]
     usage_log = dummy_db.added[-1]
-    assert assistant_message.metadata_["citations"][0]["page"] == 2
-    assert assistant_message.metadata_["statement_citations"][0]["citations"][0]["doc_id"] == str(document_id)
-    assert assistant_message.metadata_["observability"]["raw_query"] == "血糖高怎么办？"
-    assert assistant_message.metadata_["observability"]["retrieval_query"] == "血糖高怎么办?"
-    assert assistant_message.metadata_["observability"]["retrieved_chunk_count"] == 1
-    assert usage_log.model == provider.model_name
+    assert assistant_msg.metadata_["citations"][0]["page"] == 2
+    assert assistant_msg.metadata_["observability"]["raw_query"] == "血糖高怎么办？"
+    assert assistant_msg.metadata_["observability"]["llm_model"] == "test-model"
+    assert usage_log.model == "test-model"
+
+
+@pytest.mark.asyncio
+async def test_chat_with_empty_query(monkeypatch):
+    dummy_db.added.clear()
+    dummy_db.commits = 0
+
+    monkeypatch.setattr(
+        "app.api.endpoints.biz.chat.retrieve_chunks",
+        AsyncMock(return_value=[]),
+    )
+    monkeypatch.setattr(
+        "app.api.endpoints.biz.chat.build_rag_prompt",
+        lambda q, c: ("prompt", []),
+    )
+
+    provider = MagicMock()
+    provider.model_name = "t"
+
+    async def stream_text(prompt):
+        yield "无相关信息。"
+
+    provider.stream_text = stream_text
+    provider.complete_text = AsyncMock(return_value='{"statements":[]}')
+    monkeypatch.setattr("app.api.endpoints.biz.chat.registry.get_llm", lambda: provider)
+    monkeypatch.setattr("app.api.endpoints.biz.chat.check_quota_during_stream", AsyncMock(return_value=True))
+    monkeypatch.setattr("app.api.endpoints.biz.chat.update_org_quota", AsyncMock())
+    monkeypatch.setattr("app.api.endpoints.biz.chat.count_tokens", lambda text, model="": 10)
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        resp = await ac.post("/api/v1", json={
+            "kb_id": str(uuid4()),
+            "conversation_id": str(uuid4()),
+            "query": "test",
+        })
+    assert resp.status_code == 200

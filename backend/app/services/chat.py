@@ -12,6 +12,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Select
 
+from app.core.config import settings
 from app.db.models import Chunk, Document
 from app.services.provider_registry import registry
 from app.services.query_rewrite import prepare_retrieval_query
@@ -310,7 +311,7 @@ async def retrieve_ranked_chunks(
 
     # 3. 检索
     embedding_provider = registry.get_embedding()
-    query_embedding = embedding_provider.embed_query(retrieval_query)
+    query_embedding = await embedding_provider.embed_query(retrieval_query)
     
     vector_stmt = select(Chunk).where(Chunk.org_id == org_id, Chunk.kb_id == kb_id).order_by(Chunk.embedding.cosine_distance(query_embedding)).limit(limit * 2)
     vector_stmt = _apply_retrieval_filters(vector_stmt, filters)
@@ -320,32 +321,43 @@ async def retrieve_ranked_chunks(
     keyword_stmt = _apply_retrieval_filters(keyword_stmt, filters)
     keyword_chunks = list((await db.execute(keyword_stmt)).scalars().all())
 
-    # 4. 融合与重排
-    k = 60
+    # 4. 融合与重排 — 使用可配置的权重和 RRF 参数
+    vector_weight = getattr(settings, "RAG_VECTOR_WEIGHT", 0.7)
+    keyword_weight = getattr(settings, "RAG_KEYWORD_WEIGHT", 0.3)
+    k = getattr(settings, "RAG_RRF_K", 60)
+    min_score_threshold = getattr(settings, "RAG_MIN_SCORE_THRESHOLD", 0.0)
+    
     retrieved_by_id: dict[UUID, RetrievedChunk] = {}
     for rank, chunk in enumerate(vector_chunks):
         item = retrieved_by_id.setdefault(chunk.id, RetrievedChunk(chunk=chunk, fused_score=0.0, final_score=0.0, sources=()))
-        item.fused_score += 1.0 / (k + rank + 1)
+        item.fused_score += vector_weight / (k + rank + 1)
         item.vector_rank = rank + 1
         item.sources = _dedupe_sources(item.sources, "vector")
 
     for rank, chunk in enumerate(keyword_chunks):
         item = retrieved_by_id.setdefault(chunk.id, RetrievedChunk(chunk=chunk, fused_score=0.0, final_score=0.0, sources=()))
-        item.fused_score += 1.0 / (k + rank + 1)
+        item.fused_score += keyword_weight / (k + rank + 1)
         item.keyword_rank = rank + 1
         item.sources = _dedupe_sources(item.sources, "keyword")
 
-    fused_results = sorted(retrieved_by_id.values(), key=lambda x: x.fused_score, reverse=True)
+    # 过滤低于最低分数阈值的结果
+    fused_results = sorted(
+        [r for r in retrieved_by_id.values() if r.fused_score >= min_score_threshold],
+        key=lambda x: x.fused_score, reverse=True,
+    )
 
     try:
         reranker = registry.get_reranker()
         reranked_results = await reranker.rerank(retrieval_query, fused_results, limit)
     except Exception:
+        logger.warning("Reranker failed; falling back to fused ranking", exc_info=True)
         reranked_results = fused_results[:limit]
-        for r in reranked_results: r.final_score = r.fused_score
+        for r in reranked_results:
+            r.final_score = r.fused_score
 
     if reranked_results:
-        await redis_client.setex(cache_key, 3600, _serialize_ranked_results(reranked_results))
+        cache_ttl = getattr(settings, "RAG_CACHE_TTL", 3600)
+        await redis_client.setex(cache_key, cache_ttl, _serialize_ranked_results(reranked_results))
 
     return reranked_results
 

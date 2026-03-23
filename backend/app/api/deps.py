@@ -104,20 +104,6 @@ async def require_patient_identity(
     Ensure the user is acting as a patient in this organization.
     Returns the patient_profile.id.
     """
-    if org_user.user_type != "patient":
-         # Maybe they are a staff but also have a patient profile? Let's check.
-         from app.db.models import PatientProfile
-         stmt = select(PatientProfile.id).where(
-             PatientProfile.user_id == org_user.user_id,
-             PatientProfile.org_id == org_user.org_id
-         )
-         res = await db.execute(stmt)
-         patient_id = res.scalar()
-         if not patient_id:
-             raise HTTPException(status_code=403, detail="User is not a patient in this organization")
-         return patient_id
-    
-    # If they are explicitly marked as patient type, find their profile
     from app.db.models import PatientProfile
     stmt = select(PatientProfile.id).where(
         PatientProfile.user_id == org_user.user_id,
@@ -126,7 +112,13 @@ async def require_patient_identity(
     res = await db.execute(stmt)
     patient_id = res.scalar()
     if not patient_id:
-        raise HTTPException(status_code=404, detail="Patient profile not found")
+        detail = (
+            "User is not a patient in this organization"
+            if org_user.user_type != "patient"
+            else "Patient profile not found"
+        )
+        status_code = 403 if org_user.user_type != "patient" else 404
+        raise HTTPException(status_code=status_code, detail=detail)
     return patient_id
 
 async def verify_quota(

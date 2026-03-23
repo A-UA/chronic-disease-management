@@ -1,7 +1,7 @@
 import logging
 from typing import Any
 
-from openai import OpenAI
+from openai import AsyncOpenAI
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -15,10 +15,12 @@ logger = logging.getLogger(__name__)
 
 
 class EmbeddingProvider:
-    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+    """Embedding provider 基类，所有方法均为异步"""
+
+    async def embed_documents(self, texts: list[str]) -> list[list[float]]:
         raise NotImplementedError
 
-    def embed_query(self, text: str) -> list[float]:
+    async def embed_query(self, text: str) -> list[float]:
         raise NotImplementedError
 
     def get_dimension(self) -> int | None:
@@ -26,7 +28,9 @@ class EmbeddingProvider:
 
 
 class OpenAIEmbeddingProvider(EmbeddingProvider):
-    def __init__(self, client: OpenAI, model_name: str):
+    """基于 AsyncOpenAI 的异步 Embedding Provider，避免阻塞事件循环"""
+
+    def __init__(self, client: AsyncOpenAI, model_name: str):
         self.client = client
         self.model_name = model_name
         self._dimension: int | None = None
@@ -37,11 +41,11 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
         retry=retry_if_exception_type(Exception),
         reraise=True,
     )
-    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+    async def embed_documents(self, texts: list[str]) -> list[list[float]]:
         if not texts:
             return []
         try:
-            response = self.client.embeddings.create(model=self.model_name, input=texts)
+            response = await self.client.embeddings.create(model=self.model_name, input=texts)
             embeddings = [item.embedding for item in response.data]
             if embeddings and self._dimension is None:
                 self._dimension = len(embeddings[0])
@@ -56,11 +60,11 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
         retry=retry_if_exception_type(Exception),
         reraise=True,
     )
-    def embed_query(self, text: str) -> list[float]:
+    async def embed_query(self, text: str) -> list[float]:
         if not text:
             return []
         try:
-            response = self.client.embeddings.create(model=self.model_name, input=text)
+            response = await self.client.embeddings.create(model=self.model_name, input=text)
             embedding = response.data[0].embedding
             if self._dimension is None:
                 self._dimension = len(embedding)
@@ -81,14 +85,14 @@ def get_embedding_provider() -> EmbeddingProvider:
     if provider_name == "openai":
         if not api_key:
             raise ValueError("OPENAI_API_KEY is required when EMBEDDING_PROVIDER=openai")
-        client = OpenAI(api_key=api_key, base_url=base_url or "https://api.openai.com/v1")
+        client = AsyncOpenAI(api_key=api_key, base_url=base_url or "https://api.openai.com/v1")
         return OpenAIEmbeddingProvider(client, model_name=settings.EMBEDDING_MODEL)
 
     if provider_name == "zhipu":
         if not api_key:
             raise ValueError("EMBEDDING_API_KEY is required when EMBEDDING_PROVIDER=zhipu")
         # 智谱默认 base_url
-        client = OpenAI(api_key=api_key, base_url=base_url or "https://open.bigmodel.cn/api/paas/v4/")
+        client = AsyncOpenAI(api_key=api_key, base_url=base_url or "https://open.bigmodel.cn/api/paas/v4/")
         return OpenAIEmbeddingProvider(client, model_name=settings.EMBEDDING_MODEL)
 
     raise ValueError(f"Unsupported embedding provider: {settings.EMBEDDING_PROVIDER}")
