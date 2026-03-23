@@ -17,12 +17,12 @@ async def _llm_judge_correctness(query: str, answer: str, expected_answer: str) 
     prompt = (
         "You are an expert medical auditor. Compare the generated answer with the reference answer for the given query.\n"
         "Judge if the generated answer is factually correct and consistent with the reference.\n"
-        "Query: {query}\n"
-        "Generated Answer: {answer}\n"
-        "Reference Answer: {expected_answer}\n\n"
+        f"Query: {query}\n"
+        f"Generated Answer: {answer}\n"
+        f"Reference Answer: {expected_answer}\n\n"
         "Return strict JSON: {\"correct\": true/false, \"reason\": \"...\"}"
-    ).format(query=query, answer=answer, expected_answer=expected_answer)
-    
+    )
+
     try:
         response = await llm.complete_text(prompt)
         # 尝试提取 JSON
@@ -47,7 +47,7 @@ async def evaluate_rag_cases(cases: list[dict[str, Any]], k: int = 5) -> dict[st
         query = case.get("query", "")
         answer_text = case.get("answer_text", "")
         expected_answer = case.get("expected_answer", "")
-        
+
         # 1. 检索召回率 (Recall@K)
         expected_chunk_ids = set(case.get("expected_chunk_ids", []))
         retrieved_chunk_ids = case.get("retrieved_chunk_ids", [])[:k]
@@ -59,7 +59,7 @@ async def evaluate_rag_cases(cases: list[dict[str, Any]], k: int = 5) -> dict[st
         answer_hit = _has_keyword_match(answer_text, case.get("expected_answer_keywords", []))
         if answer_hit:
             answer_hits += 1
-            
+
         # 3. LLM 裁判 (Correctness)
         judge_hit = False
         if expected_answer and answer_text:
@@ -80,14 +80,14 @@ async def evaluate_rag_cases(cases: list[dict[str, Any]], k: int = 5) -> dict[st
         refusal_hit = expected_refusal == actual_refusal if expected_refusal is not None else True
         if refusal_hit:
             refusal_hits += 1
-            
+
         # 6. Query Condensation
         expected_condensed = case.get("expected_condensed_query")
         actual_condensed = case.get("condensed_query")
         condensation_hit = True
         if expected_condensed:
             condensation_hit = (expected_condensed.lower() == (actual_condensed or "").lower())
-        
+
         latency_ms = case.get("latency_ms")
         if latency_ms is not None:
             latency_values.append(float(latency_ms))
@@ -115,7 +115,7 @@ async def evaluate_rag_cases(cases: list[dict[str, Any]], k: int = 5) -> dict[st
             "metrics": {},
             "cases": [],
         }
-        
+
     condensation_hits = sum(1 for c in evaluated_cases if c["condensation_hit"])
 
     return {
