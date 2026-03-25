@@ -34,6 +34,9 @@ async def test_manager_workflow():
         resp = await client.put("/patients/me", json=profile_data, headers=manager_headers)
         assert resp.status_code == 200
         patient_id = resp.json()["id"]
+        resp = await client.get("/patients/me", headers=manager_headers)
+        assert resp.status_code == 200
+        assert resp.json()["id"] == str(patient_id)
 
         # 3. Create assignment in DB directly
         async with AsyncSessionLocal() as db:

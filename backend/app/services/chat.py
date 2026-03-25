@@ -124,12 +124,13 @@ def _apply_retrieval_filters(stmt: Select, filters: RetrievalFilters | None) -> 
         stmt = stmt.where(Chunk.document_id.in_(document_ids))
 
     file_types = filters.get("file_types") or []
-    if file_types:
-        stmt = stmt.join(Document, Document.id == Chunk.document_id).where(Document.file_type.in_(file_types))
-
     patient_id = filters.get("patient_id")
+    if file_types or patient_id:
+        stmt = stmt.join(Document, Document.id == Chunk.document_id)
+    if file_types:
+        stmt = stmt.where(Document.file_type.in_(file_types))
     if patient_id:
-        stmt = stmt.where(Chunk.metadata_["patient_id"].astext == str(patient_id))
+        stmt = stmt.where(Document.patient_id == patient_id)
 
     metadata_filters = filters.get("metadata") or {}
     for key, value in metadata_filters.items():

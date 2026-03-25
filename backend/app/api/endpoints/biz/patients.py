@@ -10,18 +10,22 @@ from app.schemas.patient import PatientProfileRead, PatientProfileUpdate
 
 router = APIRouter()
 
+async def _load_patient_profile(db: AsyncSession, user_id: UUID, org_id: UUID) -> PatientProfile | None:
+    stmt = select(PatientProfile).where(
+        PatientProfile.user_id == user_id,
+        PatientProfile.org_id == org_id
+    )
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
+
+
 @router.get("/me", response_model=PatientProfileRead)
 async def get_my_patient_profile(
     current_user: User = Depends(get_current_user),
     org_id: UUID = Depends(get_current_org),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
-    stmt = select(PatientProfile).where(
-        PatientProfile.user_id == current_user.id,
-        PatientProfile.org_id == org_id
-    )
-    result = await db.execute(stmt)
-    profile = result.scalar_one_or_none()
+    profile = await _load_patient_profile(db, current_user.id, org_id)
     if not profile:
         raise HTTPException(status_code=404, detail="Patient profile not found")
     return profile
@@ -34,12 +38,7 @@ async def update_my_patient_profile(
     org_id: UUID = Depends(get_current_org),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
-    stmt = select(PatientProfile).where(
-        PatientProfile.user_id == current_user.id,
-        PatientProfile.org_id == org_id
-    )
-    result = await db.execute(stmt)
-    profile = result.scalar_one_or_none()
+    profile = await _load_patient_profile(db, current_user.id, org_id)
     
     if not profile:
         profile = PatientProfile(

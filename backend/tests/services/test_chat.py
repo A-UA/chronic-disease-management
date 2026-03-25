@@ -105,6 +105,7 @@ async def test_ranked_chunks_uses_cache():
 @pytest.mark.asyncio
 async def test_ranked_chunks_with_filters():
     doc_id = uuid4()
+    patient_id = uuid4()
     stmts = []
 
     async def capture_execute(stmt):
@@ -124,7 +125,7 @@ async def test_ranked_chunks_with_filters():
          patch("app.services.chat.redis_client.setex", AsyncMock()):
         await retrieve_ranked_chunks(
             db, "q", uuid4(), uuid4(), uuid4(),
-            filters={"document_ids": [doc_id], "file_types": ["pdf"]},
+            filters={"document_ids": [doc_id], "file_types": ["pdf"], "patient_id": patient_id},
         )
 
     assert len(stmts) == 2
@@ -132,6 +133,7 @@ async def test_ranked_chunks_with_filters():
         sql = str(s)
         assert "chunks.document_id" in sql
         assert "documents.file_type" in sql
+        assert "documents.patient_id" in sql
 
 
 # ── retrieve_chunks ──

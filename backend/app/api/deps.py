@@ -96,31 +96,6 @@ def check_permission(perm_code: str):
         
     return permission_dependency
 
-async def require_patient_identity(
-    org_user: OrganizationUser = Depends(get_current_org_user),
-    db: AsyncSession = Depends(get_db)
-) -> UUID:
-    """
-    Ensure the user is acting as a patient in this organization.
-    Returns the patient_profile.id.
-    """
-    from app.db.models import PatientProfile
-    stmt = select(PatientProfile.id).where(
-        PatientProfile.user_id == org_user.user_id,
-        PatientProfile.org_id == org_user.org_id
-    )
-    res = await db.execute(stmt)
-    patient_id = res.scalar()
-    if not patient_id:
-        detail = (
-            "User is not a patient in this organization"
-            if org_user.user_type != "patient"
-            else "Patient profile not found"
-        )
-        status_code = 403 if org_user.user_type != "patient" else 404
-        raise HTTPException(status_code=status_code, detail=detail)
-    return patient_id
-
 async def verify_quota(
     org_id: UUID = Depends(get_current_org),
     db: AsyncSession = Depends(get_db)
