@@ -1,4 +1,4 @@
-from sqlalchemy import String, ForeignKey, Date, Index
+from sqlalchemy import String, ForeignKey, Date, Index, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from uuid import UUID
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 class PatientProfile(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "patient_profiles"
 
-    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), unique=True)
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
     org_id: Mapped[UUID] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True)
     
     real_name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -25,5 +25,6 @@ class PatientProfile(Base, UUIDMixin, TimestampMixin):
     organization: Mapped["Organization"] = relationship()
     
     __table_args__ = (
+        UniqueConstraint("org_id", "user_id", name="uq_patient_profiles_org_user"),
         Index('idx_patient_medical_history_gin', 'medical_history', postgresql_using='gin'),
     )

@@ -1,5 +1,7 @@
 import pytest
 from httpx import AsyncClient, ASGITransport
+
+from app.db.models import PatientProfile
 from app.main import app
 
 @pytest.mark.asyncio
@@ -13,3 +15,13 @@ async def test_health_check():
 def test_kb_routes_registered():
     paths = {route.path for route in app.routes if hasattr(route, "path")}
     assert "/api/v1/kb/" in paths
+
+
+def test_patient_profile_is_unique_per_org():
+    unique_constraints = {
+        tuple(column.name for column in constraint.columns)
+        for constraint in PatientProfile.__table__.constraints
+        if constraint.__class__.__name__ == "UniqueConstraint"
+    }
+    assert ("org_id", "user_id") in unique_constraints
+    assert ("user_id",) not in unique_constraints

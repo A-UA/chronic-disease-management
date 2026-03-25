@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from uuid import UUID
 
-from app.api.deps import get_current_org, get_current_user, get_db, require_patient_identity
+from app.api.deps import get_current_org, get_current_user, get_db
 from app.db.models import User, PatientProfile
 from app.schemas.patient import PatientProfileRead, PatientProfileUpdate
 
@@ -14,11 +14,14 @@ router = APIRouter()
 async def get_my_patient_profile(
     current_user: User = Depends(get_current_user),
     org_id: UUID = Depends(get_current_org),
-    patient_id: UUID = Depends(require_patient_identity),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
-    # Now we can just use the patient_id found by dependency
-    profile = await db.get(PatientProfile, patient_id)
+    stmt = select(PatientProfile).where(
+        PatientProfile.user_id == current_user.id,
+        PatientProfile.org_id == org_id
+    )
+    result = await db.execute(stmt)
+    profile = result.scalar_one_or_none()
     if not profile:
         raise HTTPException(status_code=404, detail="Patient profile not found")
     return profile
