@@ -3,7 +3,7 @@ import logging
 from collections.abc import AsyncGenerator
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -48,6 +48,22 @@ async def chat_endpoint(
         filters["patient_id"] = request.patient_id
 
     # 2. 获取对话历史用于 Condense Query
+    conversation = await db.get(Conversation, request.conversation_id)
+    if conversation:
+        if conversation.org_id != org_id or conversation.user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Conversation does not belong to current user")
+        if conversation.kb_id != request.kb_id:
+            raise HTTPException(status_code=400, detail="Conversation knowledge base mismatch")
+    else:
+        conversation = Conversation(
+            id=request.conversation_id,
+            kb_id=request.kb_id,
+            org_id=org_id,
+            user_id=current_user.id,
+            title=request.query[:50],
+        )
+        db.add(conversation)
+
     history_stmt = (
         select(Message)
         .where(Message.conversation_id == request.conversation_id)
@@ -55,12 +71,11 @@ async def chat_endpoint(
         .limit(10)
     )
     history_res = await db.execute(history_stmt)
-    history_msgs = history_res.scalars().all()[::-1]  # 恢复正序
+    history_msgs = history_res.scalars().all()[::-1]
     history_list = [{"role": m.role, "content": m.content} for m in history_msgs]
 
     llm_provider = registry.get_llm()
 
-    # 3. 增强版检索（包含对话压缩和安全缓存）
     chunks = await retrieve_chunks(
         db,
         request.query,
@@ -73,18 +88,6 @@ async def chat_endpoint(
     )
 
     prompt, citations = build_rag_prompt(request.query, chunks)
-
-    # 4. 会话管理
-    conversation = await db.get(Conversation, request.conversation_id)
-    if not conversation:
-        conversation = Conversation(
-            id=request.conversation_id,
-            kb_id=request.kb_id,
-            org_id=org_id,
-            user_id=current_user.id,
-            title=request.query[:50],
-        )
-        db.add(conversation)
 
     user_msg = Message(
         conversation_id=conversation.id,

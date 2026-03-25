@@ -2,10 +2,11 @@ from typing import Any, List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from uuid import UUID
 
-from app.api.deps import get_db, get_current_user
-from app.db.models import User, Organization, OrganizationUser, PatientProfile, PatientManagerAssignment
+from app.api.deps import check_permission, get_current_org, get_current_user, get_db
+from app.db.models import Role, User, Organization, OrganizationUser, PatientProfile, PatientManagerAssignment
 from app.schemas.organization import OrganizationReadAdmin, OrganizationMemberRead, PatientAssignmentCreate
 
 router = APIRouter()
@@ -14,23 +15,13 @@ router = APIRouter()
 async def assign_patient_to_manager(
     org_id: UUID,
     assign_in: PatientAssignmentCreate,
-    current_user: User = Depends(get_current_user),
+    current_org_id: UUID = Depends(get_current_org),
+    _org_user: OrganizationUser = Depends(check_permission("org:manage_members")),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
-    """
-    行政管理功能：管理员将患者指派给特定管理师。
-    """
-    # 1. 校验当前用户是否为该组织的管理员
-    stmt = select(OrganizationUser).where(
-        OrganizationUser.org_id == org_id,
-        OrganizationUser.user_id == current_user.id,
-        OrganizationUser.role.in_(["owner", "admin"])
-    )
-    res = await db.execute(stmt)
-    if not res.scalar_one_or_none():
-        raise HTTPException(status_code=403, detail="Only admins can assign patients")
-        
-    # 2. 校验患者是否属于该组织
+    if current_org_id != org_id:
+        raise HTTPException(status_code=403, detail="Organization context mismatch")
+
     stmt_p = select(PatientProfile).where(
         PatientProfile.id == assign_in.patient_id,
         PatientProfile.org_id == org_id
@@ -39,7 +30,15 @@ async def assign_patient_to_manager(
     if not res_p.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Patient not found in this organization")
 
-    # 3. 创建或更新分配关系
+    stmt_m = select(OrganizationUser).where(
+        OrganizationUser.org_id == org_id,
+        OrganizationUser.user_id == assign_in.manager_id,
+        OrganizationUser.user_type == "staff"
+    )
+    res_m = await db.execute(stmt_m)
+    if not res_m.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Manager not found in this organization")
+
     from sqlalchemy.dialects.postgresql import insert
     stmt_ins = insert(PatientManagerAssignment).values(
         org_id=org_id,
@@ -76,10 +75,6 @@ async def get_organization_members(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
-    """
-    获取组织的成员列表（仅限组织成员查看）。
-    """
-    # 1. 校验当前用户是否属于该组织
     stmt_check = select(OrganizationUser).where(
         OrganizationUser.org_id == org_id,
         OrganizationUser.user_id == current_user.id
@@ -88,19 +83,23 @@ async def get_organization_members(
     if not res_check.scalar_one_or_none():
         raise HTTPException(status_code=403, detail="Not a member of this organization")
 
-    # 2. 获取成员详情并脱敏映射
     stmt = (
-        select(User.id, User.email, User.name, OrganizationUser.role)
-        .join(OrganizationUser, OrganizationUser.user_id == User.id)
+        select(OrganizationUser)
+        .options(
+            selectinload(OrganizationUser.user),
+            selectinload(OrganizationUser.rbac_roles).selectinload(Role.permissions)
+        )
         .where(OrganizationUser.org_id == org_id)
     )
     result = await db.execute(stmt)
     members = []
-    for row in result.all():
+    for org_user in result.scalars().all():
+        role_codes = sorted(role.code for role in org_user.rbac_roles)
+        role_label = ",".join(role_codes) if role_codes else org_user.user_type
         members.append({
-            "user_id": row[0],
-            "email": row[1],
-            "name": row[2],
-            "role": row[3]
+            "user_id": org_user.user.id,
+            "email": org_user.user.email,
+            "name": org_user.user.name,
+            "role": role_label
         })
     return members

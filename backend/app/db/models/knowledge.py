@@ -1,5 +1,5 @@
 from sqlalchemy import String, ForeignKey, Integer, Text, Index
-from sqlalchemy.dialects.postgresql import TSVECTOR
+from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from pgvector.sqlalchemy import Vector
 from uuid import UUID
@@ -45,7 +45,7 @@ class Chunk(Base, UUIDMixin, TimestampMixin):
     # The actual dimension is enforced at the database column level via migrations.
     embedding: Mapped[list[float]] = mapped_column(Vector, nullable=True)
     
-    # Keyword search vector
+    metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
     tsv_content: Mapped[Any] = mapped_column(TSVECTOR, nullable=True)
 
     __table_args__ = (

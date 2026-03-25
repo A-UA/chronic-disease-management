@@ -6,7 +6,7 @@ from uuid import UUID
 
 from app.api.deps import get_db, get_current_user, get_current_org
 from app.db.models import User, KnowledgeBase
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 router = APIRouter()
 
@@ -20,6 +20,8 @@ class KBRead(BaseModel):
     description: str | None
     org_id: UUID
     created_at: Any
+
+    model_config = ConfigDict(from_attributes=True)
 
 @router.post("/", response_model=KBRead)
 async def create_knowledge_base(

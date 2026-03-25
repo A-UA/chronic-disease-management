@@ -129,27 +129,19 @@ def _apply_retrieval_filters(stmt: Select, filters: RetrievalFilters | None) -> 
 
     patient_id = filters.get("patient_id")
     if patient_id:
-        if Document not in [entity.class_ for entity in stmt.get_final_froms() if hasattr(entity, "class_")]:
-             stmt = stmt.join(Document, Document.id == Chunk.document_id)
-        stmt = stmt.where(Document.patient_id == patient_id)
+        stmt = stmt.where(Chunk.metadata_["patient_id"].astext == str(patient_id))
 
     metadata_filters = filters.get("metadata") or {}
     for key, value in metadata_filters.items():
         if key.endswith("__in") and isinstance(value, list):
             base_key = key[:-4]
-            # Since JSONB does not have a direct IN operator easily in SQLAlchemy without raw SQL,
-            # we can use multiple ORs or jsonb ?| array
-            # A simple approach for now is to use text cast and IN, or just multiple exact matches.
-            # Using contains with OR is complex, let's use op("?|") for arrays if strings.
-            # But the simplest is:
             from sqlalchemy import or_
-            stmt = stmt.where(or_(*(Chunk.metadata.contains({base_key: v}) for v in value)))
+            stmt = stmt.where(or_(*(Chunk.metadata_.contains({base_key: v}) for v in value)))
         elif key.endswith("__gt"):
             base_key = key[:-4]
-            # Assumes integer or float values
-            stmt = stmt.where(func.cast(Chunk.metadata[base_key].astext, func.float) > value)
+            stmt = stmt.where(func.cast(Chunk.metadata_[base_key].astext, func.float) > value)
         else:
-            stmt = stmt.where(Chunk.metadata.contains({key: value}))
+            stmt = stmt.where(Chunk.metadata_.contains({key: value}))
 
     return stmt
 

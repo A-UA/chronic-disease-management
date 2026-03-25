@@ -14,7 +14,7 @@ from app.db.models import User, OrganizationUser, Organization, ApiKey, Role, Pe
 from app.services.quota import check_org_quota, check_api_key_rate_limit
 import hashlib
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/login/access-token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login/access-token")
 
 async def get_current_user(
     db: AsyncSession = Depends(get_db),

@@ -9,6 +9,7 @@ from httpx import ASGITransport, AsyncClient
 
 from app.api.deps import get_current_org, get_current_user, get_db, verify_quota
 from app.api.endpoints.biz.chat import router
+from app.db.models import Conversation
 
 
 app = FastAPI()
@@ -34,9 +35,10 @@ class DummyDB:
     def __init__(self):
         self.added = []
         self.commits = 0
+        self.objects = {}
 
     async def get(self, model, obj_id):
-        return None
+        return self.objects.get((model, obj_id))
 
     async def execute(self, stmt, *args, **kwargs):
         return DummyExecResult()
@@ -72,6 +74,7 @@ app.dependency_overrides[get_db] = _override_db
 async def test_chat_stream_full_flow(monkeypatch):
     dummy_db.added.clear()
     dummy_db.commits = 0
+    dummy_db.objects = {}
 
     doc_id = uuid4()
     fake_chunk = MagicMock()
@@ -135,6 +138,7 @@ async def test_chat_stream_full_flow(monkeypatch):
 async def test_chat_with_empty_query(monkeypatch):
     dummy_db.added.clear()
     dummy_db.commits = 0
+    dummy_db.objects = {}
 
     monkeypatch.setattr(
         "app.api.endpoints.biz.chat.retrieve_chunks",
@@ -165,3 +169,28 @@ async def test_chat_with_empty_query(monkeypatch):
             "query": "test",
         })
     assert resp.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_reject_foreign_conversation(monkeypatch):
+    dummy_db.added.clear()
+    dummy_db.commits = 0
+    dummy_db.objects = {}
+
+    conversation_id = uuid4()
+    conversation = MagicMock()
+    conversation.id = conversation_id
+    conversation.org_id = current_org
+    conversation.user_id = uuid4()
+    conversation.kb_id = uuid4()
+    dummy_db.objects[(Conversation, conversation_id)] = conversation
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        resp = await ac.post("/api/v1", json={
+            "kb_id": str(conversation.kb_id),
+            "conversation_id": str(conversation_id),
+            "query": "test",
+        })
+
+    assert resp.status_code == 403
+    assert resp.json()["detail"] == "Conversation does not belong to current user"

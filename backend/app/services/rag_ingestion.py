@@ -265,7 +265,7 @@ async def process_document(document_id: UUID, file_content: str, pages: list[str
                     chunk_index=i,
                     embedding=emb,
                     tsv_content=func.to_tsvector("chinese", cm.content),
-                    metadata={
+                    metadata_={
                         "heading_aware": True,
                         "section_title": cm.section_title,
                         "source": str(document.file_name) if document.file_name else "unknown",

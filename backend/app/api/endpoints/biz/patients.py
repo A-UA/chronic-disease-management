@@ -1,15 +1,12 @@
-from typing import Any, List
+from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from uuid import UUID
 
-from app.api.deps import get_db, get_current_user, get_current_org
+from app.api.deps import get_current_org, get_current_user, get_db, require_patient_identity
 from app.db.models import User, PatientProfile
 from app.schemas.patient import PatientProfileRead, PatientProfileUpdate
-from datetime import date
-
-from app.api.deps import get_db, get_current_user, get_current_org, require_patient_identity
 
 router = APIRouter()
 
