@@ -21,13 +21,25 @@ class DummyUser:
         self.id = uuid4()
 
 
+class DummyExecResult:
+    def __init__(self, scalar_value=None):
+        self._scalar_value = scalar_value
+
+    def scalar_one_or_none(self):
+        return self._scalar_value
+
+
 class DummyDB:
     def __init__(self):
         self.added = []
         self.committed = False
+        self.scalar_value = None
 
     def add(self, obj):
         self.added.append(obj)
+
+    async def execute(self, stmt):
+        return DummyExecResult(self.scalar_value)
 
     async def commit(self):
         self.committed = True
@@ -38,13 +50,14 @@ class DummyDB:
 
 
 dummy_db = DummyDB()
+current_org = uuid4()
 
 async def override_db():
     yield dummy_db
 
 app.dependency_overrides[get_db] = override_db
 app.dependency_overrides[get_current_user] = lambda: DummyUser()
-app.dependency_overrides[get_current_org] = lambda: uuid4()
+app.dependency_overrides[get_current_org] = lambda: current_org
 
 
 def _docx_bytes():
@@ -79,6 +92,7 @@ async def test_reject_unsupported(monkeypatch):
 async def test_upload_docx(monkeypatch):
     dummy_db.added.clear()
     dummy_db.committed = False
+    dummy_db.scalar_value = None
 
     async def fake_upload(*a, **kw):
         return "http://minio/test"
@@ -96,3 +110,29 @@ async def test_upload_docx(monkeypatch):
         )
     assert resp.status_code == 200
     assert dummy_db.committed
+
+
+@pytest.mark.asyncio
+async def test_upload_docx_with_patient_id(monkeypatch):
+    dummy_db.added.clear()
+    dummy_db.committed = False
+    patient_id = uuid4()
+    dummy_db.scalar_value = patient_id
+
+    async def fake_upload(*a, **kw):
+        return "http://minio/test"
+
+    storage = MagicMock()
+    storage.upload_file = fake_upload
+    monkeypatch.setattr("app.api.endpoints.documents.get_storage_service", lambda: storage)
+    monkeypatch.setattr("app.api.endpoints.documents.process_document", lambda *a, **kw: None)
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        resp = await ac.post(
+            f"/api/v1/kb/{uuid4()}/documents",
+            data={"patient_id": str(patient_id)},
+            files={"file": ("note.docx", _docx_bytes(),
+                            "application/vnd.openxmlformats-officedocument.wordprocessingml.document")},
+        )
+    assert resp.status_code == 200
+    assert dummy_db.added[0].patient_id == patient_id

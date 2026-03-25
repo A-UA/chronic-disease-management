@@ -22,6 +22,7 @@ class Document(Base, UUIDMixin, TimestampMixin):
     kb_id: Mapped[UUID] = mapped_column(ForeignKey("knowledge_bases.id", ondelete="CASCADE"), index=True)
     org_id: Mapped[UUID] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"))
     uploader_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
+    patient_id: Mapped[UUID | None] = mapped_column(ForeignKey("patient_profiles.id", ondelete="SET NULL"), index=True, nullable=True)
     
     file_name: Mapped[str] = mapped_column(String(255), nullable=False)
     file_type: Mapped[str] = mapped_column(String(50), nullable=True)

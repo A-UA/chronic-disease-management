@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, BackgroundTasks, Form
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 
 from app.api.deps import get_current_user, get_current_org, get_db
-from app.db.models import User, Document
+from app.db.models import User, Document, PatientProfile
 from app.services.document_parser import DocumentParseError, parse_document
 from app.services.rag_ingestion import process_document
 from app.services.storage import get_storage_service
@@ -16,11 +17,21 @@ async def upload_document(
     kb_id: UUID,
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
+    patient_id: UUID | None = Form(None),
     current_user: User = Depends(get_current_user),
     org_id: UUID = Depends(get_current_org),
     db: AsyncSession = Depends(get_db),
 ):
     try:
+        if patient_id is not None:
+            patient_stmt = select(PatientProfile.id).where(
+                PatientProfile.id == patient_id,
+                PatientProfile.org_id == org_id
+            )
+            patient_result = await db.execute(patient_stmt)
+            if patient_result.scalar_one_or_none() is None:
+                raise HTTPException(status_code=404, detail="Patient profile not found")
+
         file_bytes = await file.read()
 
         parsed = parse_document(file_bytes, file.filename, file.content_type)
@@ -35,6 +46,7 @@ async def upload_document(
             kb_id=kb_id,
             org_id=org_id,
             uploader_id=current_user.id,
+            patient_id=patient_id,
             file_name=file.filename,
             file_type=file.content_type,
             file_size=len(file_bytes),

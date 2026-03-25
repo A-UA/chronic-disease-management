@@ -79,6 +79,7 @@ def _mock_doc():
     doc.kb_id = uuid4()
     doc.org_id = uuid4()
     doc.uploader_id = uuid4()
+    doc.patient_id = None
     doc.status = "pending"
     doc.failed_reason = None
     doc.file_name = "test.txt"
@@ -152,3 +153,24 @@ async def test_process_document_clears_old_failed_reason():
         await process_document(doc.id, "诊断:\n稳定样本")
 
     assert doc.failed_reason is None
+
+
+@pytest.mark.asyncio
+async def test_process_document_persists_patient_id_into_chunk_metadata():
+    doc = _mock_doc()
+    doc.patient_id = uuid4()
+    db = AsyncMock()
+    db.get.return_value = doc
+    db.add = MagicMock()
+
+    provider = MagicMock()
+    provider.embed_documents = AsyncMock(return_value=[[0.1] * 3])
+    provider.model_name = "test"
+
+    with patch("app.services.rag_ingestion.AsyncSessionLocal") as sf, \
+         patch("app.services.rag_ingestion.registry.get_embedding", return_value=provider):
+        sf.return_value.__aenter__.return_value = db
+        await process_document(doc.id, "诊断:\n稳定样本")
+
+    chunk = db.add.call_args_list[0].args[0]
+    assert chunk.metadata_["patient_id"] == str(doc.patient_id)
