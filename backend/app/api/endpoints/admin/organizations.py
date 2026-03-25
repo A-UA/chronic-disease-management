@@ -95,12 +95,10 @@ async def get_organization_members(
     members = []
     for org_user in result.scalars().all():
         role_codes = sorted(role.code for role in org_user.rbac_roles)
-        role_label = ",".join(role_codes) if role_codes else org_user.user_type
         members.append({
             "user_id": org_user.user.id,
             "email": org_user.user.email,
             "name": org_user.user.name,
-            "role": role_label,
             "roles": role_codes,
             "user_type": org_user.user_type,
         })

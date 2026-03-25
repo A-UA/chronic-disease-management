@@ -86,4 +86,4 @@ async def test_get_organization_members_returns_structured_roles():
     payload = resp.json()
     assert payload[0]["roles"] == ["admin", "manager"]
     assert payload[0]["user_type"] == "staff"
-    assert payload[0]["role"] == "admin,manager"
+    assert "role" not in payload[0]

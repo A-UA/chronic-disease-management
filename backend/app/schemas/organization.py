@@ -33,7 +33,6 @@ class OrganizationMemberRead(BaseModel):
     user_id: UUID
     email: str
     name: str | None = None
-    role: str
     roles: list[str] = []
     user_type: str
 
