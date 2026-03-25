@@ -33,7 +33,9 @@ class OrganizationMemberRead(BaseModel):
     user_id: UUID
     email: str
     name: str | None = None
-    role: str # owner, admin, member, viewer
+    role: str
+    roles: list[str] = []
+    user_type: str
 
 class PatientAssignmentCreate(BaseModel):
     patient_id: UUID

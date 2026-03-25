@@ -100,6 +100,8 @@ async def get_organization_members(
             "user_id": org_user.user.id,
             "email": org_user.user.email,
             "name": org_user.user.name,
-            "role": role_label
+            "role": role_label,
+            "roles": role_codes,
+            "user_type": org_user.user_type,
         })
     return members
