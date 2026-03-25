@@ -1,4 +1,4 @@
-from sqlalchemy import String, ForeignKey, Boolean, Text, Index
+from sqlalchemy import String, ForeignKey, Boolean, Text, Index, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from uuid import UUID
 from typing import TYPE_CHECKING
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 class ManagerProfile(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "manager_profiles"
 
-    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), unique=True)
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
     org_id: Mapped[UUID] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True)
     
     title: Mapped[str | None] = mapped_column(String(100)) # Senior, Assistant, etc.
@@ -22,6 +22,10 @@ class ManagerProfile(Base, UUIDMixin, TimestampMixin):
     # Relationships
     user: Mapped["User"] = relationship()
     organization: Mapped["Organization"] = relationship()
+
+    __table_args__ = (
+        UniqueConstraint("org_id", "user_id", name="uq_manager_profiles_org_user"),
+    )
 
 class PatientManagerAssignment(Base, TimestampMixin):
     __tablename__ = "patient_manager_assignments"

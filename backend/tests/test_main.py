@@ -1,7 +1,7 @@
 import pytest
 from httpx import AsyncClient, ASGITransport
 
-from app.db.models import PatientProfile
+from app.db.models import ManagerProfile, PatientProfile
 from app.main import app
 
 @pytest.mark.asyncio
@@ -21,6 +21,16 @@ def test_patient_profile_is_unique_per_org():
     unique_constraints = {
         tuple(column.name for column in constraint.columns)
         for constraint in PatientProfile.__table__.constraints
+        if constraint.__class__.__name__ == "UniqueConstraint"
+    }
+    assert ("org_id", "user_id") in unique_constraints
+    assert ("user_id",) not in unique_constraints
+
+
+def test_manager_profile_is_unique_per_org():
+    unique_constraints = {
+        tuple(column.name for column in constraint.columns)
+        for constraint in ManagerProfile.__table__.constraints
         if constraint.__class__.__name__ == "UniqueConstraint"
     }
     assert ("org_id", "user_id") in unique_constraints

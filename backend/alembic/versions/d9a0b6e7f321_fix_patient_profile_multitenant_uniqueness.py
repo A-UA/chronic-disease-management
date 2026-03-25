@@ -1,4 +1,4 @@
-"""fix_patient_profile_multitenant_uniqueness
+"""fix_healthcare_profile_multitenant_uniqueness
 
 Revision ID: d9a0b6e7f321
 Revises: 5c8b4c7a9e21, 12c3eabda525
@@ -25,8 +25,17 @@ def upgrade() -> None:
         "patient_profiles",
         ["org_id", "user_id"],
     )
+    op.execute("ALTER TABLE manager_profiles DROP CONSTRAINT IF EXISTS manager_profiles_user_id_key")
+    op.execute("ALTER TABLE manager_profiles DROP CONSTRAINT IF EXISTS uq_manager_profiles_org_user")
+    op.create_unique_constraint(
+        "uq_manager_profiles_org_user",
+        "manager_profiles",
+        ["org_id", "user_id"],
+    )
 
 
 def downgrade() -> None:
+    op.drop_constraint("uq_manager_profiles_org_user", "manager_profiles", type_="unique")
+    op.create_unique_constraint("manager_profiles_user_id_key", "manager_profiles", ["user_id"])
     op.drop_constraint("uq_patient_profiles_org_user", "patient_profiles", type_="unique")
     op.create_unique_constraint("patient_profiles_user_id_key", "patient_profiles", ["user_id"])
