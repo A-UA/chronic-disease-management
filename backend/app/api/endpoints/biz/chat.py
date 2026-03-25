@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_org, get_current_user, get_db, verify_quota
-from app.db.models import Conversation, Message, UsageLog, User
+from app.db.models import Conversation, KnowledgeBase, Message, UsageLog, User
 from app.services.chat import RetrievalFilters, build_rag_prompt, extract_statement_citations_structured, retrieve_chunks
 from app.services.provider_registry import registry
 from app.services.quota import check_quota_during_stream, update_org_quota
@@ -46,6 +46,12 @@ async def chat_endpoint(
         filters["file_types"] = request.file_types
     if request.patient_id:
         filters["patient_id"] = request.patient_id
+
+    kb = await db.get(KnowledgeBase, request.kb_id)
+    if kb is None:
+        raise HTTPException(status_code=404, detail="Knowledge base not found")
+    if kb.org_id != org_id:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
 
     # 2. 获取对话历史用于 Condense Query
     conversation = await db.get(Conversation, request.conversation_id)

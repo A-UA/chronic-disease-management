@@ -9,7 +9,7 @@ from httpx import ASGITransport, AsyncClient
 
 from app.api.deps import get_current_org, get_current_user, get_db, verify_quota
 from app.api.endpoints.biz.chat import router
-from app.db.models import Conversation
+from app.db.models import Conversation, KnowledgeBase
 
 
 app = FastAPI()
@@ -75,6 +75,7 @@ async def test_chat_stream_full_flow(monkeypatch):
     dummy_db.added.clear()
     dummy_db.commits = 0
     dummy_db.objects = {}
+    kb_id = uuid4()
 
     doc_id = uuid4()
     fake_chunk = MagicMock()
@@ -108,10 +109,11 @@ async def test_chat_stream_full_flow(monkeypatch):
     monkeypatch.setattr("app.api.endpoints.biz.chat.check_quota_during_stream", AsyncMock(return_value=True))
     monkeypatch.setattr("app.api.endpoints.biz.chat.update_org_quota", AsyncMock())
     monkeypatch.setattr("app.api.endpoints.biz.chat.count_tokens", lambda text, model="": len(text) // 4)
+    dummy_db.objects[(KnowledgeBase, kb_id)] = MagicMock(org_id=current_org)
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         resp = await ac.post("/api/v1", json={
-            "kb_id": str(uuid4()),
+            "kb_id": str(kb_id),
             "conversation_id": str(uuid4()),
             "query": "血糖高怎么办？",
             "document_ids": [str(doc_id)],
@@ -139,6 +141,7 @@ async def test_chat_with_empty_query(monkeypatch):
     dummy_db.added.clear()
     dummy_db.commits = 0
     dummy_db.objects = {}
+    kb_id = uuid4()
 
     monkeypatch.setattr(
         "app.api.endpoints.biz.chat.retrieve_chunks",
@@ -161,10 +164,11 @@ async def test_chat_with_empty_query(monkeypatch):
     monkeypatch.setattr("app.api.endpoints.biz.chat.check_quota_during_stream", AsyncMock(return_value=True))
     monkeypatch.setattr("app.api.endpoints.biz.chat.update_org_quota", AsyncMock())
     monkeypatch.setattr("app.api.endpoints.biz.chat.count_tokens", lambda text, model="": 10)
+    dummy_db.objects[(KnowledgeBase, kb_id)] = MagicMock(org_id=current_org)
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         resp = await ac.post("/api/v1", json={
-            "kb_id": str(uuid4()),
+            "kb_id": str(kb_id),
             "conversation_id": str(uuid4()),
             "query": "test",
         })
@@ -183,6 +187,7 @@ async def test_reject_foreign_conversation(monkeypatch):
     conversation.org_id = current_org
     conversation.user_id = uuid4()
     conversation.kb_id = uuid4()
+    dummy_db.objects[(KnowledgeBase, conversation.kb_id)] = MagicMock(org_id=current_org)
     dummy_db.objects[(Conversation, conversation_id)] = conversation
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
@@ -194,3 +199,23 @@ async def test_reject_foreign_conversation(monkeypatch):
 
     assert resp.status_code == 403
     assert resp.json()["detail"] == "Conversation does not belong to current user"
+
+
+@pytest.mark.asyncio
+async def test_reject_chat_for_foreign_kb():
+    dummy_db.added.clear()
+    dummy_db.commits = 0
+    dummy_db.objects = {}
+
+    kb_id = uuid4()
+    dummy_db.objects[(KnowledgeBase, kb_id)] = MagicMock(org_id=uuid4())
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        resp = await ac.post("/api/v1", json={
+            "kb_id": str(kb_id),
+            "conversation_id": str(uuid4()),
+            "query": "test",
+        })
+
+    assert resp.status_code == 403
+    assert resp.json()["detail"] == "Not enough permissions"

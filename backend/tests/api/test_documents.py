@@ -10,6 +10,7 @@ from httpx import ASGITransport, AsyncClient
 
 from app.api.deps import get_current_org, get_current_user, get_db
 from app.api.endpoints.documents import router
+from app.db.models import KnowledgeBase
 
 
 app = FastAPI()
@@ -34,9 +35,13 @@ class DummyDB:
         self.added = []
         self.committed = False
         self.scalar_value = None
+        self.objects = {}
 
     def add(self, obj):
         self.added.append(obj)
+
+    async def get(self, model, obj_id):
+        return self.objects.get((model, obj_id))
 
     async def execute(self, stmt):
         return DummyExecResult(self.scalar_value)
@@ -76,13 +81,15 @@ def _docx_bytes():
 
 @pytest.mark.asyncio
 async def test_reject_unsupported(monkeypatch):
+    kb_id = uuid4()
+    dummy_db.objects = {(KnowledgeBase, kb_id): MagicMock(org_id=current_org)}
     storage = MagicMock()
     storage.upload_file = MagicMock()  # 不应被调用
     monkeypatch.setattr("app.api.endpoints.documents.get_storage_service", lambda: storage)
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         resp = await ac.post(
-            f"/api/v1/kb/{uuid4()}/documents",
+            f"/api/v1/kb/{kb_id}/documents",
             files={"file": ("img.png", b"\x89PNG", "image/png")},
         )
     assert resp.status_code == 400
@@ -90,9 +97,11 @@ async def test_reject_unsupported(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_upload_docx(monkeypatch):
+    kb_id = uuid4()
     dummy_db.added.clear()
     dummy_db.committed = False
     dummy_db.scalar_value = None
+    dummy_db.objects = {(KnowledgeBase, kb_id): MagicMock(org_id=current_org)}
 
     async def fake_upload(*a, **kw):
         return "http://minio/test"
@@ -104,7 +113,7 @@ async def test_upload_docx(monkeypatch):
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         resp = await ac.post(
-            f"/api/v1/kb/{uuid4()}/documents",
+            f"/api/v1/kb/{kb_id}/documents",
             files={"file": ("note.docx", _docx_bytes(),
                             "application/vnd.openxmlformats-officedocument.wordprocessingml.document")},
         )
@@ -114,10 +123,12 @@ async def test_upload_docx(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_upload_docx_with_patient_id(monkeypatch):
+    kb_id = uuid4()
     dummy_db.added.clear()
     dummy_db.committed = False
     patient_id = uuid4()
     dummy_db.scalar_value = patient_id
+    dummy_db.objects = {(KnowledgeBase, kb_id): MagicMock(org_id=current_org)}
 
     async def fake_upload(*a, **kw):
         return "http://minio/test"
@@ -129,10 +140,32 @@ async def test_upload_docx_with_patient_id(monkeypatch):
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         resp = await ac.post(
-            f"/api/v1/kb/{uuid4()}/documents",
+            f"/api/v1/kb/{kb_id}/documents",
             data={"patient_id": str(patient_id)},
             files={"file": ("note.docx", _docx_bytes(),
                             "application/vnd.openxmlformats-officedocument.wordprocessingml.document")},
         )
     assert resp.status_code == 200
     assert dummy_db.added[0].patient_id == patient_id
+
+
+@pytest.mark.asyncio
+async def test_reject_upload_for_foreign_kb(monkeypatch):
+    kb_id = uuid4()
+    dummy_db.added.clear()
+    dummy_db.committed = False
+    dummy_db.scalar_value = None
+    dummy_db.objects = {(KnowledgeBase, kb_id): MagicMock(org_id=uuid4())}
+
+    storage = MagicMock()
+    storage.upload_file = MagicMock()
+    monkeypatch.setattr("app.api.endpoints.documents.get_storage_service", lambda: storage)
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        resp = await ac.post(
+            f"/api/v1/kb/{kb_id}/documents",
+            files={"file": ("note.docx", _docx_bytes(),
+                            "application/vnd.openxmlformats-officedocument.wordprocessingml.document")},
+        )
+
+    assert resp.status_code == 403

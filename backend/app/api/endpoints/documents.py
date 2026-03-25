@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 
 from app.api.deps import get_current_user, get_current_org, get_db
-from app.db.models import User, Document, PatientProfile
+from app.db.models import User, Document, KnowledgeBase, PatientProfile
 from app.services.document_parser import DocumentParseError, parse_document
 from app.services.rag_ingestion import process_document
 from app.services.storage import get_storage_service
@@ -23,6 +23,12 @@ async def upload_document(
     db: AsyncSession = Depends(get_db),
 ):
     try:
+        kb = await db.get(KnowledgeBase, kb_id)
+        if kb is None:
+            raise HTTPException(status_code=404, detail="Knowledge base not found")
+        if kb.org_id != org_id:
+            raise HTTPException(status_code=403, detail="Not enough permissions")
+
         if patient_id is not None:
             patient_stmt = select(PatientProfile.id).where(
                 PatientProfile.id == patient_id,
