@@ -34,7 +34,7 @@ const App: React.FC = () => {
             <Route path="/" element={<div>仪表盘首页</div>} />
             
             {/* 后续添加具体页面路由 */}
-            <Route path="/admin/orgs" element={<div>机构管理</div>} />
+            <Route path="/admin/orgs" element={<OrgManagement />} />
             <Route path="/org/staff" element={<div>成员管理</div>} />
             <Route path="/org/kb" element={<div>知识库管理</div>} />
             <Route path="/biz/patients" element={<div>患者工作台</div>} />
@@ -47,6 +47,12 @@ const App: React.FC = () => {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
+    </QueryClientProvider>
+  );
+};
+
+export default App;
+er>
     </QueryClientProvider>
   );
 };
