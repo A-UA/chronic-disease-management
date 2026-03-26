@@ -3,21 +3,21 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Multi-Tenant AI SaaS"
     API_V1_STR: str = "/api/v1"
-    
+
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/ai_saas"
-    
+
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
-    
+
     # MinIO
     MINIO_URL: str = "http://localhost:9000"
     MINIO_ACCESS_KEY: str = "minioadmin"
     MINIO_SECRET_KEY: str = "minioadmin"
     MINIO_BUCKET_NAME: str = "documents"
-    
+
     # Security — 必须通过 .env 或环境变量显式设置，禁止使用默认值
-    JWT_SECRET: str
+    JWT_SECRET: str = ""
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
 
     # Embeddings
@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     RAG_RRF_K: int = 60                  # RRF 融合参数 k
     RAG_MIN_SCORE_THRESHOLD: float = 0.0 # 检索结果最低分数阈值
     RAG_CACHE_TTL: int = 3600            # 检索缓存 TTL（秒）
-    
+
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
 settings = Settings()
