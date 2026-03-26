@@ -37,7 +37,7 @@ const App: React.FC = () => {
             <Route path="/admin/orgs" element={<OrgManagement />} />
             <Route path="/org/staff" element={<div>成员管理</div>} />
             <Route path="/org/kb" element={<KBManagement />} />
-            <Route path="/biz/patients" element={<div>患者工作台</div>} />
+            <Route path="/biz/patients" element={<PatientWorkbench />} />
             <Route path="/biz/chat" element={<div>AI 咨询</div>} />
             <Route path="/audit" element={<div>审计日志</div>} />
             
