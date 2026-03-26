@@ -5,6 +5,11 @@ import LoginPage from './pages/login/LoginPage';
 import MainLayout from './components/layout/MainLayout';
 import { useAuthStore } from './stores/auth';
 
+// 页面导入
+import OrgManagement from './pages/admin/OrgManagement';
+import KBManagement from './pages/org/KBManagement';
+import PatientWorkbench from './pages/biz/PatientWorkbench';
+
 const queryClient = new QueryClient();
 
 // 路由守卫组件
@@ -33,7 +38,6 @@ const App: React.FC = () => {
           <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
             <Route path="/" element={<div>仪表盘首页</div>} />
             
-            {/* 后续添加具体页面路由 */}
             <Route path="/admin/orgs" element={<OrgManagement />} />
             <Route path="/org/staff" element={<div>成员管理</div>} />
             <Route path="/org/kb" element={<KBManagement />} />
@@ -47,12 +51,6 @@ const App: React.FC = () => {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
-    </QueryClientProvider>
-  );
-};
-
-export default App;
-er>
     </QueryClientProvider>
   );
 };
