@@ -8,4 +8,7 @@ export default {
     extend: {},
   },
   plugins: [],
+  corePlugins: {
+    preflight: false, // 禁用 preflight 以避免与 Ant Design 样式冲突
+  }
 }
