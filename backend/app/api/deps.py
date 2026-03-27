@@ -37,7 +37,7 @@ async def get_current_user(
 
     # Inject User ID for RLS (e.g. for cross-org family access)
     await db.execute(
-        text("SELECT set_config('app.current_user_id', :user_id, false)"),
+        text("SELECT set_config('app.current_user_id', :user_id, true)"),
         {"user_id": str(user.id)},
     )
 
@@ -73,7 +73,7 @@ async def get_current_org_user(
 
     # Inject RLS context
     await db.execute(
-        text("SELECT set_config('app.current_org_id', :org_id, false)"),
+        text("SELECT set_config('app.current_org_id', :org_id, true)"),
         {"org_id": str(org_uuid)},
     )
 
@@ -147,7 +147,7 @@ async def get_api_key_context(
 
     # RLS
     await db.execute(
-        text("SELECT set_config('app.current_org_id', :org_id, false)"),
+        text("SELECT set_config('app.current_org_id', :org_id, true)"),
         {"org_id": str(api_key.org_id)},
     )
 

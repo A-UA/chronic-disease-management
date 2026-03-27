@@ -80,7 +80,7 @@ async def upload_document(
         await db.refresh(document)
 
         background_tasks.add_task(
-            process_document, document.id, parsed.text, parsed.pages
+            process_document, document.id, parsed.text, org_id, parsed.pages
         )
 
         return {

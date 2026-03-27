@@ -270,16 +270,27 @@ def split_document_text(
 
 
 async def process_document(
-    document_id: UUID, file_content: str, pages: list[str] | None = None
+    document_id: UUID, 
+    file_content: str, 
+    org_id: UUID,
+    pages: list[str] | None = None
 ):
     """处理文档入库：切块、生成 embedding、写入数据库
 
     参数:
         document_id: 文档 ID
         file_content: 文档全文
+        org_id: 组织 ID (用于设置 RLS 上下文)
         pages: 按页分割的文本列表（来自 ParsedDocument.pages），用于计算页码
     """
     async with AsyncSessionLocal() as db:
+        # 必须先设置 RLS 上下文，否则后续查询会被 RLS 拦截
+        from sqlalchemy import text
+        await db.execute(
+            text("SELECT set_config('app.current_org_id', :org_id, true)"),
+            {"org_id": str(org_id)},
+        )
+
         document = await db.get(Document, document_id)
         if not document:
             return
@@ -287,7 +298,8 @@ async def process_document(
         chunk_metas = split_document_text(file_content, pages=pages)
         texts = [cm.content for cm in chunk_metas]
         embedding_provider: EmbeddingProvider = registry.get_embedding()
-        model_name = getattr(embedding_provider, "model_name", "gpt-4o")
+        # 从 provider 或配置中获取模型名称，避免硬编码
+        model_name = getattr(embedding_provider, "model_name", settings.EMBEDDING_MODEL)
 
         try:
             embeddings = await embedding_provider.embed_documents(texts)

@@ -49,14 +49,38 @@ def _parse_docx_document(file_bytes: bytes) -> ParsedDocument:
     root = ElementTree.fromstring(document_xml)
     namespace = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
 
-    paragraphs: list[str] = []
-    for paragraph in root.findall(".//w:body/w:p", namespace):
-        texts = [node.text or "" for node in paragraph.findall(".//w:t", namespace)]
-        combined = "".join(texts).strip()
-        if combined:
-            paragraphs.append(combined)
+    def _extract_text_recursive(element) -> list[str]:
+        texts: list[str] = []
+        for child in element:
+            # 处理段落
+            if child.tag.endswith("}p"):
+                t_nodes = child.findall(".//w:t", namespace)
+                p_text = "".join(node.text or "" for node in t_nodes).strip()
+                if p_text:
+                    texts.append(p_text)
+            # 处理表格
+            elif child.tag.endswith("}tbl"):
+                table_texts: list[str] = []
+                for row in child.findall(".//w:tr", namespace):
+                    row_cells = []
+                    for cell in row.findall(".//w:tc", namespace):
+                        cell_text = " ".join(_extract_text_recursive(cell)).strip()
+                        row_cells.append(cell_text)
+                    if any(row_cells):
+                        table_texts.append(" | ".join(row_cells))
+                if table_texts:
+                    texts.append("\n" + "\n".join(table_texts) + "\n")
+            # 递归处理其他容器（如 body）
+            elif child.tag.endswith("}body") or child.tag.endswith("}sdtContent"):
+                texts.extend(_extract_text_recursive(child))
+        return texts
 
-    text = _normalize_text("\n\n".join(paragraphs))
+    body = root.find("w:body", namespace)
+    if body is None:
+        return ParsedDocument(text="", pages=[])
+
+    all_texts = _extract_text_recursive(body)
+    text = _normalize_text("\n\n".join(all_texts))
     return ParsedDocument(text=text, pages=[text] if text else [])
 
 

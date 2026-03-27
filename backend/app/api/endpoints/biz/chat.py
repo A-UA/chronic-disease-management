@@ -97,6 +97,7 @@ async def chat_endpoint(
 
     user_msg = Message(
         conversation_id=conversation.id,
+        org_id=org_id,
         role="user",
         content=request.query,
         metadata_={"filters": filters or None},
@@ -109,82 +110,99 @@ async def chat_endpoint(
 
         full_response = ""
         quota_exceeded = False
-        try:
-            async for chunk_text in llm_provider.stream_text(prompt):
-                full_response += chunk_text
-                # 使用 tiktoken 精准计算 Token 数，修复原来 len//4 的严重偏差
-                tokens_so_far = count_tokens(prompt + full_response, llm_provider.model_name)
-                if not await check_quota_during_stream(org_id, tokens_so_far, db=db):
-                    quota_exceeded = True
-                    yield f"event: error\ndata: {json.dumps({'detail': 'Quota exceeded. Response cut short.'})}\n\n"
-                    break
+        
+        # 在生成器内部开启独立会话，并手动管理 RLS 上下文
+        from app.db.session import AsyncSessionLocal
+        from sqlalchemy import text
+        async with AsyncSessionLocal() as db_gen:
+            await db_gen.execute(
+                text("SELECT set_config('app.current_org_id', :org_id, true)"),
+                {"org_id": str(org_id)},
+            )
+            await db_gen.execute(
+                text("SELECT set_config('app.current_user_id', :user_id, true)"),
+                {"user_id": str(current_user.id)},
+            )
 
-                yield f"event: chunk\ndata: {json.dumps({'text': chunk_text})}\n\n"
-        except Exception as e:
-            logger.error(f"LLM streaming error: {str(e)}")
-            yield f"event: error\ndata: {json.dumps({'detail': 'LLM streaming failed.'})}\n\n"
+            try:
+                # 预计算 prompt tokens
+                prompt_tokens = count_tokens(prompt, llm_provider.model_name)
+                completion_tokens = 0
+                
+                async for chunk_text in llm_provider.stream_text(prompt):
+                    full_response += chunk_text
+                    
+                    # 优化：增量计算 token，避免 O(N^2)
+                    chunk_tokens = count_tokens(chunk_text, llm_provider.model_name)
+                    completion_tokens += chunk_tokens
+                    
+                    if not await check_quota_during_stream(org_id, prompt_tokens + completion_tokens, db=db_gen):
+                        quota_exceeded = True
+                        yield f"event: error\ndata: {json.dumps({'detail': 'Quota exceeded. Response cut short.'})}\n\n"
+                        break
 
-        # 无论流是否正常结束或中断，都保存回答记录和 Usage 日志
-        # 修复原来客户端断联时数据丢失的问题
-        try:
-            prompt_tokens = count_tokens(prompt, llm_provider.model_name)
-            completion_tokens = count_tokens(full_response, llm_provider.model_name) if full_response else 0
+                    yield f"event: chunk\ndata: {json.dumps({'text': chunk_text})}\n\n"
+            except Exception as e:
+                logger.error(f"LLM streaming error: {str(e)}")
+                yield f"event: error\ndata: {json.dumps({'detail': 'LLM streaming failed.'})}\n\n"
 
-            statement_citations = []
-            done_statement_citations = []
-            if full_response and not quota_exceeded:
-                try:
-                    statement_citations = await extract_statement_citations_structured(
-                        full_response, citations, llm_provider
-                    )
-                    done_statement_citations = [
-                        {
-                            "text": item["text"],
-                            "citation_refs": [citation["ref"] for citation in item["citations"]],
-                            "chunk_ids": [citation.get("chunk_id") for citation in item["citations"]],
-                        }
-                        for item in statement_citations
-                    ]
-                except Exception:
-                    logger.warning("Statement citation extraction failed", exc_info=True)
+            try:
+                statement_citations = []
+                done_statement_citations = []
+                if full_response and not quota_exceeded:
+                    try:
+                        statement_citations = await extract_statement_citations_structured(
+                            full_response, citations, llm_provider
+                        )
+                        done_statement_citations = [
+                            {
+                                "text": item["text"],
+                                "citation_refs": [citation["ref"] for citation in item["citations"]],
+                                "chunk_ids": [citation.get("chunk_id") for citation in item["citations"]],
+                            }
+                            for item in statement_citations
+                        ]
+                    except Exception:
+                        logger.warning("Statement citation extraction failed", exc_info=True)
 
-            assistant_msg = Message(
-                conversation_id=conversation.id,
-                role="assistant",
-                content=full_response or "[回答生成中断]",
-                metadata_={
-                    "citations": citations,
-                    "statement_citations": statement_citations,
-                    "tokens": {"input": prompt_tokens, "output": completion_tokens},
-                    "filters": filters or None,
-                    "quota_exceeded": quota_exceeded,
-                    "observability": {
-                        "raw_query": request.query,
-                        "retrieved_chunk_count": len(chunks),
-                        "llm_model": llm_provider.model_name,
-                        "citation_count": len(citations),
-                        "statement_count": len(statement_citations),
+                assistant_msg = Message(
+                    conversation_id=conversation.id,
+                    org_id=org_id, # 补上 org_id
+                    role="assistant",
+                    content=full_response or "[回答生成中断]",
+                    metadata_={
+                        "citations": citations,
+                        "statement_citations": statement_citations,
+                        "tokens": {"input": prompt_tokens, "output": completion_tokens},
+                        "filters": filters or None,
+                        "quota_exceeded": quota_exceeded,
+                        "observability": {
+                            "raw_query": request.query,
+                            "retrieved_chunk_count": len(chunks),
+                            "llm_model": llm_provider.model_name,
+                            "citation_count": len(citations),
+                            "statement_count": len(statement_citations),
+                        },
                     },
-                },
-            )
-            db.add(assistant_msg)
+                )
+                db_gen.add(assistant_msg)
 
-            total_tokens = prompt_tokens + completion_tokens
-            usage = UsageLog(
-                org_id=org_id,
-                user_id=current_user.id,
-                model=llm_provider.model_name,
-                prompt_tokens=prompt_tokens,
-                completion_tokens=completion_tokens,
-                action_type="chat",
-                resource_id=conversation.id,
-            )
-            db.add(usage)
-            await db.commit()
+                total_tokens = prompt_tokens + completion_tokens
+                usage = UsageLog(
+                    org_id=org_id,
+                    user_id=current_user.id,
+                    model=llm_provider.model_name,
+                    prompt_tokens=prompt_tokens,
+                    completion_tokens=completion_tokens,
+                    action_type="chat",
+                    resource_id=conversation.id,
+                )
+                db_gen.add(usage)
+                await db_gen.commit()
 
-            await update_org_quota(db, org_id, total_tokens)
-            yield f"event: done\ndata: {json.dumps({'tokens': total_tokens, 'statement_citations': done_statement_citations})}\n\n"
-        except Exception:
-            logger.exception("Failed to save chat audit records")
+                await update_org_quota(db_gen, org_id, total_tokens)
+                yield f"event: done\ndata: {json.dumps({'tokens': total_tokens, 'statement_citations': done_statement_citations})}\n\n"
+            except Exception:
+                logger.exception("Failed to save chat audit records")
 
     return StreamingResponse(generate(), media_type="text/event-stream")
