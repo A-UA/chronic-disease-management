@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     # Security — 必须通过 .env 或环境变量显式设置，禁止使用默认值
     JWT_SECRET: str = ""
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
+    API_KEY_SALT: str = ""  # 用于API密钥哈希的盐值
 
     # Upload
     MAX_UPLOAD_SIZE_MB: int = 50
@@ -63,6 +64,9 @@ class Settings(BaseSettings):
     def validate_jwt_secret(self):
         if not self.JWT_SECRET:
             print("FATAL: JWT_SECRET must be set. Exiting.", file=sys.stderr)
+            sys.exit(1)
+        if not self.API_KEY_SALT:
+            print("FATAL: API_KEY_SALT must be set. Exiting.", file=sys.stderr)
             sys.exit(1)
         return self
 
