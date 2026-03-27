@@ -1,15 +1,26 @@
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, BackgroundTasks, Form
+from fastapi import (
+    APIRouter,
+    Depends,
+    UploadFile,
+    File,
+    HTTPException,
+    BackgroundTasks,
+    Form,
+)
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 
 from app.api.deps import get_current_user, get_current_org, get_db
+from app.core.config import settings
 from app.db.models import User, Document, KnowledgeBase, PatientProfile
 from app.services.document_parser import DocumentParseError, parse_document
 from app.services.rag_ingestion import process_document
 from app.services.storage import get_storage_service
 
 router = APIRouter()
+
+MAX_UPLOAD_BYTES = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
 
 
 @router.post("/kb/{kb_id}/documents")
@@ -31,14 +42,19 @@ async def upload_document(
 
         if patient_id is not None:
             patient_stmt = select(PatientProfile.id).where(
-                PatientProfile.id == patient_id,
-                PatientProfile.org_id == org_id
+                PatientProfile.id == patient_id, PatientProfile.org_id == org_id
             )
             patient_result = await db.execute(patient_stmt)
             if patient_result.scalar_one_or_none() is None:
                 raise HTTPException(status_code=404, detail="Patient profile not found")
 
         file_bytes = await file.read()
+
+        if len(file_bytes) > MAX_UPLOAD_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File size exceeds the maximum allowed size of {settings.MAX_UPLOAD_SIZE_MB}MB",
+            )
 
         parsed = parse_document(file_bytes, file.filename, file.content_type)
 
@@ -63,9 +79,15 @@ async def upload_document(
         await db.commit()
         await db.refresh(document)
 
-        background_tasks.add_task(process_document, document.id, parsed.text, parsed.pages)
+        background_tasks.add_task(
+            process_document, document.id, parsed.text, parsed.pages
+        )
 
-        return {"id": document.id, "minio_url": document.minio_url, "status": document.status}
+        return {
+            "id": document.id,
+            "minio_url": document.minio_url,
+            "status": document.status,
+        }
     except DocumentParseError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except HTTPException:

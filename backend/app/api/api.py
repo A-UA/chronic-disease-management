@@ -8,10 +8,16 @@ api_router = APIRouter()
 # --- Public/Common ---
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
 api_router.include_router(external_api.router, prefix="/external", tags=["external"])
+api_router.include_router(documents.router, tags=["documents"])
+api_router.include_router(
+    knowledge_bases.router, prefix="/kb", tags=["knowledge-bases"]
+)
 
 # --- Admin (B-side) ---
 admin_router = APIRouter()
-admin_router.include_router(admin_orgs.router, prefix="/organizations", tags=["admin-orgs"])
+admin_router.include_router(
+    admin_orgs.router, prefix="/organizations", tags=["admin-orgs"]
+)
 
 api_router.include_router(admin_router, prefix="/admin")
 
@@ -23,13 +29,3 @@ biz_router.include_router(managers.router, prefix="/managers", tags=["biz-manage
 biz_router.include_router(chat.router, prefix="/chat", tags=["biz-chat"])
 
 api_router.include_router(biz_router, prefix="/biz")
-
-# --- Compatibility Layer (Optional: for existing tests or old clients) ---
-# To keep existing tests passing, we can still mount them at root as well
-api_router.include_router(admin_orgs.router, prefix="/organizations", tags=["organizations"])
-api_router.include_router(knowledge_bases.router, prefix="/kb", tags=["knowledge-bases"])
-api_router.include_router(patients.router, prefix="/patients", tags=["patients"])
-api_router.include_router(family.router, prefix="/family", tags=["family"])
-api_router.include_router(managers.router, prefix="/managers", tags=["managers"])
-api_router.include_router(chat.router, prefix="/chat", tags=["chat"])
-api_router.include_router(documents.router, tags=["documents"])

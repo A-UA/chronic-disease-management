@@ -22,7 +22,11 @@ redis_client = _RedisClientProxy()
 def get_redis_client():
     global _redis_client
     if _redis_client is None:
-        _redis_client = redis.from_url(settings.REDIS_URL, decode_responses=True)
+        _redis_client = redis.from_url(
+            settings.REDIS_URL,
+            decode_responses=True,
+            max_connections=settings.REDIS_POOL_SIZE,
+        )
     return _redis_client
 
 
@@ -32,14 +36,21 @@ async def check_org_quota(db: AsyncSession, org_id: UUID) -> Organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
     if org.quota_tokens_used >= org.quota_tokens_limit:
-        raise HTTPException(status_code=402, detail="Organization token quota exceeded. Please upgrade your plan.")
+        raise HTTPException(
+            status_code=402,
+            detail="Organization token quota exceeded. Please upgrade your plan.",
+        )
 
     quota_key = f"quota:org:{org_id}"
-    await get_redis_client().set(quota_key, org.quota_tokens_limit - org.quota_tokens_used, ex=300)
+    await get_redis_client().set(
+        quota_key, org.quota_tokens_limit - org.quota_tokens_used, ex=300
+    )
     return org
 
 
-async def check_quota_during_stream(org_id: UUID, tokens_so_far: int, db: AsyncSession | None = None) -> bool:
+async def check_quota_during_stream(
+    org_id: UUID, tokens_so_far: int, db: AsyncSession | None = None
+) -> bool:
     quota_key = f"quota:org:{org_id}"
     remaining = await get_redis_client().get(quota_key)
     if remaining is None:

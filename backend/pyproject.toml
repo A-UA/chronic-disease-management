@@ -1,7 +1,7 @@
 [project]
-name = "ai"
+name = "chronic-disease-management"
 version = "0.1.0"
-description = "Add your description here"
+description = "Multi-Tenant AI SaaS for chronic disease management"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -9,12 +9,11 @@ dependencies = [
     "argon2-cffi>=25.1.0",
     "arq>=0.25.0",
     "asyncpg>=0.31.0",
-    "bcrypt>=5.0.0",
     "boto3>=1.42.68",
     "email-validator>=2.3.0",
     "fastapi>=0.135.1",
     "openai>=2.29.0",
-    "passlib>=1.7.4",
+    "passlib[argon2]>=1.7.4",
     "pdfplumber>=0.11.9",
     "pgvector>=0.4.2",
     "pydantic-settings>=2.13.1",

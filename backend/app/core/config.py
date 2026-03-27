@@ -1,14 +1,19 @@
+import sys
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import model_validator
+
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Multi-Tenant AI SaaS"
     API_V1_STR: str = "/api/v1"
+    DEBUG_SQL: bool = False
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/ai_saas"
 
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_POOL_SIZE: int = 10
 
     # MinIO
     MINIO_URL: str = "http://localhost:9000"
@@ -19,6 +24,9 @@ class Settings(BaseSettings):
     # Security — 必须通过 .env 或环境变量显式设置，禁止使用默认值
     JWT_SECRET: str = ""
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
+
+    # Upload
+    MAX_UPLOAD_SIZE_MB: int = 50
 
     # Embeddings
     EMBEDDING_PROVIDER: str = "openai"
@@ -40,12 +48,23 @@ class Settings(BaseSettings):
     LLM_BASE_URL: str = ""
 
     # RAG 检索参数
-    RAG_VECTOR_WEIGHT: float = 0.7       # 向量检索在 RRF 融合中的权重
-    RAG_KEYWORD_WEIGHT: float = 0.3      # 关键词检索在 RRF 融合中的权重
-    RAG_RRF_K: int = 60                  # RRF 融合参数 k
-    RAG_MIN_SCORE_THRESHOLD: float = 0.0 # 检索结果最低分数阈值
-    RAG_CACHE_TTL: int = 3600            # 检索缓存 TTL（秒）
+    RAG_VECTOR_WEIGHT: float = 0.7  # 向量检索在 RRF 融合中的权重
+    RAG_KEYWORD_WEIGHT: float = 0.3  # 关键词检索在 RRF 融合中的权重
+    RAG_RRF_K: int = 60  # RRF 融合参数 k
+    RAG_MIN_SCORE_THRESHOLD: float = 0.0  # 检索结果最低分数阈值
+    RAG_CACHE_TTL: int = 3600  # 检索缓存 TTL（秒）
+
+    # CORS
+    CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:5173"]
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
+
+    @model_validator(mode="after")
+    def validate_jwt_secret(self):
+        if not self.JWT_SECRET:
+            print("FATAL: JWT_SECRET must be set. Exiting.", file=sys.stderr)
+            sys.exit(1)
+        return self
+
 
 settings = Settings()
