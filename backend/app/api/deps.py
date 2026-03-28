@@ -152,3 +152,67 @@ async def get_api_key_context(
     )
 
     return api_key
+
+
+async def get_platform_admin(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    """验证用户拥有 platform_admin 角色"""
+    from app.db.models import OrganizationUserRole
+
+    stmt = (
+        select(OrganizationUserRole)
+        .join(Role, Role.id == OrganizationUserRole.role_id)
+        .where(
+            OrganizationUserRole.user_id == current_user.id,
+            Role.code == "platform_admin",
+            Role.org_id.is_(None),
+        )
+    )
+    result = await db.execute(stmt)
+    if not result.scalar_one_or_none():
+        raise HTTPException(status_code=403, detail="Platform admin access required")
+    return current_user
+
+
+async def get_platform_viewer(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    """验证用户拥有 platform_admin 或 platform_viewer 角色"""
+    from app.db.models import OrganizationUserRole
+
+    stmt = (
+        select(OrganizationUserRole)
+        .join(Role, Role.id == OrganizationUserRole.role_id)
+        .where(
+            OrganizationUserRole.user_id == current_user.id,
+            Role.code.in_(["platform_admin", "platform_viewer"]),
+            Role.org_id.is_(None),
+        )
+    )
+    result = await db.execute(stmt)
+    if not result.scalar_one_or_none():
+        raise HTTPException(status_code=403, detail="Platform access required")
+    return current_user
+
+
+def check_org_admin():
+    """检查用户是否是当前组织的管理员 (owner/admin)"""
+
+    async def _check(
+        org_user: OrganizationUser = Depends(get_current_org_user),
+    ) -> OrganizationUser:
+        if org_user.user_type != "staff":
+            raise HTTPException(status_code=403, detail="Access denied. Staff only.")
+        if not org_user.rbac_roles:
+            raise HTTPException(status_code=403, detail="No roles assigned to user")
+        role_codes = {r.code for r in org_user.rbac_roles}
+        if not role_codes.intersection({"owner", "admin"}):
+            raise HTTPException(
+                status_code=403, detail="Organization admin access required"
+            )
+        return org_user
+
+    return _check
