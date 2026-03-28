@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from uuid import uuid4
 
 from app.api.deps import get_db, get_current_user
@@ -89,6 +90,22 @@ async def login_access_token(
 
 
 @router.get("/me", response_model=UserRead)
-async def read_current_user(current_user: User = Depends(get_current_user)) -> Any:
+async def read_current_user(
+    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+) -> Any:
     """获取当前登录用户信息"""
-    return current_user
+    # 显式加载组织信息以填充 org_id
+    stmt = (
+        select(User)
+        .options(selectinload(User.organizations))
+        .where(User.id == current_user.id)
+    )
+    res = await db.execute(stmt)
+    full_user = res.scalar_one()
+
+    # 将第一个组织 ID 注入响应
+    user_data = UserRead.model_validate(full_user)
+    if full_user.organizations:
+        user_data.org_id = full_user.organizations[0].org_id
+
+    return user_data

@@ -12,6 +12,7 @@ class UserCreate(UserBase):
 class UserRead(UserBase):
     id: UUID
     created_at: datetime
+    org_id: UUID | None = None
     
     model_config = ConfigDict(from_attributes=True)
 

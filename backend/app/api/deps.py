@@ -45,36 +45,53 @@ async def get_current_user(
 
 
 async def get_current_org_user(
-    x_organization_id: str = Header(...),
+    x_organization_id: str | None = Header(None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> OrganizationUser:
-    try:
-        org_uuid = UUID(x_organization_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid Organization ID")
+    org_uuid: UUID | None = None
+    if x_organization_id:
+        try:
+            org_uuid = UUID(x_organization_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid Organization ID")
 
-    # Verify user belongs to org and load RBAC info
-    stmt = (
-        select(OrganizationUser)
-        .options(
-            selectinload(OrganizationUser.rbac_roles).selectinload(Role.permissions)
+    if org_uuid:
+        # Verify user belongs to org and load RBAC info
+        stmt = (
+            select(OrganizationUser)
+            .options(
+                selectinload(OrganizationUser.rbac_roles).selectinload(Role.permissions)
+            )
+            .where(
+                OrganizationUser.org_id == org_uuid,
+                OrganizationUser.user_id == current_user.id,
+            )
         )
-        .where(
-            OrganizationUser.org_id == org_uuid,
-            OrganizationUser.user_id == current_user.id,
+        result = await db.execute(stmt)
+        org_user = result.scalar_one_or_none()
+    else:
+        # Fallback to the first organization the user belongs to
+        stmt = (
+            select(OrganizationUser)
+            .options(
+                selectinload(OrganizationUser.rbac_roles).selectinload(Role.permissions)
+            )
+            .where(OrganizationUser.user_id == current_user.id)
+            .limit(1)
         )
-    )
-    result = await db.execute(stmt)
-    org_user = result.scalar_one_or_none()
+        result = await db.execute(stmt)
+        org_user = result.scalar_one_or_none()
 
     if not org_user:
-        raise HTTPException(status_code=403, detail="Not enough permissions")
+        raise HTTPException(
+            status_code=403, detail="Not enough permissions or no organization context"
+        )
 
     # Inject RLS context
     await db.execute(
         text("SELECT set_config('app.current_org_id', :org_id, true)"),
-        {"org_id": str(org_uuid)},
+        {"org_id": str(org_user.org_id)},
     )
 
     return org_user

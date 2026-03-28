@@ -11,6 +11,7 @@ from app.api.endpoints.admin import (
     usage as admin_usage,
     audit_logs as admin_audits,
     settings as admin_settings,
+    rbac as admin_rbac,
 )
 from app.api.endpoints.biz import patients, family, managers, chat
 
@@ -51,6 +52,9 @@ admin_router.include_router(
 )
 admin_router.include_router(
     admin_settings.router, prefix="/settings", tags=["admin-settings"]
+)
+admin_router.include_router(
+    admin_rbac.router, prefix="/roles", tags=["admin-rbac"]
 )
 
 api_router.include_router(admin_router, prefix="/admin")
