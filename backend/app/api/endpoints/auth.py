@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from uuid import uuid4
 
-from app.api.deps import get_db, get_current_user, get_current_user
+from app.api.deps import get_db, get_current_user
 from app.core import security
 from app.core.config import settings
 from app.db.models import (
@@ -16,7 +16,7 @@ from app.db.models import (
     OrganizationUserRole,
     Role,
 )
-from app.schemas.user import UserCreate, Token
+from app.schemas.user import UserCreate, Token, UserRead
 from pydantic import BaseModel, EmailStr
 
 router = APIRouter()
@@ -86,3 +86,9 @@ async def login_access_token(
         ),
         "token_type": "bearer",
     }
+
+
+@router.get("/me", response_model=UserRead)
+async def read_current_user(current_user: User = Depends(get_current_user)) -> Any:
+    """获取当前登录用户信息"""
+    return current_user
