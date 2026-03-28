@@ -15,14 +15,6 @@ class IDMixin:
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, default=get_next_id)
 
 
-class UUIDMixin(IDMixin):
-    """
-    Deprecated: Using Snowflake ID (BigInteger) now, keep this name for compatibility 
-    during migration but alias it to IDMixin.
-    """
-    pass
-
-
 class TimestampMixin:
     created_at: Mapped[datetime] = mapped_column(
         default=func.now(), server_default=func.now()

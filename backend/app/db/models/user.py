@@ -1,12 +1,12 @@
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import TYPE_CHECKING
-from .base import Base, UUIDMixin, TimestampMixin
+from .base import Base, IDMixin, TimestampMixin
 
 if TYPE_CHECKING:
     from .organization import OrganizationUser
 
-class User(Base, UUIDMixin, TimestampMixin):
+class User(Base, IDMixin, TimestampMixin):
     __tablename__ = "users"
 
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)

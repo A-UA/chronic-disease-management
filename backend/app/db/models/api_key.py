@@ -1,9 +1,9 @@
 from sqlalchemy import String, ForeignKey, Integer, BigInteger, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
-from .base import Base, UUIDMixin, TimestampMixin
+from .base import Base, IDMixin, TimestampMixin
 
-class ApiKey(Base, UUIDMixin, TimestampMixin):
+class ApiKey(Base, IDMixin, TimestampMixin):
     __tablename__ = "api_keys"
 
     org_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True)

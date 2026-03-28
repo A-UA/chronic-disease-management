@@ -2,10 +2,10 @@ from sqlalchemy import BigInteger, String, ForeignKey, Integer, Text, Index
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy import BigInteger
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from .base import Base, UUIDMixin, TimestampMixin
+from .base import Base, IDMixin, TimestampMixin
 
 
-class Conversation(Base, UUIDMixin, TimestampMixin):
+class Conversation(Base, IDMixin, TimestampMixin):
     __tablename__ = "conversations"
 
     kb_id: Mapped[int] = mapped_column(
@@ -18,7 +18,7 @@ class Conversation(Base, UUIDMixin, TimestampMixin):
     title: Mapped[str] = mapped_column(String(255), nullable=True)
 
 
-class Message(Base, UUIDMixin, TimestampMixin):
+class Message(Base, IDMixin, TimestampMixin):
     __tablename__ = "messages"
 
     conversation_id: Mapped[int] = mapped_column(
@@ -34,7 +34,7 @@ class Message(Base, UUIDMixin, TimestampMixin):
     metadata_: Mapped[dict] = mapped_column("metadata", JSONB, nullable=True)
 
 
-class UsageLog(Base, UUIDMixin, TimestampMixin):
+class UsageLog(Base, IDMixin, TimestampMixin):
     __tablename__ = "usage_logs"
 
     org_id: Mapped[int] = mapped_column(

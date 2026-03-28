@@ -1,9 +1,9 @@
 from sqlalchemy import BigInteger, String, ForeignKey, Text
 from sqlalchemy import BigInteger
 from sqlalchemy.orm import Mapped, mapped_column
-from .base import Base, UUIDMixin, TimestampMixin
+from .base import Base, IDMixin, TimestampMixin
 
-class AuditLog(Base, UUIDMixin, TimestampMixin):
+class AuditLog(Base, IDMixin, TimestampMixin):
     __tablename__ = "audit_logs"
 
     org_id: Mapped[int | None] = mapped_column(ForeignKey("organizations.id", ondelete="SET NULL"), index=True)

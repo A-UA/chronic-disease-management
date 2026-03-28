@@ -4,11 +4,11 @@ from sqlalchemy import BigInteger
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from pgvector.sqlalchemy import Vector
 from typing import Any
-from .base import Base, UUIDMixin, TimestampMixin
+from .base import Base, IDMixin, TimestampMixin
 from .user import User
 from .organization import Organization
 
-class KnowledgeBase(Base, UUIDMixin, TimestampMixin):
+class KnowledgeBase(Base, IDMixin, TimestampMixin):
     __tablename__ = "knowledge_bases"
 
     org_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True)
@@ -16,7 +16,7 @@ class KnowledgeBase(Base, UUIDMixin, TimestampMixin):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=True)
 
-class Document(Base, UUIDMixin, TimestampMixin):
+class Document(Base, IDMixin, TimestampMixin):
     __tablename__ = "documents"
 
     kb_id: Mapped[int] = mapped_column(ForeignKey("knowledge_bases.id", ondelete="CASCADE"), index=True)
@@ -31,7 +31,7 @@ class Document(Base, UUIDMixin, TimestampMixin):
     status: Mapped[str] = mapped_column(String(50), default='processing', server_default='processing')
     failed_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-class Chunk(Base, UUIDMixin, TimestampMixin):
+class Chunk(Base, IDMixin, TimestampMixin):
     __tablename__ = "chunks"
 
     kb_id: Mapped[int] = mapped_column(ForeignKey("knowledge_bases.id", ondelete="CASCADE"), index=True)

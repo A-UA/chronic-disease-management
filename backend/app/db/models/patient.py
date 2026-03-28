@@ -3,14 +3,14 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy import BigInteger
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import TYPE_CHECKING
-from .base import Base, UUIDMixin, TimestampMixin
+from .base import Base, IDMixin, TimestampMixin
 
 if TYPE_CHECKING:
     from .user import User
     from .organization import Organization
 
 
-class PatientProfile(Base, UUIDMixin, TimestampMixin):
+class PatientProfile(Base, IDMixin, TimestampMixin):
     __tablename__ = "patient_profiles"
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)

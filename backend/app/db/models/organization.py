@@ -2,7 +2,7 @@ from sqlalchemy import String, ForeignKey, BigInteger, ForeignKeyConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 from typing import TYPE_CHECKING
-from .base import Base, UUIDMixin, TimestampMixin
+from .base import Base, IDMixin, TimestampMixin
 
 if TYPE_CHECKING:
     from .user import User
@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from .rbac import Role
 
 
-class Organization(Base, UUIDMixin, TimestampMixin):
+class Organization(Base, IDMixin, TimestampMixin):
     __tablename__ = "organizations"
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -69,7 +69,7 @@ class OrganizationUserRole(Base, TimestampMixin):
     )
 
 
-class OrganizationInvitation(Base, UUIDMixin, TimestampMixin):
+class OrganizationInvitation(Base, IDMixin, TimestampMixin):
     __tablename__ = "organization_invitations"
 
     org_id: Mapped[int] = mapped_column(

@@ -2,14 +2,14 @@ from sqlalchemy import BigInteger, String, ForeignKey, Boolean, Text, Index, Uni
 from sqlalchemy import BigInteger
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import TYPE_CHECKING
-from .base import Base, UUIDMixin, TimestampMixin
+from .base import Base, IDMixin, TimestampMixin
 
 if TYPE_CHECKING:
     from .user import User
     from .organization import Organization
     from .patient import PatientProfile
 
-class ManagerProfile(Base, UUIDMixin, TimestampMixin):
+class ManagerProfile(Base, IDMixin, TimestampMixin):
     __tablename__ = "manager_profiles"
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
@@ -40,7 +40,7 @@ class PatientManagerAssignment(Base, TimestampMixin):
     manager: Mapped["User"] = relationship()
     patient: Mapped["PatientProfile"] = relationship()
 
-class ManagementSuggestion(Base, UUIDMixin, TimestampMixin):
+class ManagementSuggestion(Base, IDMixin, TimestampMixin):
     __tablename__ = "management_suggestions"
 
     org_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True)

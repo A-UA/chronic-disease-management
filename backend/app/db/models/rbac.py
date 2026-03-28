@@ -1,10 +1,10 @@
 from sqlalchemy import BigInteger, String, ForeignKey, Text, UniqueConstraint
 from sqlalchemy import BigInteger
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from .base import Base, UUIDMixin, TimestampMixin
+from .base import Base, IDMixin, TimestampMixin
 from typing import List
 
-class Permission(Base, UUIDMixin):
+class Permission(Base, IDMixin):
     __tablename__ = "permissions"
 
     name: Mapped[str] = mapped_column(String(100), unique=True, index=True) # e.g. "View Patients"
@@ -14,7 +14,7 @@ class Permission(Base, UUIDMixin):
     # Relationships
     roles: Mapped[List["Role"]] = relationship(secondary="role_permissions", back_populates="permissions")
 
-class Role(Base, UUIDMixin, TimestampMixin):
+class Role(Base, IDMixin, TimestampMixin):
     __tablename__ = "roles"
 
     # If org_id is NULL, it's a System Global Role (Owner, Admin, Member, etc.)
