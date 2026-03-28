@@ -1,5 +1,4 @@
 from pydantic import BaseModel, ConfigDict, computed_field
-from uuid import UUID
 
 class OrganizationBase(BaseModel):
     name: str
@@ -14,7 +13,7 @@ class OrganizationUpdate(BaseModel):
 
 class OrganizationReadPublic(OrganizationBase):
     """Viewable by any member or patient."""
-    id: UUID
+    id: int
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -30,13 +29,13 @@ class OrganizationReadAdmin(OrganizationReadPublic):
         return round((self.quota_tokens_used / self.quota_tokens_limit) * 100, 2)
 
 class OrganizationMemberRead(BaseModel):
-    user_id: UUID
+    user_id: int
     email: str
     name: str | None = None
     roles: list[str] = []
     user_type: str
 
 class PatientAssignmentCreate(BaseModel):
-    patient_id: UUID
-    manager_id: UUID
+    patient_id: int
+    manager_id: int
     role: str = "main"

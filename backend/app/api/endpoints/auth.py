@@ -5,7 +5,6 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from uuid import uuid4
 
 from app.api.deps import get_db, get_current_user
 from app.core import security

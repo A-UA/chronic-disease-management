@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from uuid import UUID
 from typing import List
 
 from app.api.deps import get_db, get_platform_viewer
@@ -43,7 +42,7 @@ async def get_usage_summary(
 
 @router.get("/by-organization/{org_id}")
 async def get_org_usage_detail(
-    org_id: UUID,
+    org_id: int,
     _admin=Depends(get_platform_viewer),
     db: AsyncSession = Depends(get_db),
 ):

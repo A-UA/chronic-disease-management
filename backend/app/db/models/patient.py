@@ -1,7 +1,7 @@
-from sqlalchemy import String, ForeignKey, Date, Index, UniqueConstraint
+from sqlalchemy import BigInteger, String, ForeignKey, Date, Index, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import BigInteger
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from uuid import UUID
 from typing import TYPE_CHECKING
 from .base import Base, UUIDMixin, TimestampMixin
 
@@ -13,8 +13,8 @@ if TYPE_CHECKING:
 class PatientProfile(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "patient_profiles"
 
-    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), index=True)
-    org_id: Mapped[UUID] = mapped_column(
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    org_id: Mapped[int] = mapped_column(
         ForeignKey("organizations.id", ondelete="CASCADE"), index=True
     )
 

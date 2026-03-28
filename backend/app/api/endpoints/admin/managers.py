@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from uuid import UUID
 from typing import List
 
 from app.api.deps import get_db, get_current_org, check_permission
@@ -19,8 +18,8 @@ router = APIRouter()
 
 
 class ManagerRead(BaseModel):
-    id: UUID
-    user_id: UUID
+    id: int
+    user_id: int
     title: str | None = None
     bio: str | None = None
     is_active: bool
@@ -35,14 +34,14 @@ class ManagerDetailRead(ManagerRead):
 
 
 class AssignmentCreate(BaseModel):
-    patient_id: UUID
-    manager_id: UUID
+    patient_id: int
+    manager_id: int
     assignment_role: str = "main"
 
 
 class AssignmentRead(BaseModel):
-    manager_id: UUID
-    patient_id: UUID
+    manager_id: int
+    patient_id: int
     assignment_role: str
     patient_name: str | None = None
 
@@ -51,7 +50,7 @@ class AssignmentRead(BaseModel):
 
 @router.get("/", response_model=List[ManagerDetailRead])
 async def list_managers(
-    org_id: UUID = Depends(get_current_org),
+    org_id: int = Depends(get_current_org),
     _org_user=Depends(check_permission("patient:view")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -86,8 +85,8 @@ async def list_managers(
 
 @router.get("/{manager_id}/patients", response_model=List[AssignmentRead])
 async def get_manager_patients(
-    manager_id: UUID,
-    org_id: UUID = Depends(get_current_org),
+    manager_id: int,
+    org_id: int = Depends(get_current_org),
     _org_user=Depends(check_permission("patient:view")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -115,7 +114,7 @@ async def get_manager_patients(
 @router.post("/assignments")
 async def create_assignment(
     data: AssignmentCreate,
-    org_id: UUID = Depends(get_current_org),
+    org_id: int = Depends(get_current_org),
     _org_user=Depends(check_permission("org:manage_members")),
     db: AsyncSession = Depends(get_db),
 ):

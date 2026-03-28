@@ -2,7 +2,6 @@ from typing import Any, List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from uuid import UUID
 
 from app.api.deps import get_db, get_current_user, get_current_org, check_permission
 from app.db.models import User, PatientProfile, PatientManagerAssignment, ManagementSuggestion
@@ -11,8 +10,8 @@ from pydantic import BaseModel, ConfigDict
 router = APIRouter()
 
 class PatientBriefRead(BaseModel):
-    id: UUID
-    user_id: UUID
+    id: int
+    user_id: int
     real_name: str
     gender: str | None = None
     
@@ -23,9 +22,9 @@ class SuggestionCreate(BaseModel):
     suggestion_type: str = "general"
 
 class SuggestionRead(BaseModel):
-    id: UUID
-    manager_id: UUID
-    patient_id: UUID
+    id: int
+    manager_id: int
+    patient_id: int
     content: str
     suggestion_type: str
     created_at: Any
@@ -35,7 +34,7 @@ class SuggestionRead(BaseModel):
 @router.get("/patients", response_model=List[PatientBriefRead])
 async def get_my_assigned_patients(
     current_user: User = Depends(get_current_user),
-    org_id: UUID = Depends(get_current_org),
+    org_id: int = Depends(get_current_org),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     """
@@ -54,10 +53,10 @@ async def get_my_assigned_patients(
 
 @router.post("/patients/{patient_id}/suggestions", response_model=SuggestionRead)
 async def create_patient_suggestion(
-    patient_id: UUID,
+    patient_id: int,
     suggest_in: SuggestionCreate,
     current_user: User = Depends(get_current_user),
-    org_id: UUID = Depends(get_current_org),
+    org_id: int = Depends(get_current_org),
     _ = Depends(check_permission("suggestion:create")),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
@@ -86,9 +85,9 @@ async def create_patient_suggestion(
 
 @router.get("/patients/{patient_id}/suggestions", response_model=List[SuggestionRead])
 async def get_patient_suggestion_history(
-    patient_id: UUID,
+    patient_id: int,
     current_user: User = Depends(get_current_user),
-    org_id: UUID = Depends(get_current_org),
+    org_id: int = Depends(get_current_org),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     # 1. 校验权限

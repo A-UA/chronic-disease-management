@@ -1,5 +1,4 @@
 from pydantic import BaseModel, EmailStr, ConfigDict
-from uuid import UUID
 from datetime import datetime
 
 class UserBase(BaseModel):
@@ -10,9 +9,9 @@ class UserCreate(UserBase):
     password: str
 
 class UserRead(UserBase):
-    id: UUID
+    id: int
     created_at: datetime
-    org_id: UUID | None = None
+    org_id: int | None = None
     
     model_config = ConfigDict(from_attributes=True)
 

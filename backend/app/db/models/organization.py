@@ -1,6 +1,5 @@
 from sqlalchemy import String, ForeignKey, BigInteger, ForeignKeyConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from uuid import UUID
 from datetime import datetime
 from typing import TYPE_CHECKING
 from .base import Base, UUIDMixin, TimestampMixin
@@ -35,10 +34,10 @@ class Organization(Base, UUIDMixin, TimestampMixin):
 class OrganizationUser(Base, TimestampMixin):
     __tablename__ = "organization_users"
 
-    org_id: Mapped[UUID] = mapped_column(
+    org_id: Mapped[int] = mapped_column(
         ForeignKey("organizations.id", ondelete="CASCADE"), primary_key=True
     )
-    user_id: Mapped[UUID] = mapped_column(
+    user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
     )
 
@@ -55,10 +54,10 @@ class OrganizationUser(Base, TimestampMixin):
 class OrganizationUserRole(Base, TimestampMixin):
     __tablename__ = "organization_user_roles"
 
-    org_id: Mapped[UUID] = mapped_column(primary_key=True)
-    user_id: Mapped[UUID] = mapped_column(primary_key=True)
-    role_id: Mapped[UUID] = mapped_column(
-        ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True
+    org_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    role_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True
     )
 
     __table_args__ = (
@@ -73,10 +72,10 @@ class OrganizationUserRole(Base, TimestampMixin):
 class OrganizationInvitation(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "organization_invitations"
 
-    org_id: Mapped[UUID] = mapped_column(
+    org_id: Mapped[int] = mapped_column(
         ForeignKey("organizations.id", ondelete="CASCADE"), index=True
     )
-    inviter_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
+    inviter_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     role: Mapped[str] = mapped_column(String(50), nullable=False)
     token: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
@@ -89,10 +88,10 @@ class OrganizationInvitation(Base, UUIDMixin, TimestampMixin):
 class PatientFamilyLink(Base, TimestampMixin):
     __tablename__ = "patient_family_links"
 
-    patient_id: Mapped[UUID] = mapped_column(
+    patient_id: Mapped[int] = mapped_column(
         ForeignKey("patient_profiles.id", ondelete="CASCADE"), primary_key=True
     )
-    family_user_id: Mapped[UUID] = mapped_column(
+    family_user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
     )
 

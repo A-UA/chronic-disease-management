@@ -4,7 +4,6 @@ import jwt
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, text
-from uuid import UUID
 
 from app.core.config import settings
 from app.core.security import ALGORITHM
@@ -31,7 +30,7 @@ async def get_current_user(
     except (jwt.PyJWTError, ValidationError):
         raise HTTPException(status_code=401, detail="Could not validate credentials")
 
-    user = await db.get(User, UUID(user_id))
+    user = await db.get(User, int(user_id))
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -49,10 +48,10 @@ async def get_current_org_user(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> OrganizationUser:
-    org_uuid: UUID | None = None
+    org_uuid: int | None = None
     if x_organization_id:
         try:
-            org_uuid = UUID(x_organization_id)
+            org_uuid = int(x_organization_id)
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid Organization ID")
 
@@ -99,7 +98,7 @@ async def get_current_org_user(
 
 async def get_current_org(
     org_user: OrganizationUser = Depends(get_current_org_user),
-) -> UUID:
+) -> int:
     return org_user.org_id
 
 
@@ -127,7 +126,7 @@ def check_permission(perm_code: str):
 
 
 async def verify_quota(
-    org_id: UUID = Depends(get_current_org), db: AsyncSession = Depends(get_db)
+    org_id: int = Depends(get_current_org), db: AsyncSession = Depends(get_db)
 ) -> Organization:
     return await check_org_quota(db, org_id)
 

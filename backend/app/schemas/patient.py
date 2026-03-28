@@ -1,5 +1,4 @@
 from pydantic import BaseModel, ConfigDict
-from uuid import UUID
 from datetime import date
 
 class PatientProfileBase(BaseModel):
@@ -18,8 +17,8 @@ class PatientProfileUpdate(BaseModel):
     medical_history: dict | None = None
 
 class PatientProfileRead(PatientProfileBase):
-    id: UUID
-    user_id: UUID
-    org_id: UUID
+    id: int
+    user_id: int
+    org_id: int
     
     model_config = ConfigDict(from_attributes=True)

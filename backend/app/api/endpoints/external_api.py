@@ -1,7 +1,6 @@
 import json
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from uuid import UUID
 from pydantic import BaseModel
 
 from app.api.deps import get_api_key_context, get_db
@@ -12,7 +11,7 @@ from app.services.chat import retrieve_chunks, build_rag_prompt
 router = APIRouter()
 
 class ExternalChatRequest(BaseModel):
-    kb_id: UUID
+    kb_id: int
     query: str
     limit: int = 5
 

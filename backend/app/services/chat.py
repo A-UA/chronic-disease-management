@@ -7,7 +7,6 @@ import logging
 import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, TypedDict, Any
-from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -43,9 +42,9 @@ class Citation(TypedDict):
 
 
 class RetrievalFilters(TypedDict, total=False):
-    document_ids: list[UUID]
+    document_ids: list[int]
     file_types: list[str]
-    patient_id: UUID | None
+    patient_id: int | None
     metadata: dict[str, Any]
 
 
@@ -67,9 +66,9 @@ class RetrievedChunk:
 
 def _build_cache_key(
     query: str,
-    kb_id: UUID,
-    org_id: UUID,
-    user_id: UUID,
+    kb_id: int,
+    org_id: int,
+    user_id: int,
     filters: RetrievalFilters | None = None,
 ) -> str:
     """增强版 Cache Key：包含用户 ID 和更细粒度的过滤条件，防止越权缓存命中"""
@@ -279,7 +278,7 @@ async def _load_cached_ranked_results(
         if not cached_meta:
             return []
 
-        chunk_ids = [UUID(item["chunk_id"]) for item in cached_meta]
+        chunk_ids = [int(item["chunk_id"]) for item in cached_meta]
         stmt = select(Chunk).where(Chunk.id.in_(chunk_ids))
         result = await db.execute(stmt)
         chunk_by_id = {str(chunk.id): chunk for chunk in result.scalars().all()}
@@ -308,9 +307,9 @@ async def _load_cached_ranked_results(
 async def retrieve_ranked_chunks(
     db: AsyncSession,
     query: str,
-    kb_id: UUID,
-    org_id: UUID,
-    user_id: UUID,
+    kb_id: int,
+    org_id: int,
+    user_id: int,
     limit: int = 5,
     filters: RetrievalFilters | None = None,
     history: list[dict[str, str]] | None = None,
@@ -375,7 +374,7 @@ async def retrieve_ranked_chunks(
     k = getattr(settings, "RAG_RRF_K", 60)
     min_score_threshold = getattr(settings, "RAG_MIN_SCORE_THRESHOLD", 0.0)
 
-    retrieved_by_id: dict[UUID, RetrievedChunk] = {}
+    retrieved_by_id: dict[int, RetrievedChunk] = {}
     for rank, chunk in enumerate(vector_chunks):
         item = retrieved_by_id.setdefault(
             chunk.id,
@@ -422,9 +421,9 @@ async def retrieve_ranked_chunks(
 async def retrieve_chunks(
     db: AsyncSession,
     query: str,
-    kb_id: UUID,
-    org_id: UUID,
-    user_id: UUID,
+    kb_id: int,
+    org_id: int,
+    user_id: int,
     limit: int = 5,
     filters: RetrievalFilters | None = None,
     history: list[dict[str, str]] | None = None,

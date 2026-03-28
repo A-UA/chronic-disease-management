@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
-from uuid import UUID
 from typing import List
 
 from app.api.deps import get_db, get_current_org, check_permission
@@ -14,7 +13,7 @@ router = APIRouter()
 
 
 class KBAdminRead(BaseModel):
-    id: UUID
+    id: int
     name: str
     description: str | None = None
     created_at: datetime
@@ -24,7 +23,7 @@ class KBAdminRead(BaseModel):
 
 
 class DocumentAdminRead(BaseModel):
-    id: UUID
+    id: int
     file_name: str
     file_type: str | None = None
     file_size: int | None = None
@@ -36,7 +35,7 @@ class DocumentAdminRead(BaseModel):
 
 @router.get("/", response_model=List[KBAdminRead])
 async def list_knowledge_bases(
-    org_id: UUID = Depends(get_current_org),
+    org_id: int = Depends(get_current_org),
     _org_user=Depends(check_permission("kb:manage")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -64,8 +63,8 @@ async def list_knowledge_bases(
 
 @router.get("/{kb_id}/documents", response_model=List[DocumentAdminRead])
 async def list_documents(
-    kb_id: UUID,
-    org_id: UUID = Depends(get_current_org),
+    kb_id: int,
+    org_id: int = Depends(get_current_org),
     _org_user=Depends(check_permission("doc:manage")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -84,8 +83,8 @@ async def list_documents(
 
 @router.delete("/{kb_id}")
 async def delete_knowledge_base(
-    kb_id: UUID,
-    org_id: UUID = Depends(get_current_org),
+    kb_id: int,
+    org_id: int = Depends(get_current_org),
     _org_user=Depends(check_permission("kb:manage")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -99,8 +98,8 @@ async def delete_knowledge_base(
 
 @router.delete("/documents/{doc_id}")
 async def delete_document(
-    doc_id: UUID,
-    org_id: UUID = Depends(get_current_org),
+    doc_id: int,
+    org_id: int = Depends(get_current_org),
     _org_user=Depends(check_permission("doc:manage")),
     db: AsyncSession = Depends(get_db),
 ):

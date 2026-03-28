@@ -1,5 +1,4 @@
 import time
-from uuid import UUID
 
 import redis.asyncio as redis
 from fastapi import HTTPException
@@ -30,7 +29,7 @@ def get_redis_client():
     return _redis_client
 
 
-async def check_org_quota(db: AsyncSession, org_id: UUID) -> Organization:
+async def check_org_quota(db: AsyncSession, org_id: int) -> Organization:
     org = await db.get(Organization, org_id)
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
@@ -49,7 +48,7 @@ async def check_org_quota(db: AsyncSession, org_id: UUID) -> Organization:
 
 
 async def check_quota_during_stream(
-    org_id: UUID, tokens_so_far: int, db: AsyncSession | None = None
+    org_id: int, tokens_so_far: int, db: AsyncSession | None = None
 ) -> bool:
     quota_key = f"quota:org:{org_id}"
     remaining = await get_redis_client().get(quota_key)
@@ -65,7 +64,7 @@ async def check_quota_during_stream(
     return int(remaining) > tokens_so_far
 
 
-async def check_api_key_rate_limit(api_key_id: UUID, qps_limit: int):
+async def check_api_key_rate_limit(api_key_id: int, qps_limit: int):
     key = f"rate_limit:api_key:{api_key_id}"
     current_time = int(time.time())
     window_key = f"{key}:{current_time}"
@@ -79,7 +78,7 @@ async def check_api_key_rate_limit(api_key_id: UUID, qps_limit: int):
         raise HTTPException(status_code=429, detail="Too Many Requests")
 
 
-async def update_org_quota(db: AsyncSession, org_id: UUID, tokens_consumed: int):
+async def update_org_quota(db: AsyncSession, org_id: int, tokens_consumed: int):
     from sqlalchemy import update
 
     stmt = (

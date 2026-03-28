@@ -3,7 +3,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from uuid import UUID
 
 from app.api.deps import check_permission, get_current_org, get_current_user, get_db
 from app.db.models import Role, User, Organization, OrganizationUser, PatientProfile, PatientManagerAssignment
@@ -13,9 +12,9 @@ router = APIRouter()
 
 @router.post("/{org_id}/assignments", response_model=dict)
 async def assign_patient_to_manager(
-    org_id: UUID,
+    org_id: int,
     assign_in: PatientAssignmentCreate,
-    current_org_id: UUID = Depends(get_current_org),
+    current_org_id: int = Depends(get_current_org),
     _org_user: OrganizationUser = Depends(check_permission("org:manage_members")),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
@@ -71,7 +70,7 @@ async def get_my_organizations(
 
 @router.get("/{org_id}/members", response_model=List[OrganizationMemberRead])
 async def get_organization_members(
-    org_id: UUID,
+    org_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ) -> Any:

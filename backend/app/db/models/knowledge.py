@@ -1,8 +1,8 @@
-from sqlalchemy import String, ForeignKey, Integer, Text, Index
+from sqlalchemy import BigInteger, String, ForeignKey, Integer, Text, Index
 from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
+from sqlalchemy import BigInteger
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from pgvector.sqlalchemy import Vector
-from uuid import UUID
 from typing import Any
 from .base import Base, UUIDMixin, TimestampMixin
 from .user import User
@@ -11,18 +11,18 @@ from .organization import Organization
 class KnowledgeBase(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "knowledge_bases"
 
-    org_id: Mapped[UUID] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True)
-    created_by: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
+    org_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True)
+    created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=True)
 
 class Document(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "documents"
 
-    kb_id: Mapped[UUID] = mapped_column(ForeignKey("knowledge_bases.id", ondelete="CASCADE"), index=True)
-    org_id: Mapped[UUID] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"))
-    uploader_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
-    patient_id: Mapped[UUID | None] = mapped_column(ForeignKey("patient_profiles.id", ondelete="SET NULL"), index=True, nullable=True)
+    kb_id: Mapped[int] = mapped_column(ForeignKey("knowledge_bases.id", ondelete="CASCADE"), index=True)
+    org_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"))
+    uploader_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    patient_id: Mapped[int | None] = mapped_column(ForeignKey("patient_profiles.id", ondelete="SET NULL"), index=True, nullable=True)
     
     file_name: Mapped[str] = mapped_column(String(255), nullable=False)
     file_type: Mapped[str] = mapped_column(String(50), nullable=True)
@@ -34,9 +34,9 @@ class Document(Base, UUIDMixin, TimestampMixin):
 class Chunk(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "chunks"
 
-    kb_id: Mapped[UUID] = mapped_column(ForeignKey("knowledge_bases.id", ondelete="CASCADE"), index=True)
-    org_id: Mapped[UUID] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"))
-    document_id: Mapped[UUID] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"))
+    kb_id: Mapped[int] = mapped_column(ForeignKey("knowledge_bases.id", ondelete="CASCADE"), index=True)
+    org_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"))
+    document_id: Mapped[int] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"))
     
     content: Mapped[str] = mapped_column(Text, nullable=False)
     page_number: Mapped[int] = mapped_column(Integer, nullable=True)

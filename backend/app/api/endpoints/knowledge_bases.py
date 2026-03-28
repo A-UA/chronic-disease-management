@@ -3,7 +3,6 @@ from typing import Any, List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from uuid import UUID
 
 from app.api.deps import get_db, get_current_user, get_current_org
 from app.db.models import User, KnowledgeBase
@@ -18,10 +17,10 @@ class KBCreate(BaseModel):
 
 
 class KBRead(BaseModel):
-    id: UUID
+    id: int
     name: str
     description: str | None
-    org_id: UUID
+    org_id: int
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -31,7 +30,7 @@ class KBRead(BaseModel):
 async def create_knowledge_base(
     kb_in: KBCreate,
     current_user: User = Depends(get_current_user),
-    org_id: UUID = Depends(get_current_org),
+    org_id: int = Depends(get_current_org),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     # 逻辑已经在 get_current_org 中校验了权限和 RLS
@@ -51,7 +50,7 @@ async def create_knowledge_base(
 async def list_knowledge_bases(
     skip: int = 0,
     limit: int = 100,
-    org_id: UUID = Depends(get_current_org),
+    org_id: int = Depends(get_current_org),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     # 依赖 RLS，直接查询即可，只能查到当前 org_id 的数据
@@ -62,8 +61,8 @@ async def list_knowledge_bases(
 
 @router.delete("/{kb_id}")
 async def delete_knowledge_base(
-    kb_id: UUID,
-    org_id: UUID = Depends(get_current_org),
+    kb_id: int,
+    org_id: int = Depends(get_current_org),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     kb = await db.get(KnowledgeBase, kb_id)

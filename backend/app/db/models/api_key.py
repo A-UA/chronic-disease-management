@@ -1,14 +1,13 @@
 from sqlalchemy import String, ForeignKey, Integer, BigInteger, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from uuid import UUID
 from datetime import datetime
 from .base import Base, UUIDMixin, TimestampMixin
 
 class ApiKey(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "api_keys"
 
-    org_id: Mapped[UUID] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True)
-    created_by: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
+    org_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True)
+    created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     
     key_prefix: Mapped[str] = mapped_column(String(20), nullable=False)

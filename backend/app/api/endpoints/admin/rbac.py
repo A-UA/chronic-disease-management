@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from uuid import UUID
 from typing import List
 from sqlalchemy.orm import selectinload
 
@@ -14,7 +13,7 @@ router = APIRouter()
 
 @router.get("/", response_model=List[RoleRead])
 async def list_roles(
-    org_id: UUID = Depends(get_current_org),
+    org_id: int = Depends(get_current_org),
     _org_user=Depends(check_permission("org:manage_members")),
     db: AsyncSession = Depends(get_db),
 ):

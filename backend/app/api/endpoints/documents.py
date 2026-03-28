@@ -9,7 +9,6 @@ from fastapi import (
 )
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from uuid import UUID
 
 from app.api.deps import get_current_user, get_current_org, get_db
 from app.core.config import settings
@@ -25,12 +24,12 @@ MAX_UPLOAD_BYTES = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
 
 @router.post("/kb/{kb_id}/documents")
 async def upload_document(
-    kb_id: UUID,
+    kb_id: int,
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    patient_id: UUID | None = Form(None),
+    patient_id: int | None = Form(None),
     current_user: User = Depends(get_current_user),
-    org_id: UUID = Depends(get_current_org),
+    org_id: int = Depends(get_current_org),
     db: AsyncSession = Depends(get_db),
 ):
     try:

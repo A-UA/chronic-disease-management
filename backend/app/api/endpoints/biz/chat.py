@@ -1,7 +1,6 @@
 import json
 import logging
 from collections.abc import AsyncGenerator
-from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
@@ -22,19 +21,19 @@ router = APIRouter()
 
 
 class ChatRequest(BaseModel):
-    kb_id: UUID
-    conversation_id: UUID
+    kb_id: int
+    conversation_id: int
     query: str
-    document_ids: list[UUID] | None = None
+    document_ids: list[int] | None = None
     file_types: list[str] | None = None
-    patient_id: UUID | None = None
+    patient_id: int | None = None
 
 
 @router.post("")
 async def chat_endpoint(
     request: ChatRequest,
     current_user: User = Depends(get_current_user),
-    org_id: UUID = Depends(get_current_org),
+    org_id: int = Depends(get_current_org),
     _=Depends(verify_quota),
     db: AsyncSession = Depends(get_db),
 ):

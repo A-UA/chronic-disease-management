@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from uuid import UUID
 from typing import List
 
 from app.api.deps import get_db, get_current_org, check_permission
@@ -17,7 +16,7 @@ async def list_audit_logs(
     limit: int = 50,
     action: str | None = None,
     resource_type: str | None = None,
-    org_id: UUID = Depends(get_current_org),
+    org_id: int = Depends(get_current_org),
     _org_user=Depends(check_permission("org:view_usage")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -36,7 +35,7 @@ async def list_global_audit_logs(
     skip: int = 0,
     limit: int = 50,
     action: str | None = None,
-    org_id_filter: UUID | None = None,
+    org_id_filter: int | None = None,
     db: AsyncSession = Depends(get_db),
 ):
     """Platform-level audit log endpoint (requires platform_viewer externally)"""

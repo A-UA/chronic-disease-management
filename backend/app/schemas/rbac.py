@@ -1,9 +1,8 @@
 from pydantic import BaseModel, ConfigDict
-from uuid import UUID
 from typing import List
 
 class PermissionRead(BaseModel):
-    id: UUID
+    id: int
     name: str
     code: str
     description: str | None
@@ -11,7 +10,7 @@ class PermissionRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class RoleRead(BaseModel):
-    id: UUID
+    id: int
     name: str
     code: str
     description: str | None
@@ -24,4 +23,4 @@ class RoleCreate(BaseModel):
     name: str
     code: str
     description: str | None = None
-    permission_ids: List[UUID]
+    permission_ids: List[int]

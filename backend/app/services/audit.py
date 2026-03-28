@@ -1,15 +1,14 @@
 from typing import Any
-from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.models import AuditLog
 
 async def audit_action(
     db: AsyncSession,
-    user_id: UUID,
-    org_id: UUID | None,
+    user_id: int,
+    org_id: int | None,
     action: str,
     resource_type: str,
-    resource_id: UUID | None = None,
+    resource_id: int | None = None,
     details: str | None = None,
     ip_address: str | None = None
 ) -> None:

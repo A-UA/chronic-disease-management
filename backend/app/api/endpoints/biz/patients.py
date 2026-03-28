@@ -2,7 +2,6 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from uuid import UUID
 
 from app.api.deps import get_current_org, get_current_user, get_db
 from app.db.models import User, PatientProfile
@@ -10,7 +9,7 @@ from app.schemas.patient import PatientProfileRead, PatientProfileUpdate
 
 router = APIRouter()
 
-async def _load_patient_profile(db: AsyncSession, user_id: UUID, org_id: UUID) -> PatientProfile | None:
+async def _load_patient_profile(db: AsyncSession, user_id: int, org_id: int) -> PatientProfile | None:
     stmt = select(PatientProfile).where(
         PatientProfile.user_id == user_id,
         PatientProfile.org_id == org_id
@@ -22,7 +21,7 @@ async def _load_patient_profile(db: AsyncSession, user_id: UUID, org_id: UUID) -
 @router.get("/me", response_model=PatientProfileRead)
 async def get_my_patient_profile(
     current_user: User = Depends(get_current_user),
-    org_id: UUID = Depends(get_current_org),
+    org_id: int = Depends(get_current_org),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     profile = await _load_patient_profile(db, current_user.id, org_id)
@@ -35,7 +34,7 @@ async def get_my_patient_profile(
 async def update_my_patient_profile(
     profile_in: PatientProfileUpdate,
     current_user: User = Depends(get_current_user),
-    org_id: UUID = Depends(get_current_org),
+    org_id: int = Depends(get_current_org),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     profile = await _load_patient_profile(db, current_user.id, org_id)

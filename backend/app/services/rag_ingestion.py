@@ -2,7 +2,6 @@ import re
 import logging
 import tiktoken
 from dataclasses import dataclass
-from uuid import UUID
 
 from sqlalchemy import func
 
@@ -270,9 +269,9 @@ def split_document_text(
 
 
 async def process_document(
-    document_id: UUID, 
+    document_id: int, 
     file_content: str, 
-    org_id: UUID,
+    org_id: int,
     pages: list[str] | None = None
 ):
     """处理文档入库：切块、生成 embedding、写入数据库

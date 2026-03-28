@@ -2,7 +2,6 @@ from typing import Any, List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
-from uuid import UUID
 
 from app.api.deps import get_db, get_current_user, get_current_org
 from app.db.models import User, PatientFamilyLink, PatientProfile, ManagementSuggestion
@@ -13,14 +12,14 @@ from datetime import date
 router = APIRouter()
 
 class FamilyLinkCreate(BaseModel):
-    patient_id: UUID
+    patient_id: int
     family_user_email: str
     relationship_type: str | None = None
     access_level: int = 1
 
 class FamilyLinkRead(BaseModel):
-    patient_id: UUID
-    family_user_id: UUID
+    patient_id: int
+    family_user_id: int
     relationship_type: str | None
     access_level: int
     status: str
@@ -28,7 +27,7 @@ class FamilyLinkRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class PatientProfileFamilyRead(BaseModel):
-    id: UUID
+    id: int
     real_name: str
     gender: str | None
     birth_date: date | None
@@ -41,7 +40,7 @@ class PatientProfileFamilyRead(BaseModel):
 async def create_family_link(
     link_in: FamilyLinkCreate,
     current_user: User = Depends(get_current_user),
-    org_id: UUID = Depends(get_current_org),
+    org_id: int = Depends(get_current_org),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     # 1. Verify patient belongs to current_user or current_user is admin in org
@@ -91,7 +90,7 @@ async def get_my_linked_patients(
 
 @router.get("/patients/{patient_id}", response_model=PatientProfileFamilyRead)
 async def get_linked_patient_profile(
-    patient_id: UUID,
+    patient_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ) -> Any:

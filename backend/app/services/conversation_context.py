@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -84,7 +83,7 @@ def build_retrieval_query_from_history(current_query: str, history_messages: lis
 
 async def load_recent_conversation_messages(
     db: AsyncSession,
-    conversation_id: UUID,
+    conversation_id: int,
     limit: int = 6,
 ) -> list[dict[str, str]]:
     if not hasattr(db, "execute"):
@@ -103,7 +102,7 @@ async def load_recent_conversation_messages(
 
 async def build_contextual_retrieval_query(
     db: AsyncSession,
-    conversation_id: UUID,
+    conversation_id: int,
     current_query: str,
 ) -> str:
     history = await load_recent_conversation_messages(db, conversation_id)

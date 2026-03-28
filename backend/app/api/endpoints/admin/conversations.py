@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from uuid import UUID
 from typing import List
 
 from app.api.deps import get_db, get_current_org, check_permission
@@ -15,7 +14,7 @@ router = APIRouter()
 async def list_conversations(
     skip: int = 0,
     limit: int = 50,
-    org_id: UUID = Depends(get_current_org),
+    org_id: int = Depends(get_current_org),
     _org_user=Depends(check_permission("org:view_usage")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -32,8 +31,8 @@ async def list_conversations(
 
 @router.get("/{conversation_id}/messages", response_model=List[MessageRead])
 async def get_messages(
-    conversation_id: UUID,
-    org_id: UUID = Depends(get_current_org),
+    conversation_id: int,
+    org_id: int = Depends(get_current_org),
     _org_user=Depends(check_permission("org:view_usage")),
     db: AsyncSession = Depends(get_db),
 ):

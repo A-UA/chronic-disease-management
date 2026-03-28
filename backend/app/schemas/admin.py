@@ -1,10 +1,9 @@
 from pydantic import BaseModel, ConfigDict
-from uuid import UUID
 from datetime import datetime
 
 
 class UserAdminRead(BaseModel):
-    id: UUID
+    id: int
     email: str
     name: str | None
     created_at: datetime
@@ -14,7 +13,7 @@ class UserAdminRead(BaseModel):
 
 
 class OrganizationAdminRead(BaseModel):
-    id: UUID
+    id: int
     name: str
     plan_type: str
     quota_tokens_limit: int
@@ -35,7 +34,7 @@ class DashboardStats(BaseModel):
 
 
 class UsageSummaryItem(BaseModel):
-    org_id: UUID
+    org_id: int
     org_name: str
     total_tokens: int
     total_cost: float
@@ -53,11 +52,11 @@ class SystemSettingUpdate(BaseModel):
 
 
 class AuditLogRead(BaseModel):
-    id: UUID
-    user_id: UUID
+    id: int
+    user_id: int
     action: str
     resource_type: str
-    resource_id: UUID | None = None
+    resource_id: int | None = None
     details: str | None = None
     ip_address: str | None = None
     created_at: datetime
@@ -66,8 +65,8 @@ class AuditLogRead(BaseModel):
 
 
 class ConversationRead(BaseModel):
-    id: UUID
-    user_id: UUID
+    id: int
+    user_id: int
     title: str | None = None
     created_at: datetime
 
@@ -75,7 +74,7 @@ class ConversationRead(BaseModel):
 
 
 class MessageRead(BaseModel):
-    id: UUID
+    id: int
     role: str
     content: str
     created_at: datetime

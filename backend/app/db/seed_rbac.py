@@ -4,7 +4,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from app.db.session import AsyncSessionLocal as SessionLocal
 from app.db.models.rbac import Permission, Role
-from uuid import UUID
 
 PERMISSIONS = [
     {

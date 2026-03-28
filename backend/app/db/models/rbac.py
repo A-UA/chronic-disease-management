@@ -1,6 +1,6 @@
-from sqlalchemy import String, ForeignKey, Text, UniqueConstraint
+from sqlalchemy import BigInteger, String, ForeignKey, Text, UniqueConstraint
+from sqlalchemy import BigInteger
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from uuid import UUID
 from .base import Base, UUIDMixin, TimestampMixin
 from typing import List
 
@@ -19,7 +19,7 @@ class Role(Base, UUIDMixin, TimestampMixin):
 
     # If org_id is NULL, it's a System Global Role (Owner, Admin, Member, etc.)
     # If org_id is set, it's a Custom Role created by that specific Organization
-    org_id: Mapped[UUID | None] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True)
+    org_id: Mapped[int | None] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True)
     
     name: Mapped[str] = mapped_column(String(100), index=True)
     code: Mapped[str] = mapped_column(String(100), index=True) # e.g. "org_admin", "head_nurse"
@@ -36,5 +36,9 @@ class Role(Base, UUIDMixin, TimestampMixin):
 class RolePermission(Base):
     __tablename__ = "role_permissions"
 
-    role_id: Mapped[UUID] = mapped_column(ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True)
-    permission_id: Mapped[UUID] = mapped_column(ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True)
+    role_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True
+    )
+    permission_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True
+    )

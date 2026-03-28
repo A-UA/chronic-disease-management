@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from uuid import UUID
 from typing import List
 
 from app.api.deps import get_db, get_platform_admin, get_platform_viewer
@@ -46,7 +45,7 @@ async def list_users(
 
 @router.put("/{user_id}/status")
 async def update_user_status(
-    user_id: UUID,
+    user_id: int,
     is_active: bool,
     _admin=Depends(get_platform_admin),
     db: AsyncSession = Depends(get_db),
