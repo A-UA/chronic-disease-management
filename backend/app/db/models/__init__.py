@@ -8,6 +8,7 @@ from .api_key import ApiKey
 from .patient import PatientProfile
 from .manager import ManagerProfile, PatientManagerAssignment, ManagementSuggestion
 from .audit import AuditLog
+from .settings import SystemSetting
 
 # Ensure all models are in metadata for migrations
 __all__ = [
@@ -29,6 +30,7 @@ __all__ = [
     "PatientManagerAssignment",
     "ManagementSuggestion",
     "AuditLog",
+    "SystemSetting",
     "Role",
     "Permission",
     "RolePermission"

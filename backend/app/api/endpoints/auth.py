@@ -3,7 +3,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import get_db, get_current_user
@@ -59,6 +59,24 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)) -> A
             org_id=org.id, user_id=user.id, role_id=owner_role.id
         )
         db.add(role_link)
+
+    # 6. If this is the first user in the system, assign platform_admin role
+    stmt_user_count = select(func.count(User.id))
+    user_count_res = await db.execute(stmt_user_count)
+    if user_count_res.scalar() == 1:  # The user we just added is already in DB but not committed
+        stmt_platform_role = select(Role).where(
+            Role.code == "platform_admin", Role.org_id.is_(None)
+        )
+        res_platform = await db.execute(stmt_platform_role)
+        platform_role = res_platform.scalar_one_or_none()
+        if platform_role:
+            # Platform roles don't necessarily need an org context in OrganizationUserRole table
+            # but our current schema uses org_id as part of the primary key in some tables.
+            # However, for platform_admin, we can link it to their first org.
+            role_link_platform = OrganizationUserRole(
+                org_id=org.id, user_id=user.id, role_id=platform_role.id
+            )
+            db.add(role_link_platform)
 
     await db.commit()
     await db.refresh(user)

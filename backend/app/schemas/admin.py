@@ -47,6 +47,22 @@ class UsageSummaryItem(BaseModel):
     total_cost: float
 
 
+class DynamicSettings(BaseModel):
+    # Chat & RAG
+    llm_default_model: str = "gpt-4o-mini"
+    rag_max_chunks: int = 5
+    rag_min_score: float = 0.0
+    
+    # System Status
+    system_maintenance_mode: bool = False
+    allow_new_registrations: bool = True
+    
+    # Quota
+    default_org_token_quota: int = 1000000
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class SystemSettingRead(BaseModel):
     key: str
     value: str

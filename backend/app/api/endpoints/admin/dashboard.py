@@ -24,7 +24,8 @@ async def get_dashboard_stats(
     conv_count = (await db.execute(select(func.count(Conversation.id)))).scalar() or 0
     
     # 2. 24h Active Users (based on usage logs or conversations)
-    since_24h = datetime.now(timezone.utc) - timedelta(hours=24)
+    # 数据库通常使用 naive datetime，确保比较时类型一致
+    since_24h = datetime.utcnow() - timedelta(hours=24)
     active_users = (await db.execute(
         select(func.count(func.distinct(UsageLog.user_id)))
         .where(UsageLog.created_at >= since_24h)
