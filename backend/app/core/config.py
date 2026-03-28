@@ -54,6 +54,7 @@ class Settings(BaseSettings):
     RAG_RRF_K: int = 60  # RRF 融合参数 k
     RAG_MIN_SCORE_THRESHOLD: float = 0.0  # 检索结果最低分数阈值
     RAG_CACHE_TTL: int = 3600  # 检索缓存 TTL（秒）
+    RAG_ENABLE_CONTEXTUAL_INGESTION: bool = False  # 是否开启入库背景增强（消耗额外 Token）
 
     # CORS
     CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:5173"]

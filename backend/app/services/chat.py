@@ -304,6 +304,35 @@ async def _load_cached_ranked_results(
         return None
 
 
+async def expand_query(
+    query: str, history: list[dict[str, str]], llm_provider: LLMProvider
+) -> list[str]:
+    """将原始查询扩展为多个不同维度的检索词"""
+    history_str = (
+        "\n".join([f"{m['role']}: {m['content']}" for m in history[-3:]])
+        if history
+        else "None"
+    )
+    prompt = (
+        "You are an AI language model assistant. Your task is to generate 3 "
+        "different versions of the given user question to retrieve relevant documents from a vector database. "
+        "By generating multiple perspectives on the user query, your goal is to help "
+        "the user overcome some of the limitations of the distance-based similarity search. "
+        "Provide these alternative questions separated by newlines. "
+        "Do not include any other text.\n\n"
+        f"Conversation History: {history_str}\n"
+        f"Original question: {query}\n"
+    )
+    try:
+        completion = await llm_provider.complete_text(prompt)
+        queries = [q.strip() for q in completion.split("\n") if q.strip()]
+        # 总是包含原始查询或压缩后的查询
+        return queries[:3]
+    except Exception:
+        logger.warning("Query expansion failed; using original query")
+        return [query]
+
+
 async def retrieve_ranked_chunks(
     db: AsyncSession,
     query: str,
@@ -315,85 +344,94 @@ async def retrieve_ranked_chunks(
     history: list[dict[str, str]] | None = None,
     llm_provider: LLMProvider | None = None,
 ) -> list[RetrievedChunk]:
-    # 1. 对话压缩
+    # 1. 查询压缩与扩展
     search_query = query
     if history and llm_provider:
         search_query = await condense_query(query, history, llm_provider)
 
-    prepared_query = prepare_retrieval_query(search_query)
-    retrieval_query = prepared_query.retrieval_query
+    # 扩展查询 (Multi-Query)
+    if llm_provider:
+        all_queries = await expand_query(search_query, history or [], llm_provider)
+        # 确保包含当前主查询
+        if search_query not in all_queries:
+            all_queries.append(search_query)
+    else:
+        all_queries = [search_query]
 
-    # 2. 缓存检查
-    cache_key = _build_cache_key(retrieval_query, kb_id, org_id, user_id, filters)
+    # 2. 缓存检查 (针对主查询)
+    cache_key = _build_cache_key(search_query, kb_id, org_id, user_id, filters)
     cached_data = await redis_client.get(cache_key)
     if cached_data:
         cached_results = await _load_cached_ranked_results(db, cached_data)
         if cached_results:
             return cached_results
 
-    # 3. 检索 — 向量查询与关键词查询并行执行
+    # 3. 多路检索
     embedding_provider = registry.get_embedding()
-    query_embedding = await embedding_provider.embed_query(retrieval_query)
+    retrieved_by_id: dict[int, RetrievedChunk] = {}
 
-    vector_stmt = (
-        select(Chunk)
-        .where(Chunk.org_id == org_id, Chunk.kb_id == kb_id)
-        .order_by(Chunk.embedding.cosine_distance(query_embedding))
-        .limit(limit * 2)
-    )
-    vector_stmt = _apply_retrieval_filters(vector_stmt, filters)
-
-    keyword_stmt = (
-        select(Chunk)
-        .where(
-            Chunk.org_id == org_id,
-            Chunk.kb_id == kb_id,
-            Chunk.tsv_content.op("@@")(
-                func.plainto_tsquery("chinese", retrieval_query)
-            ),
-        )
-        .order_by(
-            func.ts_rank(
-                Chunk.tsv_content, func.plainto_tsquery("chinese", retrieval_query)
-            ).desc()
-        )
-        .limit(limit * 2)
-    )
-    keyword_stmt = _apply_retrieval_filters(keyword_stmt, filters)
-
-    vector_result, keyword_result = await asyncio.gather(
-        db.execute(vector_stmt),
-        db.execute(keyword_stmt),
-    )
-    vector_chunks = list(vector_result.scalars().all())
-    keyword_chunks = list(keyword_result.scalars().all())
-
-    # 4. 融合与重排 — 使用可配置的权重和 RRF 参数
     vector_weight = getattr(settings, "RAG_VECTOR_WEIGHT", 0.7)
     keyword_weight = getattr(settings, "RAG_KEYWORD_WEIGHT", 0.3)
-    k = getattr(settings, "RAG_RRF_K", 60)
+    k_rrf = getattr(settings, "RAG_RRF_K", 60)
+
+    async def _single_query_search(q: str):
+        prepared = prepare_retrieval_query(q)
+        rq = prepared.retrieval_query
+
+        # 向量检索
+        emb = await embedding_provider.embed_query(rq)
+        v_stmt = (
+            select(Chunk)
+            .where(Chunk.org_id == org_id, Chunk.kb_id == kb_id)
+            .order_by(Chunk.embedding.cosine_distance(emb))
+            .limit(limit * 2)
+        )
+        v_stmt = _apply_retrieval_filters(v_stmt, filters)
+
+        # 关键词检索
+        k_stmt = (
+            select(Chunk)
+            .where(
+                Chunk.org_id == org_id,
+                Chunk.kb_id == kb_id,
+                Chunk.tsv_content.op("@@")(func.plainto_tsquery("chinese", rq)),
+            )
+            .order_by(
+                func.ts_rank(Chunk.tsv_content, func.plainto_tsquery("chinese", rq)).desc()
+            )
+            .limit(limit * 2)
+        )
+        k_stmt = _apply_retrieval_filters(k_stmt, filters)
+
+        v_res, k_res = await asyncio.gather(db.execute(v_stmt), db.execute(k_stmt))
+        return list(v_res.scalars().all()), list(k_res.scalars().all()), rq
+
+    # 并行执行所有扩展查询
+    search_tasks = [_single_query_search(q) for q in all_queries]
+    all_res = await asyncio.gather(*search_tasks)
+
+    # 4. RRF 融合
+    for v_chunks, k_chunks, rq in all_res:
+        for rank, chunk in enumerate(v_chunks):
+            item = retrieved_by_id.setdefault(
+                chunk.id,
+                RetrievedChunk(chunk=chunk, fused_score=0.0, final_score=0.0, sources=()),
+            )
+            item.fused_score += vector_weight / (k_rrf + rank + 1)
+            item.vector_rank = min(item.vector_rank or 999, rank + 1)
+            item.sources = _dedupe_sources(item.sources, "vector")
+
+        for rank, chunk in enumerate(k_chunks):
+            item = retrieved_by_id.setdefault(
+                chunk.id,
+                RetrievedChunk(chunk=chunk, fused_score=0.0, final_score=0.0, sources=()),
+            )
+            item.fused_score += keyword_weight / (k_rrf + rank + 1)
+            item.keyword_rank = min(item.keyword_rank or 999, rank + 1)
+            item.sources = _dedupe_sources(item.sources, "keyword")
+
+    # 排序与重排
     min_score_threshold = getattr(settings, "RAG_MIN_SCORE_THRESHOLD", 0.0)
-
-    retrieved_by_id: dict[int, RetrievedChunk] = {}
-    for rank, chunk in enumerate(vector_chunks):
-        item = retrieved_by_id.setdefault(
-            chunk.id,
-            RetrievedChunk(chunk=chunk, fused_score=0.0, final_score=0.0, sources=()),
-        )
-        item.fused_score += vector_weight / (k + rank + 1)
-        item.vector_rank = rank + 1
-        item.sources = _dedupe_sources(item.sources, "vector")
-
-    for rank, chunk in enumerate(keyword_chunks):
-        item = retrieved_by_id.setdefault(
-            chunk.id,
-            RetrievedChunk(chunk=chunk, fused_score=0.0, final_score=0.0, sources=()),
-        )
-        item.fused_score += keyword_weight / (k + rank + 1)
-        item.keyword_rank = rank + 1
-        item.sources = _dedupe_sources(item.sources, "keyword")
-
-    # 过滤低于最低分数阈值的结果
     fused_results = sorted(
         [r for r in retrieved_by_id.values() if r.fused_score >= min_score_threshold],
         key=lambda x: x.fused_score,
@@ -402,17 +440,19 @@ async def retrieve_ranked_chunks(
 
     try:
         reranker = registry.get_reranker()
-        reranked_results = await reranker.rerank(retrieval_query, fused_results, limit)
+        reranked_results = await reranker.rerank(search_query, fused_results, limit)
     except Exception:
-        logger.warning("Reranker failed; falling back to fused ranking", exc_info=True)
+        logger.warning("Reranker failed; falling back to fused ranking")
         reranked_results = fused_results[:limit]
         for r in reranked_results:
             r.final_score = r.fused_score
 
+    # 缓存主查询结果
     if reranked_results:
-        cache_ttl = getattr(settings, "RAG_CACHE_TTL", 3600)
         await redis_client.setex(
-            cache_key, cache_ttl, _serialize_ranked_results(reranked_results)
+            cache_key,
+            getattr(settings, "RAG_CACHE_TTL", 3600),
+            _serialize_ranked_results(reranked_results),
         )
 
     return reranked_results
@@ -463,8 +503,19 @@ def build_rag_prompt(
         query = query.replace(patient_name, "[PATIENT]")
 
     prompt = (
-        "You are a clinical knowledge assistant. Answer strictly from the provided context.\n"
-        "Format: 1. Conclusion: short answer. 2. Evidence: supporting material. 3. Uncertainty: what is missing.\n\n"
-        f"Context:\n{context_str}\n\nQuestion: {query}"
+        "You are a Clinical Reasoning Assistant. Your goal is to provide accurate answers based ONLY on the provided Context.\n\n"
+        "### INSTRUCTIONS:\n"
+        "1. Analyze the Context carefully to find evidence for the Question.\n"
+        "2. If the Context contains the answer, follow the Output Format below.\n"
+        "3. If the Context does NOT contain enough information, state that the information is missing and do not invent facts.\n"
+        "4. Always cite your sources using [Doc n] notation.\n\n"
+        "### OUTPUT FORMAT:\n"
+        "- Reasoning: (Briefly describe your thought process and how you mapped the context to the answer)\n"
+        "- Conclusion: (A direct, concise answer to the question)\n"
+        "- Evidence: (Detailed supporting facts from the context, citing [Doc n])\n"
+        "- Uncertainty: (Any gaps in the provided context or potential ambiguities)\n\n"
+        f"### CONTEXT:\n{context_str}\n\n"
+        f"### QUESTION: {query}\n\n"
+        "### RESPONSE:"
     )
     return prompt, citations

@@ -268,23 +268,36 @@ def split_document_text(
     return final_chunks
 
 
-async def process_document(
-    document_id: int, 
-    file_content: str, 
-    org_id: int,
-    pages: list[str] | None = None
-):
-    """处理文档入库：切块、生成 embedding、写入数据库
+async def generate_chunk_context(
+    document_content: str, chunk_content: str, llm_provider: "LLMProvider"
+) -> str:
+    """为切块生成背景上下文（Contextual Retrieval 技术）"""
+    prompt = (
+        "Here is a document: <document>\n"
+        f"{document_content[:10000]}\n"  # 限制文档预览长度
+        "</document>\n"
+        "Here is a chunk from that document: <chunk>\n"
+        f"{chunk_content}\n"
+        "</chunk>\n"
+        "Please give a short succinct context to situate this chunk within the overall document "
+        "for the purpose of improving search retrieval of the chunk. "
+        "Answer only with the context and nothing else."
+    )
+    try:
+        context = await llm_provider.complete_text(prompt)
+        return context.strip() if context else ""
+    except Exception:
+        logger.warning("Failed to generate chunk context; using empty string")
+        return ""
 
-    参数:
-        document_id: 文档 ID
-        file_content: 文档全文
-        org_id: 组织 ID (用于设置 RLS 上下文)
-        pages: 按页分割的文本列表（来自 ParsedDocument.pages），用于计算页码
-    """
+
+async def process_document(
+    document_id: int, file_content: str, org_id: int, pages: list[str] | None = None
+):
+    """处理文档入库：切块、生成 embedding、写入数据库"""
     async with AsyncSessionLocal() as db:
-        # 必须先设置 RLS 上下文，否则后续查询会被 RLS 拦截
         from sqlalchemy import text
+
         await db.execute(
             text("SELECT set_config('app.current_org_id', :org_id, true)"),
             {"org_id": str(org_id)},
@@ -295,13 +308,38 @@ async def process_document(
             return
 
         chunk_metas = split_document_text(file_content, pages=pages)
-        texts = [cm.content for cm in chunk_metas]
         embedding_provider: EmbeddingProvider = registry.get_embedding()
-        # 从 provider 或配置中获取模型名称，避免硬编码
+        llm_provider = registry.get_llm()
         model_name = getattr(embedding_provider, "model_name", settings.EMBEDDING_MODEL)
 
         try:
-            embeddings = await embedding_provider.embed_documents(texts)
+            # 增强：Contextual Ingestion
+            enhanced_contents = []
+            if settings.RAG_ENABLE_CONTEXTUAL_INGESTION:
+                # 并行生成背景
+                tasks = [
+                    generate_chunk_context(file_content, cm.content, llm_provider)
+                    for cm in chunk_metas
+                ]
+                # 分批执行，防止并发过大导致 Rate Limit
+                batch_size = 10
+                contexts = []
+                for i in range(0, len(tasks), batch_size):
+                    batch = tasks[i : i + batch_size]
+                    batch_res = await asyncio.gather(*batch)
+                    contexts.extend(batch_res)
+
+                for cm, ctx in zip(chunk_metas, contexts):
+                    if ctx:
+                        # 将背景拼接到原始内容前面进行向量化
+                        enhanced_contents.append(f"{ctx}\n\n{cm.content}")
+                    else:
+                        enhanced_contents.append(cm.content)
+            else:
+                enhanced_contents = [cm.content for cm in chunk_metas]
+
+            # 向量化
+            embeddings = await embedding_provider.embed_documents(enhanced_contents)
 
             actual_dim = embedding_provider.get_dimension()
             if actual_dim:
@@ -310,7 +348,9 @@ async def process_document(
                 )
 
             total_tokens = 0
-            for i, (cm, emb) in enumerate(zip(chunk_metas, embeddings)):
+            for i, (cm, emb, enhanced_content) in enumerate(
+                zip(chunk_metas, embeddings, enhanced_contents)
+            ):
                 num_tokens = count_tokens(cm.content, model_name)
                 total_tokens += num_tokens
 
@@ -318,11 +358,11 @@ async def process_document(
                     kb_id=document.kb_id,
                     org_id=document.org_id,
                     document_id=document.id,
-                    content=cm.content,
-                    page_number=cm.page_number,  # 保留页码信息
+                    content=cm.content,  # 数据库存储原文，防止干扰展示
+                    page_number=cm.page_number,
                     chunk_index=i,
-                    embedding=emb,
-                    tsv_content=func.to_tsvector("chinese", cm.content),
+                    embedding=emb,  # embedding 是基于 enhanced_content 生成的
+                    tsv_content=func.to_tsvector("chinese", enhanced_content),  # 检索基于增强内容
                     metadata_={
                         "patient_id": str(document.patient_id)
                         if getattr(document, "patient_id", None)
@@ -335,6 +375,7 @@ async def process_document(
                         "token_count": num_tokens,
                         "char_start": cm.char_start,
                         "char_end": cm.char_end,
+                        "is_contextual": settings.RAG_ENABLE_CONTEXTUAL_INGESTION,
                     },
                 )
                 db.add(chunk)
