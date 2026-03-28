@@ -1,6 +1,6 @@
-﻿# Multi-Tenant AI SaaS 项目指南
+# Multi-Tenant AI SaaS 项目指南
 
-更新时间：2026-03-22
+更新时间：2026-03-28
 
 ## 1. 项目概览
 
@@ -9,8 +9,9 @@
 当前技术栈：
 
 - 后端框架：FastAPI
-- ORM：SQLAlchemy 2.x Async
-- 数据库：PostgreSQL + pgvector
+- ORM：SQLAlchemy 2.x Async (使用 BigInteger 作为主键)
+- 数据库：PostgreSQL + pgvector (ID 已全线切换为雪花算法)
+- 序列化：orjson (高性能 JSON 库，自动处理大整数精度保护)
 - 缓存与限流：Redis
 - 对象存储：MinIO
 - 测试：pytest / pytest-asyncio
@@ -53,28 +54,24 @@
 
 ### 工程能力
 
-- Storage 已改为延迟初始化：`get_storage_service()`
-- Redis 已改为延迟初始化：`get_redis_client()`
-- 流式配额检查在 Redis miss 时会回退数据库
-- assistant message metadata 已增加 `observability`
-- 离线评测已支持：
-  - `recall_at_k`
-  - `answer_match_rate`
-  - `citation_hit_rate`
-  - `refusal_match_rate`
-  - `avg_latency_ms`
-  - `avg_total_tokens`
+- **ID 体系**：已完成从 UUID 到 **Snowflake ID (64-bit int)** 的全面切换，使用 `snowflake-id-toolkit` 实现。
+- **精度保护**：使用自定义 `SnowflakeJSONResponse` 和 `orjson`，在接口返回时自动将超过 JS 安全范围的大整数转为字符串。
+- **多租户鲁棒性**：`X-Organization-ID` Header 已改为可选，若缺失则自动回退至用户的第一个组织。
+- **认证增强**：`/auth/me` 端点已实现，并随用户信息一同返回 `org_id`。
+- **Storage/Redis**：已改为延迟初始化。
+- **配额管理**：流式配额检查在 Redis miss 时会回退数据库。
+- **观测性**：assistant message metadata 已增加 `observability`。
+- **评测系统**：离线评测已支持多维度指标（Recall, Match Rate, Latency 等）。
 
 ## 3. 目录说明
 
-- `backend/app/api/`: API 路由与依赖
-- `backend/app/core/`: 配置与安全设置
-- `backend/app/db/`: 数据库模型、会话、迁移
+- `backend/app/api/`: API 路由与依赖（含 `admin/roles` 等新端点）
+- `backend/app/core/`: 配置与安全设置（含 `snowflake.py`）
+- `backend/app/db/`: 数据库模型（Base 配置了 BigInteger 映射）、会话、迁移
 - `backend/app/services/`: 主要业务服务层
-- `backend/alembic/`: Alembic 迁移
+- `backend/alembic/`: Alembic 迁移脚本
 - `backend/tests/`: 自动化测试
-- `backend/scripts/`: 辅助脚本
-- `docs/`: 项目文档
+- `backend/scripts/`: 辅助与维护脚本
 
 重点文档：
 
@@ -117,25 +114,12 @@ uv run python -m pytest
 
 主要环境变量位于 `backend/.env`，参考模板位于 `backend/.env.example`。
 
-当前推荐配置方向：
-
-- 聊天 / reranker：可使用 Xiaomi MiMo 的 OpenAI 兼容网关
-- embeddings：MiMo 当前不支持本项目所需 embeddings 路径，需接真实可用的 embedding 服务
-
 关键配置项：
 
-- `LLM_PROVIDER`
-- `CHAT_MODEL`
-- `LLM_API_KEY`
-- `LLM_BASE_URL`
-- `RERANKER_PROVIDER`
-- `RERANKER_MODEL`
-- `RERANKER_API_KEY`
-- `RERANKER_BASE_URL`
-- `EMBEDDING_PROVIDER`
-- `EMBEDDING_MODEL`
-- `EMBEDDING_API_KEY`
-- `EMBEDDING_BASE_URL`
+- `LLM_PROVIDER` / `CHAT_MODEL`
+- `RERANKER_PROVIDER` / `RERANKER_MODEL`
+- `EMBEDDING_PROVIDER` / `EMBEDDING_MODEL`
+- `WORKER_ID`: 雪花算法节点 ID (0-1023)
 
 ## 6. 当前剩余重点
 
@@ -147,7 +131,8 @@ uv run python -m pytest
 
 ## 7. 开发约定
 
-- 新增功能优先走 provider / service 抽象，不直接把外部依赖写死在 endpoint
-- 检索行为变更优先补测试，再改实现
-- 涉及 RAG 质量变更时，同步更新 `docs/rag专项整改清单.md`
-- 不要在导入阶段初始化外部服务
+- **ID 使用**：所有新表必须继承 `IDMixin`（或 `UUIDMixin` 别名），默认生成 64 位整数 ID。
+- **类型提示**：ID 字段在 Python 中一律使用 `int` 类型声明。
+- **接口返回**：直接返回 `int` 即可，底层 `SnowflakeJSONResponse` 会处理 JS 精度转换。
+- **API 设计**：新增功能优先走 provider / service 抽象。
+- **导入规范**：不要在导入阶段初始化外部服务。
