@@ -1,7 +1,13 @@
-import { PageContainer, ProTable } from '@ant-design/pro-components';
-import { listUsers, updateUserStatus } from '@/services/api/admin';
+import { PlusOutlined } from '@ant-design/icons';
+import {
+  ModalForm,
+  PageContainer,
+  ProFormText,
+  ProTable,
+} from '@ant-design/pro-components';
+import { listUsers, updateUserStatus, createUser } from '@/services/api/admin';
 import type { ProColumns, ActionType } from '@ant-design/pro-components';
-import { message, Popconfirm, Tag } from 'antd';
+import { Button, message, Popconfirm, Tag } from 'antd';
 import { useRef } from 'react';
 
 export default () => {
@@ -80,6 +86,40 @@ export default () => {
         search={{ labelWidth: 'auto' }}
         pagination={{ pageSize: 20 }}
         headerTitle="Global User Management"
+        toolBarRender={() => [
+          <ModalForm
+            key="create"
+            title="Register New User"
+            trigger={
+              <Button type="primary">
+                <PlusOutlined /> New User
+              </Button>
+            }
+            onFinish={async (values: any) => {
+              await createUser(values);
+              message.success('User registered successfully');
+              actionRef.current?.reload();
+              return true;
+            }}
+          >
+            <ProFormText
+              name="email"
+              label="Email"
+              placeholder="user@example.com"
+              rules={[{ required: true, type: 'email' }]}
+            />
+            <ProFormText
+              name="name"
+              label="Full Name"
+              placeholder="Enter name"
+            />
+            <ProFormText.Password
+              name="password"
+              label="Password"
+              rules={[{ required: true, min: 6 }]}
+            />
+          </ModalForm>,
+        ]}
       />
     </PageContainer>
   );

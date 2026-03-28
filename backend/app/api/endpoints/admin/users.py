@@ -10,6 +10,42 @@ from app.schemas.admin import UserAdminRead
 router = APIRouter()
 
 
+from app.core import security
+from app.schemas.user import UserCreate
+
+@router.post("/", response_model=UserAdminRead)
+async def create_user(
+    user_in: UserCreate,
+    _admin=Depends(get_platform_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    [平台管理员] 手动创建一个新用户
+    """
+    # Check if exists
+    stmt = select(User).where(User.email == user_in.email)
+    res = await db.execute(stmt)
+    if res.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="User already exists")
+    
+    user = User(
+        email=user_in.email,
+        password_hash=security.get_password_hash(user_in.password),
+        name=user_in.name
+    )
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    
+    return UserAdminRead(
+        id=user.id,
+        email=user.email,
+        name=user.name,
+        created_at=user.created_at,
+        org_count=0
+    )
+
+
 @router.get("/", response_model=List[UserAdminRead])
 async def list_users(
     skip: int = 0,

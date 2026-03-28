@@ -35,6 +35,10 @@ export async function listUsers(params?: { skip?: number; limit?: number; search
   return request('/api/admin/users/', { method: 'GET', params });
 }
 
+export async function createUser(data: any) {
+  return request('/api/admin/users/', { method: 'POST', data });
+}
+
 export async function updateUserStatus(userId: string | number, isActive: boolean) {
   return request(`/api/admin/users/${userId}/status`, {
     method: 'PUT',
