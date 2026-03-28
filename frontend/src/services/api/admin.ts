@@ -7,14 +7,26 @@ export async function getDashboardStats() {
 
 // Organizations
 export async function listOrganizations(params?: any) {
-  return request('/api/admin/organizations', { method: 'GET', params });
+  return request('/api/admin/organizations/', { method: 'GET', params });
+}
+
+export async function createOrganization(data: { name: string; plan_type: string }) {
+  return request('/api/admin/organizations/', { method: 'POST', data });
+}
+
+export async function updateOrganization(orgId: string | number, data: any) {
+  return request(`/api/admin/organizations/${orgId}`, { method: 'PUT', data });
+}
+
+export async function deleteOrganization(orgId: string | number) {
+  return request(`/api/admin/organizations/${orgId}`, { method: 'DELETE' });
 }
 
 export async function getMyOrganizations() {
   return request('/api/admin/organizations/me', { method: 'GET' });
 }
 
-export async function getOrganizationMembers(orgId: string) {
+export async function getOrganizationMembers(orgId: string | number) {
   return request(`/api/admin/organizations/${orgId}/members`, { method: 'GET' });
 }
 
@@ -23,7 +35,7 @@ export async function listUsers(params?: { skip?: number; limit?: number; search
   return request('/api/admin/users/', { method: 'GET', params });
 }
 
-export async function updateUserStatus(userId: string, isActive: boolean) {
+export async function updateUserStatus(userId: string | number, isActive: boolean) {
   return request(`/api/admin/users/${userId}/status`, {
     method: 'PUT',
     params: { is_active: isActive },
@@ -35,7 +47,7 @@ export async function getUsageSummary() {
   return request('/api/admin/usage/summary', { method: 'GET' });
 }
 
-export async function getOrgUsageDetail(orgId: string) {
+export async function getOrgUsageDetail(orgId: string | number) {
   return request(`/api/admin/usage/by-organization/${orgId}`, { method: 'GET' });
 }
 

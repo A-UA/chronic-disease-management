@@ -25,12 +25,19 @@ class OrganizationAdminRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class TokenTrendItem(BaseModel):
+    date: str
+    tokens: int
+
 class DashboardStats(BaseModel):
     total_organizations: int
     total_users: int
+    active_users_24h: int
     total_patients: int
     total_conversations: int
     total_tokens_used: int
+    token_usage_trend: list[TokenTrendItem]
+    recent_failed_docs: int = 0
 
 
 class UsageSummaryItem(BaseModel):

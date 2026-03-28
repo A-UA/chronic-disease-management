@@ -10,6 +10,7 @@ class OrganizationCreate(OrganizationBase):
 class OrganizationUpdate(BaseModel):
     name: str | None = None
     plan_type: str | None = None
+    quota_tokens_limit: int | None = None
 
 class OrganizationReadPublic(OrganizationBase):
     """Viewable by any member or patient."""
