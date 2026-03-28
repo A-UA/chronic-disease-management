@@ -112,6 +112,7 @@
         "hooks": {
           "modifyRoutes": [
             0,
+            0,
             0
           ]
         },
@@ -135,7 +136,9 @@
             3,
             3,
             1,
-            2
+            2,
+            3,
+            1
           ]
         },
         "register": 1
@@ -156,6 +159,7 @@
           ],
           "onGenerateFiles": [
             1,
+            5,
             5
           ]
         },
@@ -173,6 +177,7 @@
       "time": {
         "hooks": {
           "addEntryCode": [
+            0,
             0,
             0
           ]
@@ -197,6 +202,7 @@
             0
           ],
           "onPrepareBuildSuccess": [
+            0,
             0,
             0,
             0,
@@ -241,6 +247,8 @@
             0,
             0,
             1,
+            0,
+            0,
             0
           ]
         },
@@ -1252,6 +1260,27 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0
           ]
         },
@@ -1270,9 +1299,11 @@
         "hooks": {
           "onGenerateFiles": [
             2,
+            0,
             0
           ],
           "addRuntimePlugin": [
+            0,
             0,
             0
           ]
@@ -1349,9 +1380,12 @@
         "hooks": {
           "onGenerateFiles": [
             0,
+            0,
             0
           ],
           "addEntryImports": [
+            0,
+            0,
             0,
             0,
             0,
@@ -1389,9 +1423,12 @@
           ],
           "onGenerateFiles": [
             49,
-            15
+            15,
+            10
           ],
           "addPolyfillImports": [
+            0,
+            0,
             0,
             0,
             0,
@@ -1414,6 +1451,8 @@
             0,
             0,
             0,
+            0,
+            0,
             0
           ]
         },
@@ -1432,6 +1471,7 @@
         "hooks": {
           "onGenerateFiles": [
             156,
+            0,
             0
           ]
         },
@@ -1476,6 +1516,7 @@
         "hooks": {
           "onGenerateFiles": [
             1,
+            0,
             0
           ],
           "addBeforeMiddlewares": [
@@ -1499,7 +1540,9 @@
             14,
             13,
             14,
-            4
+            4,
+            12,
+            3
           ]
         },
         "register": 3
@@ -1555,7 +1598,8 @@
         "hooks": {
           "onGenerateFiles": [
             382,
-            12
+            12,
+            4
           ]
         },
         "register": 2
@@ -1641,7 +1685,8 @@
         "hooks": {
           "onGenerateFiles": [
             4,
-            0
+            0,
+            1
           ]
         },
         "register": 1
@@ -1778,6 +1823,27 @@
             12,
             2,
             2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -2152,11 +2218,13 @@
         "hooks": {
           "addRuntimePlugin": [
             0,
+            0,
             0
           ],
           "onGenerateFiles": [
             2,
-            1
+            1,
+            0
           ],
           "addTmpGenerateWatcherPaths": [
             0
@@ -2202,18 +2270,23 @@
             0,
             0,
             0,
+            0,
+            0,
             0
           ],
           "addRuntimePlugin": [
+            0,
             0,
             0
           ],
           "addRuntimePluginKey": [
             0,
+            0,
             0
           ],
           "onGenerateFiles": [
             3,
+            1,
             1
           ],
           "addExtraBabelPlugins": [
@@ -2250,17 +2323,21 @@
         "hooks": {
           "addRuntimePlugin": [
             0,
+            0,
             0
           ],
           "addRuntimePluginKey": [
+            0,
             0,
             0
           ],
           "onGenerateFiles": [
             4,
+            0,
             0
           ],
           "addExtraModels": [
+            0,
             0,
             0
           ]
@@ -2285,6 +2362,7 @@
           ],
           "addLayouts": [
             0,
+            0,
             0
           ],
           "modifyAppData": [
@@ -2292,15 +2370,18 @@
           ],
           "addRuntimePlugin": [
             0,
+            0,
             0
           ],
           "addRuntimePluginKey": [
+            0,
             0,
             0
           ],
           "onGenerateFiles": [
             6,
-            2
+            2,
+            1
           ]
         },
         "register": 2
@@ -2344,11 +2425,13 @@
         "hooks": {
           "addRuntimePlugin": [
             0,
+            0,
             0
           ],
           "onGenerateFiles": [
             34,
-            15
+            15,
+            13
           ],
           "addTmpGenerateWatcherPaths": [
             0
@@ -2381,6 +2464,7 @@
       "time": {
         "hooks": {
           "addRuntimePluginKey": [
+            0,
             0,
             0
           ]
@@ -2437,11 +2521,13 @@
         "hooks": {
           "addRuntimePluginKey": [
             0,
+            0,
             0
           ],
           "onGenerateFiles": [
             5,
-            1
+            1,
+            0
           ]
         },
         "register": 1
@@ -3838,7 +3924,7 @@
       "parentId": "3",
       "id": "7",
       "absPath": "/platform/users",
-      "__content": "import { PlusOutlined } from '@ant-design/icons';\nimport {\n  ModalForm,\n  PageContainer,\n  ProFormText,\n  ProTable,\n} from '@ant-design/pro-components';\nimport { listUsers, updateUserStatus, createUser } from '@/services/api/admin';\nimport type { ProColumns, ActionType } from '@ant-design/pro-components';\nimport { Button, message, Popconfirm, Tag } from 'antd';\nimport { useRef } from 'react';\n\nexport default () => {\n  const actionRef = useRef<ActionType>();\n\n  const columns: ProColumns[] = [\n    {\n      title: 'User Info',\n      dataIndex: 'email',\n      copyable: true,\n      render: (text, record) => (\n        <div>\n          <div style={{ fontWeight: 'bold' }}>{record.name || 'Anonymous'}</div>\n          <div style={{ fontSize: '12px', color: '#666' }}>{record.email}</div>\n        </div>\n      ),\n    },\n    {\n      title: 'Tenants',\n      dataIndex: 'org_count',\n      sorter: true,\n      render: (count) => <Tag color=\"blue\">{count} Orgs</Tag>,\n    },\n    {\n      title: 'Status',\n      dataIndex: 'is_active',\n      hideInSearch: true,\n      render: (_, record) => (\n        <Tag color={record.deleted_at ? 'error' : 'success'}>\n          {record.deleted_at ? 'Inactive' : 'Active'}\n        </Tag>\n      ),\n    },\n    {\n      title: 'Created At',\n      dataIndex: 'created_at',\n      valueType: 'dateTime',\n      sorter: true,\n    },\n    {\n      title: 'Operations',\n      valueType: 'option',\n      key: 'option',\n      render: (text, record) => [\n        <Popconfirm\n          key=\"toggle\"\n          title={record.deleted_at ? 'Reactivate user?' : 'Disable user?'}\n          onConfirm={async () => {\n            await updateUserStatus(record.id, !!record.deleted_at);\n            message.success('Status updated');\n            actionRef.current?.reload();\n          }}\n        >\n          <a style={{ color: record.deleted_at ? 'green' : 'red' }}>\n            {record.deleted_at ? 'Activate' : 'Disable'}\n          </a>\n        </Popconfirm>,\n      ],\n    },\n  ];\n\n  return (\n    <PageContainer>\n      <ProTable\n        columns={columns}\n        actionRef={actionRef}\n        request={async (params) => {\n          const data = await listUsers({\n            skip: ((params.current || 1) - 1) * (params.pageSize || 20),\n            limit: params.pageSize || 20,\n            search: params.email,\n          });\n          return { data, success: true, total: data.length };\n        }}\n        rowKey=\"id\"\n        search={{ labelWidth: 'auto' }}\n        pagination={{ pageSize: 20 }}\n        headerTitle=\"Global User Management\"\n      />\n    </PageContainer>\n  );\n};\n",
+      "__content": "import { PlusOutlined } from '@ant-design/icons';\nimport {\n  ModalForm,\n  PageContainer,\n  ProFormText,\n  ProTable,\n} from '@ant-design/pro-components';\nimport { listUsers, updateUserStatus, createUser } from '@/services/api/admin';\nimport type { ProColumns, ActionType } from '@ant-design/pro-components';\nimport { Button, message, Popconfirm, Tag } from 'antd';\nimport { useRef } from 'react';\n\nexport default () => {\n  const actionRef = useRef<ActionType>();\n\n  const columns: ProColumns[] = [\n    {\n      title: 'User Info',\n      dataIndex: 'email',\n      copyable: true,\n      render: (text, record) => (\n        <div>\n          <div style={{ fontWeight: 'bold' }}>{record.name || 'Anonymous'}</div>\n          <div style={{ fontSize: '12px', color: '#666' }}>{record.email}</div>\n        </div>\n      ),\n    },\n    {\n      title: 'Tenants',\n      dataIndex: 'org_count',\n      sorter: true,\n      render: (count) => <Tag color=\"blue\">{count} Orgs</Tag>,\n    },\n    {\n      title: 'Status',\n      dataIndex: 'is_active',\n      hideInSearch: true,\n      render: (_, record) => (\n        <Tag color={record.deleted_at ? 'error' : 'success'}>\n          {record.deleted_at ? 'Inactive' : 'Active'}\n        </Tag>\n      ),\n    },\n    {\n      title: 'Created At',\n      dataIndex: 'created_at',\n      valueType: 'dateTime',\n      sorter: true,\n    },\n    {\n      title: 'Operations',\n      valueType: 'option',\n      key: 'option',\n      render: (text, record) => [\n        <Popconfirm\n          key=\"toggle\"\n          title={record.deleted_at ? 'Reactivate user?' : 'Disable user?'}\n          onConfirm={async () => {\n            await updateUserStatus(record.id, !!record.deleted_at);\n            message.success('Status updated');\n            actionRef.current?.reload();\n          }}\n        >\n          <a style={{ color: record.deleted_at ? 'green' : 'red' }}>\n            {record.deleted_at ? 'Activate' : 'Disable'}\n          </a>\n        </Popconfirm>,\n      ],\n    },\n  ];\n\n  return (\n    <PageContainer>\n      <ProTable\n        columns={columns}\n        actionRef={actionRef}\n        request={async (params) => {\n          const data = await listUsers({\n            skip: ((params.current || 1) - 1) * (params.pageSize || 20),\n            limit: params.pageSize || 20,\n            search: params.email,\n          });\n          return { data, success: true, total: data.length };\n        }}\n        rowKey=\"id\"\n        search={{ labelWidth: 'auto' }}\n        pagination={{ pageSize: 20 }}\n        headerTitle=\"Global User Management\"\n        toolBarRender={() => [\n          <ModalForm\n            key=\"create\"\n            title=\"Register New User\"\n            trigger={\n              <Button type=\"primary\">\n                <PlusOutlined /> New User\n              </Button>\n            }\n            onFinish={async (values: any) => {\n              await createUser(values);\n              message.success('User registered successfully');\n              actionRef.current?.reload();\n              return true;\n            }}\n          >\n            <ProFormText\n              name=\"email\"\n              label=\"Email\"\n              placeholder=\"user@example.com\"\n              rules={[{ required: true, type: 'email' }]}\n            />\n            <ProFormText\n              name=\"name\"\n              label=\"Full Name\"\n              placeholder=\"Enter name\"\n            />\n            <ProFormText.Password\n              name=\"password\"\n              label=\"Password\"\n              rules={[{ required: true, min: 6 }]}\n            />\n          </ModalForm>,\n        ]}\n      />\n    </PageContainer>\n  );\n};\n",
       "__isJSFile": true,
       "__absFile": "D:/codes/chronic-disease-management/frontend/src/pages/platform/Users/index.tsx"
     },
@@ -5732,7 +5818,7 @@
             "format": "esm"
           },
           "src/services/api/admin.ts": {
-            "bytes": 2238,
+            "bytes": 2205,
             "imports": [
               {
                 "path": "src/.umi/exports.ts",
@@ -5898,7 +5984,7 @@
             "format": "esm"
           },
           "src/pages/platform/Settings/index.tsx": {
-            "bytes": 1708,
+            "bytes": 2447,
             "imports": [
               {
                 "path": "@ant-design/pro-components",
@@ -8167,7 +8253,7 @@
                 "bytesInOutput": 2561
               },
               "src/services/api/admin.ts": {
-                "bytesInOutput": 1653
+                "bytesInOutput": 1631
               },
               "src/pages/platform/Dashboard/index.tsx": {
                 "bytesInOutput": 4558
@@ -8185,7 +8271,7 @@
                 "bytesInOutput": 2408
               },
               "src/pages/platform/Settings/index.tsx": {
-                "bytesInOutput": 2368
+                "bytesInOutput": 3422
               },
               "src/services/api/organization.ts": {
                 "bytesInOutput": 754
@@ -8197,7 +8283,7 @@
                 "bytesInOutput": 1680
               },
               "src/pages/organization/Roles/index.tsx": {
-                "bytesInOutput": 1885
+                "bytesInOutput": 1884
               },
               "src/pages/organization/Patients/index.tsx": {
                 "bytesInOutput": 1519
@@ -8242,7 +8328,7 @@
                 "bytesInOutput": 2020
               }
             },
-            "bytes": 132877
+            "bytes": 133908
           }
         }
       }
@@ -12809,7 +12895,7 @@
       ],
       "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\platform\\Settings\\index.tsx": [
         {
-          "end": 60,
+          "end": 155,
           "importKind": "value",
           "source": "@ant-design/pro-components",
           "specifiers": [
@@ -12817,13 +12903,43 @@
               "imported": "PageContainer",
               "local": "PageContainer",
               "type": "ImportSpecifier"
+            },
+            {
+              "imported": "ProForm",
+              "local": "ProForm",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "ProFormDigit",
+              "local": "ProFormDigit",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "ProFormGroup",
+              "local": "ProFormGroup",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "ProFormSelect",
+              "local": "ProFormSelect",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "ProFormSwitch",
+              "local": "ProFormSwitch",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "ProFormText",
+              "local": "ProFormText",
+              "type": "ImportSpecifier"
             }
           ],
           "start": 1,
           "type": "ImportDeclaration"
         },
         {
-          "end": 137,
+          "end": 199,
           "importKind": "value",
           "source": "antd",
           "specifiers": [
@@ -12833,41 +12949,21 @@
               "type": "ImportSpecifier"
             },
             {
-              "imported": "Form",
-              "local": "Form",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "Input",
-              "local": "Input",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "Button",
-              "local": "Button",
-              "type": "ImportSpecifier"
-            },
-            {
               "imported": "message",
               "local": "message",
               "type": "ImportSpecifier"
             },
             {
-              "imported": "List",
-              "local": "List",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "Typography",
-              "local": "Typography",
+              "imported": "Spin",
+              "local": "Spin",
               "type": "ImportSpecifier"
             }
           ],
-          "start": 61,
+          "start": 156,
           "type": "ImportDeclaration"
         },
         {
-          "end": 182,
+          "end": 244,
           "importKind": "value",
           "source": "react",
           "specifiers": [
@@ -12882,11 +12978,11 @@
               "type": "ImportSpecifier"
             }
           ],
-          "start": 138,
+          "start": 200,
           "type": "ImportDeclaration"
         },
         {
-          "end": 249,
+          "end": 312,
           "importKind": "value",
           "source": "@/services/api/admin",
           "specifiers": [
@@ -12896,12 +12992,12 @@
               "type": "ImportSpecifier"
             },
             {
-              "imported": "updateSetting",
-              "local": "updateSetting",
+              "imported": "updateSettings",
+              "local": "updateSettings",
               "type": "ImportSpecifier"
             }
           ],
-          "start": 183,
+          "start": 245,
           "type": "ImportDeclaration"
         }
       ],

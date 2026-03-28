@@ -65,9 +65,9 @@ export async function getSettings() {
   return request('/api/admin/settings/', { method: 'GET' });
 }
 
-export async function updateSetting(key: string, value: string) {
-  return request(`/api/admin/settings/${key}`, {
+export async function updateSettings(data: any) {
+  return request('/api/admin/settings/', {
     method: 'PUT',
-    data: { value },
+    data,
   });
 }

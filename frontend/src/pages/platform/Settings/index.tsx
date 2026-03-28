@@ -1,57 +1,81 @@
-import { PageContainer } from '@ant-design/pro-components';
-import { Card, Form, Input, Button, message, List, Typography } from 'antd';
+import {
+  PageContainer,
+  ProForm,
+  ProFormDigit,
+  ProFormGroup,
+  ProFormSelect,
+  ProFormSwitch,
+  ProFormText,
+} from '@ant-design/pro-components';
+import { Card, message, Spin } from 'antd';
 import { useEffect, useState } from 'react';
-import { getSettings, updateSetting } from '@/services/api/admin';
+import { getSettings, updateSettings } from '@/services/api/admin';
 
 export default () => {
-  const [settings, setSettings] = useState<any[]>([]);
+  const [initialValues, setInitialValues] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     getSettings()
-      .then(setSettings)
+      .then(setInitialValues)
       .finally(() => setLoading(false));
   }, []);
 
-  const handleUpdate = async (key: string, value: string) => {
-    try {
-      await updateSetting(key, value);
-      message.success('Setting updated');
-      setSettings((prev) =>
-        prev.map((s) => (s.key === key ? { ...s, value } : s)),
-      );
-    } catch {
-      message.error('Failed to update setting');
-    }
-  };
+  if (loading) return <Spin size="large" />;
 
   return (
     <PageContainer>
-      <Card title="System Settings" loading={loading}>
-        <List
-          dataSource={settings}
-          renderItem={(item: any) => (
-            <List.Item
-              actions={[
-                <Button
-                  type="link"
-                  onClick={() => {
-                    const newValue = prompt(`Update ${item.key}:`, item.value);
-                    if (newValue !== null) handleUpdate(item.key, newValue);
-                  }}
-                >
-                  Edit
-                </Button>,
+      <Card title="System Configuration" style={{ maxWidth: 800, margin: '0 auto' }}>
+        <ProForm
+          initialValues={initialValues}
+          onFinish={async (values) => {
+            await updateSettings(values);
+            message.success('Settings saved successfully');
+            return true;
+          }}
+        >
+          <ProFormGroup title="Model & RAG" size={24}>
+            <ProFormSelect
+              name="llm_default_model"
+              label="Default LLM Model"
+              width="md"
+              options={[
+                { label: 'GPT-4o Mini', value: 'gpt-4o-mini' },
+                { label: 'GPT-4o', value: 'gpt-4o' },
+                { label: 'Claude 3.5 Sonnet', value: 'claude-3-5-sonnet' },
               ]}
-            >
-              <List.Item.Meta
-                title={<Typography.Text strong>{item.key}</Typography.Text>}
-                description={item.description}
-              />
-              <div>{item.value}</div>
-            </List.Item>
-          )}
-        />
+            />
+            <ProFormDigit
+              name="rag_max_chunks"
+              label="Max Retrieval Chunks"
+              min={1}
+              max={20}
+              width="xs"
+            />
+          </ProFormGroup>
+
+          <ProFormGroup title="System Policies" size={24}>
+            <ProFormSwitch
+              name="system_maintenance_mode"
+              label="Maintenance Mode"
+              extra="Disable all user access temporarily"
+            />
+            <ProFormSwitch
+              name="allow_new_registrations"
+              label="Allow New Registrations"
+              extra="Whether to allow users to sign up via public page"
+            />
+          </ProFormGroup>
+
+          <ProFormGroup title="Resource Quotas" size={24}>
+            <ProFormDigit
+              name="default_org_token_quota"
+              label="Default Org Token Quota"
+              width="md"
+              addonAfter="Tokens"
+            />
+          </ProFormGroup>
+        </ProForm>
       </Card>
     </PageContainer>
   );
