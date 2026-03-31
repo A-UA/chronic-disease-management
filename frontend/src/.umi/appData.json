@@ -37,7 +37,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 0
       },
       "enableBy": "register"
     },
@@ -50,7 +50,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 14
+        "register": 7
       },
       "enableBy": "register"
     },
@@ -63,7 +63,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 6
+        "register": 4
       },
       "enableBy": "register"
     },
@@ -80,7 +80,7 @@
             0
           ]
         },
-        "register": 4
+        "register": 3
       },
       "enableBy": "register"
     },
@@ -97,7 +97,7 @@
             1
           ]
         },
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -111,9 +111,6 @@
       "time": {
         "hooks": {
           "modifyRoutes": [
-            0,
-            0,
-            0,
             0
           ]
         },
@@ -132,11 +129,9 @@
         "hooks": {
           "onDevCompileDone": [
             13,
-            2,
             3,
-            2,
             1,
-            2
+            3
           ]
         },
         "register": 1
@@ -153,16 +148,13 @@
       "time": {
         "hooks": {
           "modifyAppData": [
-            19
+            14
           ],
           "onGenerateFiles": [
-            1,
-            5,
-            5,
-            4
+            2
           ]
         },
-        "register": 17
+        "register": 14
       },
       "enableBy": "register"
     },
@@ -176,9 +168,6 @@
       "time": {
         "hooks": {
           "addEntryCode": [
-            0,
-            0,
-            0,
             0
           ]
         },
@@ -196,17 +185,12 @@
       "time": {
         "hooks": {
           "onCheckConfig": [
-            0,
             0
           ],
           "onCheck": [
             0
           ],
           "onPrepareBuildSuccess": [
-            0,
-            0,
-            0,
-            0,
             0,
             0
           ],
@@ -226,12 +210,7 @@
             0,
             0,
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
+            1,
             0,
             0,
             0,
@@ -273,7 +252,7 @@
             0
           ]
         },
-        "register": 1
+        "register": 0
       },
       "enableBy": "register"
     },
@@ -303,7 +282,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 0
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -317,11 +296,10 @@
       "time": {
         "hooks": {
           "modifyConfig": [
-            0,
             0
           ]
         },
-        "register": 12
+        "register": 6
       },
       "enableBy": "register"
     },
@@ -1204,10 +1182,10 @@
       "time": {
         "hooks": {
           "addBeforeMiddlewares": [
-            5
+            6
           ]
         },
-        "register": 1
+        "register": 0
       },
       "enableBy": "register"
     },
@@ -1220,7 +1198,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 56
+        "register": 52
       },
       "enableBy": "register"
     },
@@ -1233,7 +1211,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 46
+        "register": 27
       },
       "enableBy": "config"
     },
@@ -1246,7 +1224,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 17
+        "register": 14
       },
       "enableBy": "config"
     },
@@ -1276,19 +1254,10 @@
             0,
             0,
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0
           ]
         },
-        "register": 1
+        "register": 0
       },
       "enableBy": "register"
     },
@@ -1302,15 +1271,9 @@
       "time": {
         "hooks": {
           "onGenerateFiles": [
-            2,
-            0,
-            0,
             1
           ],
           "addRuntimePlugin": [
-            0,
-            0,
-            0,
             0
           ]
         },
@@ -1347,7 +1310,7 @@
             1
           ]
         },
-        "register": 24
+        "register": 22
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.36_@t_809568d03bbb42ead0eac343d193aaa3/node_modules/@umijs/preset-umi/dist/features/mpa/mpa": {
@@ -1385,18 +1348,9 @@
       "time": {
         "hooks": {
           "onGenerateFiles": [
-            0,
-            0,
-            0,
             0
           ],
           "addEntryImports": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0,
             0
           ]
@@ -1428,22 +1382,12 @@
       "time": {
         "hooks": {
           "modifyConfig": [
-            1,
-            0
+            1
           ],
           "onGenerateFiles": [
-            49,
-            14,
-            11,
-            10
+            50
           ],
           "addPolyfillImports": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0,
             0
           ]
@@ -1462,16 +1406,10 @@
         "hooks": {
           "addPolyfillImports": [
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0
           ]
         },
-        "register": 1
+        "register": 0
       },
       "enableBy": "register"
     },
@@ -1485,10 +1423,7 @@
       "time": {
         "hooks": {
           "onGenerateFiles": [
-            72,
-            0,
-            0,
-            0
+            59
           ]
         },
         "register": 2
@@ -1531,16 +1466,13 @@
       "time": {
         "hooks": {
           "onGenerateFiles": [
-            0,
-            0,
-            0,
-            0
+            1
           ],
           "addBeforeMiddlewares": [
             0
           ]
         },
-        "register": 1
+        "register": 0
       },
       "enableBy": "register"
     },
@@ -1554,14 +1486,8 @@
       "time": {
         "hooks": {
           "onGenerateFiles": [
-            12,
-            6,
-            12,
-            4,
             11,
-            3,
-            11,
-            3
+            5
           ]
         },
         "register": 4
@@ -1590,7 +1516,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 0
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.36_@t_809568d03bbb42ead0eac343d193aaa3/node_modules/@umijs/preset-umi/dist/features/ssr/ssr": {
@@ -1616,13 +1542,10 @@
       "time": {
         "hooks": {
           "onGenerateFiles": [
-            294,
-            12,
-            4,
-            5
+            291
           ]
         },
-        "register": 3
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1639,7 +1562,7 @@
             0
           ]
         },
-        "register": 4
+        "register": 3
       },
       "enableBy": "register"
     },
@@ -1665,7 +1588,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 0
       },
       "enableBy": "config"
     },
@@ -1678,7 +1601,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 6
+        "register": 5
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.36_@t_809568d03bbb42ead0eac343d193aaa3/node_modules/@umijs/preset-umi/dist/features/monorepo/redirect": {
@@ -1690,7 +1613,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 15
+        "register": 14
       },
       "enableBy": "config"
     },
@@ -1704,10 +1627,7 @@
       "time": {
         "hooks": {
           "onGenerateFiles": [
-            2,
-            0,
-            1,
-            1
+            7
           ]
         },
         "register": 1
@@ -1722,7 +1642,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 0
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -1735,7 +1655,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -1815,7 +1735,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 0
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.36_@t_809568d03bbb42ead0eac343d193aaa3/node_modules/@umijs/preset-umi/dist/features/hmrGuardian/hmrGuardian": {
@@ -1840,17 +1760,8 @@
       "time": {
         "hooks": {
           "addHTMLHeadScripts": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
+            11,
+            10,
             0,
             0,
             0,
@@ -1862,7 +1773,7 @@
             0
           ]
         },
-        "register": 20
+        "register": 19
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.36_@t_809568d03bbb42ead0eac343d193aaa3/node_modules/@umijs/preset-umi/dist/features/forget/forget": {
@@ -1874,7 +1785,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -1888,7 +1799,7 @@
       "time": {
         "hooks": {
           "modifyUniBundler": [
-            512
+            375
           ]
         },
         "register": 1
@@ -1904,7 +1815,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1917,7 +1828,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 25
+        "register": 26
       },
       "enableBy": "register"
     },
@@ -1931,10 +1842,10 @@
       "time": {
         "hooks": {
           "modifyAppData": [
-            22
+            19
           ]
         },
-        "register": 42
+        "register": 30
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.36_@t_809568d03bbb42ead0eac343d193aaa3/node_modules/@umijs/preset-umi/dist/commands/help": {
@@ -1972,7 +1883,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 0
       },
       "enableBy": "register"
     },
@@ -1985,7 +1896,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 0
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1998,7 +1909,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 0
       },
       "enableBy": "register"
     },
@@ -2024,7 +1935,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 0
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -2037,7 +1948,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 0
       },
       "enableBy": "register"
     },
@@ -2050,7 +1961,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 0
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -2063,7 +1974,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 0
       },
       "enableBy": "register"
     },
@@ -2102,7 +2013,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 0
       },
       "enableBy": "register"
     },
@@ -2115,7 +2026,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 0
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -2128,7 +2039,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 0
       },
       "enableBy": "register"
     },
@@ -2141,7 +2052,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 0
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -2154,7 +2065,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 0
       },
       "enableBy": "register"
     },
@@ -2180,7 +2091,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 15
+        "register": 14
       },
       "enableBy": "register"
     },
@@ -2193,7 +2104,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 0
       },
       "enableBy": "register"
     },
@@ -2206,7 +2117,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 3
       },
       "enableBy": "register"
     },
@@ -2220,22 +2131,16 @@
       "time": {
         "hooks": {
           "addRuntimePlugin": [
-            0,
-            0,
-            0,
             0
           ],
           "onGenerateFiles": [
-            1,
-            1,
-            0,
-            0
+            1
           ],
           "addTmpGenerateWatcherPaths": [
             0
           ]
         },
-        "register": 2
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -2263,8 +2168,7 @@
       "time": {
         "hooks": {
           "modifyConfig": [
-            2,
-            0
+            1
           ],
           "modifyAppData": [
             0
@@ -2274,31 +2178,16 @@
           ],
           "addEntryImportsAhead": [
             0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
             0
           ],
           "addRuntimePlugin": [
-            0,
-            0,
-            0,
             0
           ],
           "addRuntimePluginKey": [
-            0,
-            0,
-            0,
             0
           ],
           "onGenerateFiles": [
-            3,
-            1,
-            1,
-            1
+            2
           ],
           "addExtraBabelPlugins": [
             0
@@ -2307,7 +2196,7 @@
             0
           ]
         },
-        "register": 7
+        "register": 5
       }
     },
     "./node_modules/.pnpm/@umijs+plugins@4.6.36_@babe_3453aec3d2f7a38972126ffecf5938fd/node_modules/@umijs/plugins/dist/dva": {
@@ -2333,31 +2222,19 @@
       "time": {
         "hooks": {
           "addRuntimePlugin": [
-            0,
-            0,
-            0,
             0
           ],
           "addRuntimePluginKey": [
-            0,
-            0,
-            0,
             0
           ],
           "onGenerateFiles": [
-            1,
-            0,
-            0,
-            0
+            3
           ],
           "addExtraModels": [
-            0,
-            0,
-            0,
             0
           ]
         },
-        "register": 1
+        "register": 0
       },
       "enableBy": "config"
     },
@@ -2373,38 +2250,25 @@
       "time": {
         "hooks": {
           "modifyConfig": [
-            0,
             0
           ],
           "addLayouts": [
-            0,
-            0,
-            0,
             0
           ],
           "modifyAppData": [
             0
           ],
           "addRuntimePlugin": [
-            0,
-            0,
-            0,
             0
           ],
           "addRuntimePluginKey": [
-            0,
-            0,
-            0,
             0
           ],
           "onGenerateFiles": [
-            4,
-            2,
-            1,
-            2
+            4
           ]
         },
-        "register": 3
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -2417,7 +2281,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -2444,16 +2308,10 @@
       "time": {
         "hooks": {
           "addRuntimePlugin": [
-            0,
-            0,
-            0,
             0
           ],
           "onGenerateFiles": [
-            18,
-            13,
-            11,
-            15
+            16
           ],
           "addTmpGenerateWatcherPaths": [
             0
@@ -2472,7 +2330,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 0
       },
       "enableBy": "config"
     },
@@ -2486,9 +2344,6 @@
       "time": {
         "hooks": {
           "addRuntimePluginKey": [
-            0,
-            0,
-            0,
             0
           ]
         },
@@ -2517,7 +2372,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       }
     },
     "./node_modules/.pnpm/@umijs+plugins@4.6.36_@babe_3453aec3d2f7a38972126ffecf5938fd/node_modules/@umijs/plugins/dist/react-query": {
@@ -2543,19 +2398,13 @@
       "time": {
         "hooks": {
           "addRuntimePluginKey": [
-            0,
-            0,
-            0,
             0
           ],
           "onGenerateFiles": [
-            3,
-            1,
-            1,
-            0
+            2
           ]
         },
-        "register": 1
+        "register": 0
       },
       "enableBy": "config"
     },
@@ -2581,7 +2430,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 0
       },
       "enableBy": "config"
     },
@@ -2608,7 +2457,6 @@
       "time": {
         "hooks": {
           "modifyConfig": [
-            0,
             0
           ]
         },
@@ -2626,7 +2474,7 @@
       "time": {
         "hooks": {
           "modifyAppData": [
-            1
+            0
           ]
         },
         "register": 1
@@ -2659,7 +2507,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 0
       },
       "enableBy": "register"
     }
@@ -2676,7 +2524,7 @@
     "initialState": {},
     "request": {},
     "layout": {
-      "title": "Chronic Disease Admin",
+      "title": "Chronic Disease AI",
       "locale": false
     },
     "routes": [
@@ -2691,105 +2539,80 @@
         ]
       },
       {
-        "path": "/platform",
+        "path": "/",
+        "redirect": "/dashboard"
+      },
+      {
+        "path": "/dashboard",
+        "name": "Dashboard",
+        "component": "./dashboard"
+      },
+      {
+        "path": "/patients",
+        "name": "Patients",
+        "component": "./patients"
+      },
+      {
+        "path": "/knowledge",
+        "name": "Knowledge",
+        "component": "./knowledge"
+      },
+      {
+        "path": "/chat",
+        "name": "Chat",
+        "component": "./chat"
+      },
+      {
+        "path": "/members",
+        "name": "Members",
+        "component": "./members"
+      },
+      {
+        "path": "/roles",
+        "name": "Roles",
+        "component": "./roles"
+      },
+      {
+        "path": "/audit-logs",
+        "name": "Audit",
+        "component": "./audit"
+      },
+      {
+        "path": "/managers",
+        "name": "Managers",
+        "component": "./managers"
+      },
+      {
+        "path": "/usage",
+        "name": "Usage",
+        "component": "./usage"
+      },
+      {
+        "path": "/admin",
         "name": "Platform Admin",
         "icon": "crown",
         "routes": [
           {
-            "path": "/platform",
-            "redirect": "/platform/dashboard"
+            "path": "/admin",
+            "redirect": "/admin/dashboard"
           },
           {
-            "path": "/platform/dashboard",
-            "name": "Dashboard",
-            "component": "./platform/Dashboard"
+            "path": "/admin/dashboard",
+            "component": "./admin/Dashboard"
           },
           {
-            "path": "/platform/organizations",
-            "name": "Organizations",
-            "component": "./platform/Organizations"
+            "path": "/admin/organizations",
+            "component": "./admin/Organizations"
           },
           {
-            "path": "/platform/users",
-            "name": "Users",
-            "component": "./platform/Users"
+            "path": "/admin/users",
+            "component": "./admin/Users"
           },
           {
-            "path": "/platform/usage",
-            "name": "Usage & Quota",
-            "component": "./platform/Usage"
-          },
-          {
-            "path": "/platform/audit-logs",
-            "name": "Audit Logs",
-            "component": "./platform/AuditLogs"
-          },
-          {
-            "path": "/platform/settings",
-            "name": "Settings",
-            "component": "./platform/Settings"
+            "path": "/admin/settings",
+            "component": "./admin/Settings"
           }
         ]
-      },
-      {
-        "path": "/org",
-        "name": "Organization",
-        "icon": "team",
-        "routes": [
-          {
-            "path": "/org",
-            "redirect": "/org/dashboard"
-          },
-          {
-            "path": "/org/dashboard",
-            "name": "Overview",
-            "component": "./organization/Dashboard"
-          },
-          {
-            "path": "/org/members",
-            "name": "Members",
-            "component": "./organization/Members"
-          },
-          {
-            "path": "/org/roles",
-            "name": "Roles & Permissions",
-            "component": "./organization/Roles"
-          },
-          {
-            "path": "/org/patients",
-            "name": "Patients",
-            "component": "./organization/Patients"
-          },
-          {
-            "path": "/org/managers",
-            "name": "Managers",
-            "component": "./organization/Managers"
-          },
-          {
-            "path": "/org/knowledge-bases",
-            "name": "Knowledge Bases",
-            "component": "./organization/KnowledgeBases"
-          },
-          {
-            "path": "/org/conversations",
-            "name": "Conversations",
-            "component": "./organization/Conversations"
-          },
-          {
-            "path": "/org/usage",
-            "name": "Usage",
-            "component": "./organization/Usage"
-          },
-          {
-            "path": "/org/audit-logs",
-            "name": "Audit Logs",
-            "component": "./organization/AuditLogs"
-          }
-        ]
-      },
-      {
-        "path": "/",
-        "redirect": "/org/dashboard"
       },
       {
         "component": "./404"
@@ -2842,7 +2665,7 @@
     "initialState": {},
     "request": {},
     "layout": {
-      "title": "Chronic Disease Admin",
+      "title": "Chronic Disease AI",
       "locale": false
     },
     "routes": [
@@ -2857,105 +2680,80 @@
         ]
       },
       {
-        "path": "/platform",
+        "path": "/",
+        "redirect": "/dashboard"
+      },
+      {
+        "path": "/dashboard",
+        "name": "Dashboard",
+        "component": "./dashboard"
+      },
+      {
+        "path": "/patients",
+        "name": "Patients",
+        "component": "./patients"
+      },
+      {
+        "path": "/knowledge",
+        "name": "Knowledge",
+        "component": "./knowledge"
+      },
+      {
+        "path": "/chat",
+        "name": "Chat",
+        "component": "./chat"
+      },
+      {
+        "path": "/members",
+        "name": "Members",
+        "component": "./members"
+      },
+      {
+        "path": "/roles",
+        "name": "Roles",
+        "component": "./roles"
+      },
+      {
+        "path": "/audit-logs",
+        "name": "Audit",
+        "component": "./audit"
+      },
+      {
+        "path": "/managers",
+        "name": "Managers",
+        "component": "./managers"
+      },
+      {
+        "path": "/usage",
+        "name": "Usage",
+        "component": "./usage"
+      },
+      {
+        "path": "/admin",
         "name": "Platform Admin",
         "icon": "crown",
         "routes": [
           {
-            "path": "/platform",
-            "redirect": "/platform/dashboard"
+            "path": "/admin",
+            "redirect": "/admin/dashboard"
           },
           {
-            "path": "/platform/dashboard",
-            "name": "Dashboard",
-            "component": "./platform/Dashboard"
+            "path": "/admin/dashboard",
+            "component": "./admin/Dashboard"
           },
           {
-            "path": "/platform/organizations",
-            "name": "Organizations",
-            "component": "./platform/Organizations"
+            "path": "/admin/organizations",
+            "component": "./admin/Organizations"
           },
           {
-            "path": "/platform/users",
-            "name": "Users",
-            "component": "./platform/Users"
+            "path": "/admin/users",
+            "component": "./admin/Users"
           },
           {
-            "path": "/platform/usage",
-            "name": "Usage & Quota",
-            "component": "./platform/Usage"
-          },
-          {
-            "path": "/platform/audit-logs",
-            "name": "Audit Logs",
-            "component": "./platform/AuditLogs"
-          },
-          {
-            "path": "/platform/settings",
-            "name": "Settings",
-            "component": "./platform/Settings"
+            "path": "/admin/settings",
+            "component": "./admin/Settings"
           }
         ]
-      },
-      {
-        "path": "/org",
-        "name": "Organization",
-        "icon": "team",
-        "routes": [
-          {
-            "path": "/org",
-            "redirect": "/org/dashboard"
-          },
-          {
-            "path": "/org/dashboard",
-            "name": "Overview",
-            "component": "./organization/Dashboard"
-          },
-          {
-            "path": "/org/members",
-            "name": "Members",
-            "component": "./organization/Members"
-          },
-          {
-            "path": "/org/roles",
-            "name": "Roles & Permissions",
-            "component": "./organization/Roles"
-          },
-          {
-            "path": "/org/patients",
-            "name": "Patients",
-            "component": "./organization/Patients"
-          },
-          {
-            "path": "/org/managers",
-            "name": "Managers",
-            "component": "./organization/Managers"
-          },
-          {
-            "path": "/org/knowledge-bases",
-            "name": "Knowledge Bases",
-            "component": "./organization/KnowledgeBases"
-          },
-          {
-            "path": "/org/conversations",
-            "name": "Conversations",
-            "component": "./organization/Conversations"
-          },
-          {
-            "path": "/org/usage",
-            "name": "Usage",
-            "component": "./organization/Usage"
-          },
-          {
-            "path": "/org/audit-logs",
-            "name": "Audit Logs",
-            "component": "./organization/AuditLogs"
-          }
-        ]
-      },
-      {
-        "path": "/",
-        "redirect": "/org/dashboard"
       },
       {
         "component": "./404"
@@ -3906,211 +3704,170 @@
       "__absFile": "D:/codes/chronic-disease-management/frontend/src/pages/auth/Login/index.tsx"
     },
     "3": {
-      "path": "/platform",
+      "path": "/",
+      "redirect": "/dashboard",
+      "parentId": "ant-design-pro-layout",
+      "id": "3",
+      "absPath": "/"
+    },
+    "4": {
+      "path": "/dashboard",
+      "name": "Dashboard",
+      "file": "@/pages/dashboard/index.tsx",
+      "parentId": "ant-design-pro-layout",
+      "id": "4",
+      "absPath": "/dashboard",
+      "__content": "import { PageContainer, StatisticCard } from '@ant-design/pro-components';\nimport { Row, Col, Card, Progress } from 'antd';\nimport { useEffect, useState } from 'react';\nimport { listPatients, listKnowledgeBases, listConversations } from '@/services/api/organization';\n\nexport default () => {\n  const [patientCount, setPatientCount] = useState(0);\n  const [kbCount, setKbCount] = useState(0);\n  const [convCount, setConvCount] = useState(0);\n  const [loading, setLoading] = useState(true);\n\n  useEffect(() => {\n    Promise.all([\n      listPatients().then((d) => setPatientCount(d.length)),\n      listKnowledgeBases().then((d) => setKbCount(d.length)),\n      listConversations({ limit: 1 }).then((d) => setConvCount(d.length)),\n    ]).finally(() => setLoading(false));\n  }, []);\n\n  return (\n    <PageContainer>\n      <Row gutter={16}>\n        <Col span={8}>\n          <StatisticCard\n            statistic={{ title: 'Patients', value: patientCount, loading }}\n          />\n        </Col>\n        <Col span={8}>\n          <StatisticCard\n            statistic={{ title: 'Knowledge Bases', value: kbCount, loading }}\n          />\n        </Col>\n        <Col span={8}>\n          <StatisticCard\n            statistic={{ title: 'Conversations', value: convCount, loading }}\n          />\n        </Col>\n      </Row>\n      <Row gutter={16} style={{ marginTop: 16 }}>\n        <Col span={12}>\n          <Card title=\"Quota Usage\" loading={loading}>\n            <Progress percent={30} status=\"active\" />\n            <p style={{ marginTop: 8, color: '#999' }}>\n              300,000 / 1,000,000 tokens used\n            </p>\n          </Card>\n        </Col>\n        <Col span={12}>\n          <Card title=\"Recent Activity\" loading={loading}>\n            <p>Organization dashboard ready</p>\n          </Card>\n        </Col>\n      </Row>\n    </PageContainer>\n  );\n};\n",
+      "__isJSFile": true,
+      "__absFile": "D:/codes/chronic-disease-management/frontend/src/pages/dashboard/index.tsx"
+    },
+    "5": {
+      "path": "/patients",
+      "name": "Patients",
+      "file": "@/pages/patients/index.tsx",
+      "parentId": "ant-design-pro-layout",
+      "id": "5",
+      "absPath": "/patients",
+      "__content": "import { PageContainer, ProTable } from '@ant-design/pro-components';\nimport { listPatients } from '@/services/api/organization';\nimport type { ProColumns } from '@ant-design/pro-components';\n\nconst columns: ProColumns[] = [\n  { title: 'Name', dataIndex: 'real_name' },\n  { title: 'Gender', dataIndex: 'gender', filters: [\n    { text: 'Male', value: 'male' },\n    { text: 'Female', value: 'female' },\n  ]},\n  { title: 'Birth Date', dataIndex: 'birth_date', valueType: 'date' },\n  {\n    title: 'Created At',\n    dataIndex: 'created_at',\n    valueType: 'dateTime',\n    sorter: true,\n  },\n];\n\nexport default () => {\n  return (\n    <PageContainer>\n      <ProTable\n        columns={columns}\n        request={async (params) => {\n          const data = await listPatients({\n            skip: ((params.current || 1) - 1) * (params.pageSize || 20),\n            limit: params.pageSize || 20,\n            search: params.real_name,\n          });\n          return { data, success: true, total: data.length };\n        }}\n        rowKey=\"id\"\n        search={{ labelWidth: 'auto' }}\n        pagination={{ pageSize: 20 }}\n        headerTitle=\"Patients\"\n      />\n    </PageContainer>\n  );\n};\n",
+      "__isJSFile": true,
+      "__absFile": "D:/codes/chronic-disease-management/frontend/src/pages/patients/index.tsx"
+    },
+    "6": {
+      "path": "/knowledge",
+      "name": "Knowledge",
+      "file": "@/pages/knowledge/index.tsx",
+      "parentId": "ant-design-pro-layout",
+      "id": "6",
+      "absPath": "/knowledge",
+      "__content": "import { PageContainer } from '@ant-design/pro-components';\nimport { Card, Col, Row, Tag, Empty, Spin } from 'antd';\nimport { useEffect, useState } from 'react';\nimport { listKnowledgeBases } from '@/services/api/organization';\n\nexport default () => {\n  const [kbs, setKbs] = useState<any[]>([]);\n  const [loading, setLoading] = useState(true);\n\n  useEffect(() => {\n    listKnowledgeBases()\n      .then(setKbs)\n      .finally(() => setLoading(false));\n  }, []);\n\n  return (\n    <PageContainer>\n      <Spin spinning={loading}>\n        {kbs.length === 0 ? (\n          <Empty description=\"No knowledge bases\" />\n        ) : (\n          <Row gutter={[16, 16]}>\n            {kbs.map((kb) => (\n              <Col key={kb.id} xs={24} sm={12} md={8} lg={6}>\n                <Card\n                  title={kb.name}\n                  extra={<Tag>{kb.document_count} docs</Tag>}\n                  hoverable\n                >\n                  <p>{kb.description || 'No description'}</p>\n                  <p style={{ color: '#999', fontSize: 12 }}>\n                    Created: {new Date(kb.created_at).toLocaleDateString()}\n                  </p>\n                </Card>\n              </Col>\n            ))}\n          </Row>\n        )}\n      </Spin>\n    </PageContainer>\n  );\n};\n",
+      "__isJSFile": true,
+      "__absFile": "D:/codes/chronic-disease-management/frontend/src/pages/knowledge/index.tsx"
+    },
+    "7": {
+      "path": "/chat",
+      "name": "Chat",
+      "file": "@/pages/chat/index.tsx",
+      "parentId": "ant-design-pro-layout",
+      "id": "7",
+      "absPath": "/chat",
+      "__content": "import { PageContainer, ProTable } from '@ant-design/pro-components';\nimport { listConversations } from '@/services/api/organization';\nimport type { ProColumns } from '@ant-design/pro-components';\n\nconst columns: ProColumns[] = [\n  { title: 'Title', dataIndex: 'title', ellipsis: true },\n  { title: 'User ID', dataIndex: 'user_id', copyable: true },\n  {\n    title: 'Created At',\n    dataIndex: 'created_at',\n    valueType: 'dateTime',\n    sorter: true,\n  },\n];\n\nexport default () => {\n  return (\n    <PageContainer>\n      <ProTable\n        columns={columns}\n        request={async (params) => {\n          const data = await listConversations({\n            skip: ((params.current || 1) - 1) * (params.pageSize || 20),\n            limit: params.pageSize || 20,\n          });\n          return { data, success: true, total: data.length };\n        }}\n        rowKey=\"id\"\n        search={false}\n        pagination={{ pageSize: 20 }}\n        headerTitle=\"Conversations\"\n      />\n    </PageContainer>\n  );\n};\n",
+      "__isJSFile": true,
+      "__absFile": "D:/codes/chronic-disease-management/frontend/src/pages/chat/index.tsx"
+    },
+    "8": {
+      "path": "/members",
+      "name": "Members",
+      "file": "@/pages/members/index.tsx",
+      "parentId": "ant-design-pro-layout",
+      "id": "8",
+      "absPath": "/members",
+      "__content": "import { PageContainer, ProTable } from '@ant-design/pro-components';\nimport { Tag } from 'antd';\nimport { getOrganizationMembers } from '@/services/api/admin';\nimport type { ProColumns } from '@ant-design/pro-components';\n\nconst columns: ProColumns[] = [\n  { title: 'Email', dataIndex: 'email', copyable: true },\n  { title: 'Name', dataIndex: 'name' },\n  {\n    title: 'Type',\n    dataIndex: 'user_type',\n    render: (_, record: any) => (\n      <Tag color={record.user_type === 'staff' ? 'blue' : 'green'}>\n        {record.user_type}\n      </Tag>\n    ),\n    filters: [\n      { text: 'Staff', value: 'staff' },\n      { text: 'Patient', value: 'patient' },\n    ],\n  },\n  {\n    title: 'Roles',\n    dataIndex: 'roles',\n    render: (_, record: any) =>\n      (record.roles || []).map((r: string) => <Tag key={r}>{r}</Tag>),\n  },\n];\n\nexport default () => {\n  const orgId = localStorage.getItem('currentOrgId') || '';\n\n  return (\n    <PageContainer>\n      <ProTable\n        columns={columns}\n        request={async () => {\n          if (!orgId) return { data: [], success: true };\n          const data = await getOrganizationMembers(orgId);\n          return { data, success: true, total: data.length };\n        }}\n        rowKey=\"user_id\"\n        search={false}\n        headerTitle=\"Organization Members\"\n      />\n    </PageContainer>\n  );\n};\n",
+      "__isJSFile": true,
+      "__absFile": "D:/codes/chronic-disease-management/frontend/src/pages/members/index.tsx"
+    },
+    "9": {
+      "path": "/roles",
+      "name": "Roles",
+      "file": "@/pages/roles/index.tsx",
+      "parentId": "ant-design-pro-layout",
+      "id": "9",
+      "absPath": "/roles",
+      "__content": "import { PageContainer } from '@ant-design/pro-components';\nimport { Card, Tag, List, Spin, Empty } from 'antd';\nimport { useEffect, useState } from 'react';\nimport { listRoles } from '@/services/api/organization';\n\nexport default () => {\n  const [roles, setRoles] = useState<any[]>([]);\n  const [loading, setLoading] = useState(true);\n\n  useEffect(() => {\n    listRoles()\n      .then(setRoles)\n      .catch(() => setRoles([]))\n      .finally(() => setLoading(false));\n  }, []);\n\n  return (\n    <PageContainer>\n      <Spin spinning={loading}>\n        {roles.length === 0 ? (\n          <Empty description=\"No roles found or API not available\" />\n        ) : (\n          <List\n            grid={{ gutter: 16, xs: 1, sm: 1, md: 2, lg: 2, xl: 3 }}\n            dataSource={roles}\n            renderItem={(role: any) => (\n              <List.Item>\n                <Card title={role.name} extra={role.is_system ? <Tag color=\"blue\">System</Tag> : null}>\n                  <p style={{ color: '#666' }}>{role.description}</p>\n                  <div>\n                    <p style={{ fontWeight: 'bold', marginBottom: 4 }}>Permissions:</p>\n                    {(role.permissions || []).map((p: any) => (\n                      <Tag key={p.code || p} style={{ marginBottom: 4 }}>\n                        {p.name || p}\n                      </Tag>\n                    ))}\n                  </div>\n                </Card>\n              </List.Item>\n            )}\n          />\n        )}\n      </Spin>\n    </PageContainer>\n  );\n};\n",
+      "__isJSFile": true,
+      "__absFile": "D:/codes/chronic-disease-management/frontend/src/pages/roles/index.tsx"
+    },
+    "10": {
+      "path": "/audit-logs",
+      "name": "Audit",
+      "file": "@/pages/audit/index.tsx",
+      "parentId": "ant-design-pro-layout",
+      "id": "10",
+      "absPath": "/audit-logs",
+      "__content": "import { PageContainer, ProTable } from '@ant-design/pro-components';\nimport { listOrgAuditLogs } from '@/services/api/organization';\nimport type { ProColumns } from '@ant-design/pro-components';\n\nconst columns: ProColumns[] = [\n  { title: 'Action', dataIndex: 'action', filters: true },\n  { title: 'Resource', dataIndex: 'resource_type', filters: true },\n  { title: 'Resource ID', dataIndex: 'resource_id', copyable: true },\n  { title: 'Details', dataIndex: 'details', ellipsis: true },\n  { title: 'IP Address', dataIndex: 'ip_address' },\n  {\n    title: 'Time',\n    dataIndex: 'created_at',\n    valueType: 'dateTime',\n    sorter: true,\n  },\n];\n\nexport default () => {\n  return (\n    <PageContainer>\n      <ProTable\n        columns={columns}\n        request={async (params) => {\n          const data = await listOrgAuditLogs({\n            skip: ((params.current || 1) - 1) * (params.pageSize || 20),\n            limit: params.pageSize || 20,\n            action: params.action,\n            resource_type: params.resource_type,\n          });\n          return { data, success: true, total: data.length };\n        }}\n        rowKey=\"id\"\n        search={{ labelWidth: 'auto' }}\n        pagination={{ pageSize: 20 }}\n        headerTitle=\"Organization Audit Logs\"\n      />\n    </PageContainer>\n  );\n};\n",
+      "__isJSFile": true,
+      "__absFile": "D:/codes/chronic-disease-management/frontend/src/pages/audit/index.tsx"
+    },
+    "11": {
+      "path": "/managers",
+      "name": "Managers",
+      "file": "@/pages/managers/index.tsx",
+      "parentId": "ant-design-pro-layout",
+      "id": "11",
+      "absPath": "/managers",
+      "__content": "import { PageContainer, ProTable } from '@ant-design/pro-components';\nimport { Tag } from 'antd';\nimport { listManagers } from '@/services/api/organization';\nimport type { ProColumns } from '@ant-design/pro-components';\n\nconst columns: ProColumns[] = [\n  { title: 'Name', dataIndex: 'name' },\n  { title: 'Email', dataIndex: 'email', copyable: true },\n  { title: 'Title', dataIndex: 'title' },\n  {\n    title: 'Status',\n    dataIndex: 'is_active',\n    render: (_, record: any) => (\n      <Tag color={record.is_active ? 'green' : 'red'}>\n        {record.is_active ? 'Active' : 'Inactive'}\n      </Tag>\n    ),\n  },\n  { title: 'Patients Assigned', dataIndex: 'assigned_patient_count' },\n];\n\nexport default () => {\n  return (\n    <PageContainer>\n      <ProTable\n        columns={columns}\n        request={async () => {\n          const data = await listManagers();\n          return { data, success: true, total: data.length };\n        }}\n        rowKey=\"id\"\n        search={false}\n        headerTitle=\"Managers\"\n      />\n    </PageContainer>\n  );\n};\n",
+      "__isJSFile": true,
+      "__absFile": "D:/codes/chronic-disease-management/frontend/src/pages/managers/index.tsx"
+    },
+    "12": {
+      "path": "/usage",
+      "name": "Usage",
+      "file": "@/pages/usage/index.tsx",
+      "parentId": "ant-design-pro-layout",
+      "id": "12",
+      "absPath": "/usage",
+      "__content": "import { PageContainer, ProTable } from '@ant-design/pro-components';\nimport { listOrgAuditLogs } from '@/services/api/organization';\nimport type { ProColumns } from '@ant-design/pro-components';\n\nconst columns: ProColumns[] = [\n  { title: 'Action', dataIndex: 'action', filters: true },\n  { title: 'Resource', dataIndex: 'resource_type', filters: true },\n  { title: 'User ID', dataIndex: 'user_id', copyable: true },\n  {\n    title: 'Time',\n    dataIndex: 'created_at',\n    valueType: 'dateTime',\n    sorter: true,\n  },\n];\n\nexport default () => {\n  return (\n    <PageContainer>\n      <ProTable\n        columns={columns}\n        request={async (params) => {\n          const data = await listOrgAuditLogs({\n            skip: ((params.current || 1) - 1) * (params.pageSize || 20),\n            limit: params.pageSize || 20,\n            action: params.action,\n            resource_type: params.resource_type,\n          });\n          return { data, success: true, total: data.length };\n        }}\n        rowKey=\"id\"\n        search={{ labelWidth: 'auto' }}\n        pagination={{ pageSize: 20 }}\n        headerTitle=\"Organization Audit Logs\"\n      />\n    </PageContainer>\n  );\n};\n",
+      "__isJSFile": true,
+      "__absFile": "D:/codes/chronic-disease-management/frontend/src/pages/usage/index.tsx"
+    },
+    "13": {
+      "path": "/admin",
       "name": "Platform Admin",
       "icon": "crown",
       "parentId": "ant-design-pro-layout",
-      "id": "3",
-      "absPath": "/platform"
-    },
-    "4": {
-      "path": "/platform",
-      "redirect": "/platform/dashboard",
-      "parentId": "3",
-      "id": "4",
-      "absPath": "/platform"
-    },
-    "5": {
-      "path": "/platform/dashboard",
-      "name": "Dashboard",
-      "file": "@/pages/platform/Dashboard/index.tsx",
-      "parentId": "3",
-      "id": "5",
-      "absPath": "/platform/dashboard",
-      "__content": "import { PageContainer, StatisticCard } from '@ant-design/pro-components';\nimport { Row, Col, Badge, Alert } from 'antd';\nimport { useEffect, useState } from 'react';\nimport { getDashboardStats } from '@/services/api/admin';\nimport { Line } from '@ant-design/charts';\n\nconst { Divider } = StatisticCard;\n\nexport default () => {\n  const [stats, setStats] = useState<any>({});\n  const [loading, setLoading] = useState(true);\n\n  useEffect(() => {\n    getDashboardStats()\n      .then(setStats)\n      .finally(() => setLoading(false));\n  }, []);\n\n  const config = {\n    data: stats.token_usage_trend || [],\n    padding: 'auto' as any,\n    xField: 'date',\n    yField: 'tokens',\n    xAxis: {\n      tickCount: 7,\n    },\n    smooth: true,\n  };\n\n  return (\n    <PageContainer>\n      {stats.recent_failed_docs > 0 && (\n        <Alert\n          message={`Attention: ${stats.recent_failed_docs} document(s) failed to process in the last batch.`}\n          type=\"warning\"\n          showIcon\n          closable\n          style={{ marginBottom: 16 }}\n        />\n      )}\n\n      <StatisticCard.Group direction=\"row\">\n        <StatisticCard\n          statistic={{\n            title: 'Total Organizations',\n            value: stats.total_organizations,\n            status: 'processing',\n          }}\n        />\n        <Divider type=\"vertical\" />\n        <StatisticCard\n          statistic={{\n            title: 'Active Users (24h)',\n            value: stats.active_users_24h,\n            status: 'success',\n          }}\n        />\n        <Divider type=\"vertical\" />\n        <StatisticCard\n          statistic={{\n            title: 'Total Conversations',\n            value: stats.total_conversations,\n          }}\n        />\n        <Divider type=\"vertical\" />\n        <StatisticCard\n          statistic={{\n            title: 'Total Tokens',\n            value: stats.total_tokens_used,\n            precision: 0,\n            suffix: 'T',\n          }}\n        />\n      </StatisticCard.Group>\n\n      <Row gutter={16} style={{ marginTop: 16 }}>\n        <Col span={16}>\n          <StatisticCard\n            title=\"Token Usage Trend (Last 7 Days)\"\n            chart={\n              <div style={{ height: 300, marginTop: 20 }}>\n                {stats.token_usage_trend ? <Line {...config} /> : null}\n              </div>\n            }\n          />\n        </Col>\n        <Col span={8}>\n          <StatisticCard\n            title=\"System Pulse\"\n            style={{ height: '100%' }}\n            footer={\n              <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 16 }}>\n                <Badge status=\"processing\" text=\"LLM Service: Healthy\" />\n                <br />\n                <Badge status=\"processing\" text=\"Vector DB: Connected\" />\n                <br />\n                <Badge status=\"processing\" text=\"Storage: 14% Used\" />\n              </div>\n            }\n          >\n            <StatisticCard\n              statistic={{\n                title: 'Total Patients Managed',\n                value: stats.total_patients,\n                description: <Badge status=\"default\" text=\"Across all tenants\" />,\n              }}\n              chartPlacement=\"left\"\n            />\n          </StatisticCard>\n        </Col>\n      </Row>\n    </PageContainer>\n  );\n};\n",
-      "__isJSFile": true,
-      "__absFile": "D:/codes/chronic-disease-management/frontend/src/pages/platform/Dashboard/index.tsx"
-    },
-    "6": {
-      "path": "/platform/organizations",
-      "name": "Organizations",
-      "file": "@/pages/platform/Organizations/index.tsx",
-      "parentId": "3",
-      "id": "6",
-      "absPath": "/platform/organizations",
-      "__content": "import { PlusOutlined } from '@ant-design/icons';\nimport {\n  ModalForm,\n  PageContainer,\n  ProFormDigit,\n  ProFormSelect,\n  ProFormText,\n  ProTable,\n} from '@ant-design/pro-components';\nimport { Button, message, Popconfirm, Progress, Space, Tag } from 'antd';\nimport {\n  listOrganizations,\n  createOrganization,\n  updateOrganization,\n  deleteOrganization,\n} from '@/services/api/admin';\nimport type { ProColumns, ActionType } from '@ant-design/pro-components';\nimport { useRef } from 'react';\n\nexport default () => {\n  const actionRef = useRef<ActionType>();\n\n  const columns: ProColumns[] = [\n    {\n      title: 'Organization Name',\n      dataIndex: 'name',\n      copyable: true,\n      formItemProps: {\n        rules: [{ required: true, message: 'Organization name is required' }],\n      },\n    },\n    {\n      title: 'Plan',\n      dataIndex: 'plan_type',\n      filters: true,\n      valueEnum: {\n        free: { text: 'Free', status: 'Default' },\n        pro: { text: 'Pro', status: 'Success' },\n        enterprise: { text: 'Enterprise', status: 'Processing' },\n      },\n      render: (_, record) => {\n        const color =\n          record.plan_type === 'enterprise' ? 'purple' : record.plan_type === 'pro' ? 'blue' : 'default';\n        return <Tag color={color}>{record.plan_type.toUpperCase()}</Tag>;\n      },\n    },\n    {\n      title: 'Token Usage',\n      dataIndex: 'quota_tokens_used',\n      hideInSearch: true,\n      render: (_, record) => (\n        <div style={{ width: 150 }}>\n          <Progress\n            percent={record.quota_usage_percent}\n            size=\"small\"\n            status={record.quota_usage_percent > 90 ? 'exception' : 'active'}\n          />\n          <small>\n            {record.quota_tokens_used.toLocaleString()} / {record.quota_tokens_limit.toLocaleString()}\n          </small>\n        </div>\n      ),\n    },\n    {\n      title: 'Created At',\n      dataIndex: 'created_at',\n      valueType: 'dateTime',\n      sorter: true,\n      hideInForm: true,\n    },\n    {\n      title: 'Operations',\n      valueType: 'option',\n      key: 'option',\n      render: (text, record, _, action) => [\n        <ModalForm\n          key=\"edit\"\n          title=\"Edit Organization\"\n          trigger={<a>Edit</a>}\n          initialValues={record}\n          onFinish={async (values) => {\n            await updateOrganization(record.id, values);\n            message.success('Updated successfully');\n            actionRef.current?.reload();\n            return true;\n          }}\n        >\n          <ProFormText name=\"name\" label=\"Name\" />\n          <ProFormSelect\n            name=\"plan_type\"\n            label=\"Plan\"\n            options={[\n              { label: 'Free', value: 'free' },\n              { label: 'Pro', value: 'pro' },\n              { label: 'Enterprise', value: 'enterprise' },\n            ]}\n          />\n          <ProFormDigit name=\"quota_tokens_limit\" label=\"Token Quota\" />\n        </ModalForm>,\n        <Popconfirm\n          key=\"delete\"\n          title=\"Delete organization?\"\n          description=\"This action cannot be undone.\"\n          onConfirm={async () => {\n            await deleteOrganization(record.id);\n            message.success('Deleted');\n            actionRef.current?.reload();\n          }}\n        >\n          <a style={{ color: 'red' }}>Delete</a>\n        </Popconfirm>,\n      ],\n    },\n  ];\n\n  return (\n    <PageContainer>\n      <ProTable\n        columns={columns}\n        actionRef={actionRef}\n        request={async (params, sort, filter) => {\n          const data = await listOrganizations({\n            skip: ((params.current || 1) - 1) * (params.pageSize || 20),\n            limit: params.pageSize || 20,\n            search: params.name,\n          });\n          return {\n            data,\n            success: true,\n            total: data.length, // In a real app, backend should return total\n          };\n        }}\n        rowKey=\"id\"\n        search={{ labelWidth: 'auto' }}\n        headerTitle=\"System Organizations\"\n        toolBarRender={() => [\n          <ModalForm\n            key=\"create\"\n            title=\"Create New Organization\"\n            trigger={\n              <Button type=\"primary\">\n                <PlusOutlined /> New Organization\n              </Button>\n            }\n            onFinish={async (values: any) => {\n              await createOrganization(values);\n              message.success('Created successfully');\n              actionRef.current?.reload();\n              return true;\n            }}\n          >\n            <ProFormText name=\"name\" label=\"Name\" placeholder=\"Enter organization name\" />\n            <ProFormSelect\n              name=\"plan_type\"\n              label=\"Plan\"\n              initialValue=\"free\"\n              options={[\n                { label: 'Free', value: 'free' },\n                { label: 'Pro', value: 'pro' },\n                { label: 'Enterprise', value: 'enterprise' },\n              ]}\n            />\n          </ModalForm>,\n        ]}\n      />\n    </PageContainer>\n  );\n};\n",
-      "__isJSFile": true,
-      "__absFile": "D:/codes/chronic-disease-management/frontend/src/pages/platform/Organizations/index.tsx"
-    },
-    "7": {
-      "path": "/platform/users",
-      "name": "Users",
-      "file": "@/pages/platform/Users/index.tsx",
-      "parentId": "3",
-      "id": "7",
-      "absPath": "/platform/users",
-      "__content": "import { PlusOutlined } from '@ant-design/icons';\nimport {\n  ModalForm,\n  PageContainer,\n  ProFormText,\n  ProTable,\n} from '@ant-design/pro-components';\nimport { listUsers, updateUserStatus, createUser } from '@/services/api/admin';\nimport type { ProColumns, ActionType } from '@ant-design/pro-components';\nimport { Button, message, Popconfirm, Tag } from 'antd';\nimport { useRef } from 'react';\n\nexport default () => {\n  const actionRef = useRef<ActionType>();\n\n  const columns: ProColumns[] = [\n    {\n      title: 'User Info',\n      dataIndex: 'email',\n      copyable: true,\n      render: (text, record) => (\n        <div>\n          <div style={{ fontWeight: 'bold' }}>{record.name || 'Anonymous'}</div>\n          <div style={{ fontSize: '12px', color: '#666' }}>{record.email}</div>\n        </div>\n      ),\n    },\n    {\n      title: 'Tenants',\n      dataIndex: 'org_count',\n      sorter: true,\n      render: (count) => <Tag color=\"blue\">{count} Orgs</Tag>,\n    },\n    {\n      title: 'Status',\n      dataIndex: 'is_active',\n      hideInSearch: true,\n      render: (_, record) => (\n        <Tag color={record.deleted_at ? 'error' : 'success'}>\n          {record.deleted_at ? 'Inactive' : 'Active'}\n        </Tag>\n      ),\n    },\n    {\n      title: 'Created At',\n      dataIndex: 'created_at',\n      valueType: 'dateTime',\n      sorter: true,\n    },\n    {\n      title: 'Operations',\n      valueType: 'option',\n      key: 'option',\n      render: (text, record) => [\n        <Popconfirm\n          key=\"toggle\"\n          title={record.deleted_at ? 'Reactivate user?' : 'Disable user?'}\n          onConfirm={async () => {\n            await updateUserStatus(record.id, !!record.deleted_at);\n            message.success('Status updated');\n            actionRef.current?.reload();\n          }}\n        >\n          <a style={{ color: record.deleted_at ? 'green' : 'red' }}>\n            {record.deleted_at ? 'Activate' : 'Disable'}\n          </a>\n        </Popconfirm>,\n      ],\n    },\n  ];\n\n  return (\n    <PageContainer>\n      <ProTable\n        columns={columns}\n        actionRef={actionRef}\n        request={async (params) => {\n          const data = await listUsers({\n            skip: ((params.current || 1) - 1) * (params.pageSize || 20),\n            limit: params.pageSize || 20,\n            search: params.email,\n          });\n          return { data, success: true, total: data.length };\n        }}\n        rowKey=\"id\"\n        search={{ labelWidth: 'auto' }}\n        pagination={{ pageSize: 20 }}\n        headerTitle=\"Global User Management\"\n        toolBarRender={() => [\n          <ModalForm\n            key=\"create\"\n            title=\"Register New User\"\n            trigger={\n              <Button type=\"primary\">\n                <PlusOutlined /> New User\n              </Button>\n            }\n            onFinish={async (values: any) => {\n              await createUser(values);\n              message.success('User registered successfully');\n              actionRef.current?.reload();\n              return true;\n            }}\n          >\n            <ProFormText\n              name=\"email\"\n              label=\"Email\"\n              placeholder=\"user@example.com\"\n              rules={[{ required: true, type: 'email' }]}\n            />\n            <ProFormText\n              name=\"name\"\n              label=\"Full Name\"\n              placeholder=\"Enter name\"\n            />\n            <ProFormText.Password\n              name=\"password\"\n              label=\"Password\"\n              rules={[{ required: true, min: 6 }]}\n            />\n          </ModalForm>,\n        ]}\n      />\n    </PageContainer>\n  );\n};\n",
-      "__isJSFile": true,
-      "__absFile": "D:/codes/chronic-disease-management/frontend/src/pages/platform/Users/index.tsx"
-    },
-    "8": {
-      "path": "/platform/usage",
-      "name": "Usage & Quota",
-      "file": "@/pages/platform/Usage/index.tsx",
-      "parentId": "3",
-      "id": "8",
-      "absPath": "/platform/usage",
-      "__content": "import { PageContainer, ProTable } from '@ant-design/pro-components';\nimport { getUsageSummary } from '@/services/api/admin';\nimport type { ProColumns } from '@ant-design/pro-components';\n\nconst columns: ProColumns[] = [\n  { title: 'Organization', dataIndex: 'org_name' },\n  { title: 'Total Tokens', dataIndex: 'total_tokens', sorter: true },\n  {\n    title: 'Total Cost',\n    dataIndex: 'total_cost',\n    render: (_, record) => `$${(record.total_cost || 0).toFixed(4)}`,\n  },\n];\n\nexport default () => {\n  return (\n    <PageContainer>\n      <ProTable\n        columns={columns}\n        request={async () => {\n          const data = await getUsageSummary();\n          return { data, success: true, total: data.length };\n        }}\n        rowKey=\"org_id\"\n        search={false}\n        pagination={{ pageSize: 20 }}\n        headerTitle=\"Token Usage by Organization\"\n      />\n    </PageContainer>\n  );\n};\n",
-      "__isJSFile": true,
-      "__absFile": "D:/codes/chronic-disease-management/frontend/src/pages/platform/Usage/index.tsx"
-    },
-    "9": {
-      "path": "/platform/audit-logs",
-      "name": "Audit Logs",
-      "file": "@/pages/platform/AuditLogs/index.tsx",
-      "parentId": "3",
-      "id": "9",
-      "absPath": "/platform/audit-logs",
-      "__content": "import { PageContainer, ProTable } from '@ant-design/pro-components';\nimport { listAuditLogs } from '@/services/api/admin';\nimport type { ProColumns } from '@ant-design/pro-components';\nimport { Tag } from 'antd';\n\nconst columns: ProColumns[] = [\n  {\n    title: 'Action',\n    dataIndex: 'action',\n    render: (text: string) => {\n      const color = text.includes('delete') ? 'red' : text.includes('update') ? 'orange' : 'blue';\n      return <Tag color={color}>{text.toUpperCase()}</Tag>;\n    },\n  },\n  {\n    title: 'Resource',\n    dataIndex: 'resource_type',\n    render: (text: string, record) => (\n      <span>\n        {text} <small style={{ color: '#999' }}>#{record.resource_id}</small>\n      </span>\n    ),\n  },\n  { title: 'User ID', dataIndex: 'user_id', copyable: true, width: 180 },\n  { title: 'IP Address', dataIndex: 'ip_address', width: 120 },\n  {\n    title: 'Timestamp',\n    dataIndex: 'created_at',\n    valueType: 'dateTime',\n    sorter: true,\n  },\n];\n\nexport default () => {\n  return (\n    <PageContainer>\n      <ProTable\n        columns={columns}\n        request={async (params) => {\n          const data = await listAuditLogs({\n            skip: ((params.current || 1) - 1) * (params.pageSize || 20),\n            limit: params.pageSize || 20,\n            action: params.action,\n            resource_type: params.resource_type,\n          });\n          return { data, success: true, total: data.length };\n        }}\n        rowKey=\"id\"\n        search={{ labelWidth: 'auto' }}\n        expandable={{\n          expandedRowRender: (record) => (\n            <div style={{ padding: '8px 40px' }}>\n              <pre style={{ backgroundColor: '#f5f5f5', padding: 12, borderRadius: 4 }}>\n                {record.details || 'No additional details'}\n              </pre>\n            </div>\n          ),\n        }}\n        headerTitle=\"System Audit Trails\"\n      />\n    </PageContainer>\n  );\n};\n",
-      "__isJSFile": true,
-      "__absFile": "D:/codes/chronic-disease-management/frontend/src/pages/platform/AuditLogs/index.tsx"
-    },
-    "10": {
-      "path": "/platform/settings",
-      "name": "Settings",
-      "file": "@/pages/platform/Settings/index.tsx",
-      "parentId": "3",
-      "id": "10",
-      "absPath": "/platform/settings",
-      "__content": "import {\n  PageContainer,\n  ProForm,\n  ProFormDigit,\n  ProFormGroup,\n  ProFormSelect,\n  ProFormSwitch,\n  ProFormText,\n} from '@ant-design/pro-components';\nimport { Card, message, Spin } from 'antd';\nimport { useEffect, useState } from 'react';\nimport { getSettings, updateSettings } from '@/services/api/admin';\n\nexport default () => {\n  const [initialValues, setInitialValues] = useState<any>(null);\n  const [loading, setLoading] = useState(true);\n\n  useEffect(() => {\n    getSettings()\n      .then(setInitialValues)\n      .finally(() => setLoading(false));\n  }, []);\n\n  if (loading) return <Spin size=\"large\" />;\n\n  return (\n    <PageContainer>\n      <Card title=\"System Configuration\" style={{ maxWidth: 800, margin: '0 auto' }}>\n        <ProForm\n          initialValues={initialValues}\n          onFinish={async (values) => {\n            await updateSettings(values);\n            message.success('Settings saved successfully');\n            return true;\n          }}\n        >\n          <ProFormGroup title=\"Model & RAG\" size={24}>\n            <ProFormSelect\n              name=\"llm_default_model\"\n              label=\"Default LLM Model\"\n              width=\"md\"\n              options={[\n                { label: 'GPT-4o Mini', value: 'gpt-4o-mini' },\n                { label: 'GPT-4o', value: 'gpt-4o' },\n                { label: 'Claude 3.5 Sonnet', value: 'claude-3-5-sonnet' },\n              ]}\n            />\n            <ProFormDigit\n              name=\"rag_max_chunks\"\n              label=\"Max Retrieval Chunks\"\n              min={1}\n              max={20}\n              width=\"xs\"\n            />\n          </ProFormGroup>\n\n          <ProFormGroup title=\"System Policies\" size={24}>\n            <ProFormSwitch\n              name=\"system_maintenance_mode\"\n              label=\"Maintenance Mode\"\n              extra=\"Disable all user access temporarily\"\n            />\n            <ProFormSwitch\n              name=\"allow_new_registrations\"\n              label=\"Allow New Registrations\"\n              extra=\"Whether to allow users to sign up via public page\"\n            />\n          </ProFormGroup>\n\n          <ProFormGroup title=\"Resource Quotas\" size={24}>\n            <ProFormDigit\n              name=\"default_org_token_quota\"\n              label=\"Default Org Token Quota\"\n              width=\"md\"\n              addonAfter=\"Tokens\"\n            />\n          </ProFormGroup>\n        </ProForm>\n      </Card>\n    </PageContainer>\n  );\n};\n",
-      "__isJSFile": true,
-      "__absFile": "D:/codes/chronic-disease-management/frontend/src/pages/platform/Settings/index.tsx"
-    },
-    "11": {
-      "path": "/org",
-      "name": "Organization",
-      "icon": "team",
-      "parentId": "ant-design-pro-layout",
-      "id": "11",
-      "absPath": "/org"
-    },
-    "12": {
-      "path": "/org",
-      "redirect": "/org/dashboard",
-      "parentId": "11",
-      "id": "12",
-      "absPath": "/org"
-    },
-    "13": {
-      "path": "/org/dashboard",
-      "name": "Overview",
-      "file": "@/pages/organization/Dashboard/index.tsx",
-      "parentId": "11",
       "id": "13",
-      "absPath": "/org/dashboard",
-      "__content": "import { PageContainer, StatisticCard } from '@ant-design/pro-components';\nimport { Row, Col, Card, Progress } from 'antd';\nimport { useEffect, useState } from 'react';\nimport { listPatients, listKnowledgeBases, listConversations } from '@/services/api/organization';\n\nexport default () => {\n  const [patientCount, setPatientCount] = useState(0);\n  const [kbCount, setKbCount] = useState(0);\n  const [convCount, setConvCount] = useState(0);\n  const [loading, setLoading] = useState(true);\n\n  useEffect(() => {\n    Promise.all([\n      listPatients().then((d) => setPatientCount(d.length)),\n      listKnowledgeBases().then((d) => setKbCount(d.length)),\n      listConversations({ limit: 1 }).then((d) => setConvCount(d.length)),\n    ]).finally(() => setLoading(false));\n  }, []);\n\n  return (\n    <PageContainer>\n      <Row gutter={16}>\n        <Col span={8}>\n          <StatisticCard\n            statistic={{ title: 'Patients', value: patientCount, loading }}\n          />\n        </Col>\n        <Col span={8}>\n          <StatisticCard\n            statistic={{ title: 'Knowledge Bases', value: kbCount, loading }}\n          />\n        </Col>\n        <Col span={8}>\n          <StatisticCard\n            statistic={{ title: 'Conversations', value: convCount, loading }}\n          />\n        </Col>\n      </Row>\n      <Row gutter={16} style={{ marginTop: 16 }}>\n        <Col span={12}>\n          <Card title=\"Quota Usage\" loading={loading}>\n            <Progress percent={30} status=\"active\" />\n            <p style={{ marginTop: 8, color: '#999' }}>\n              300,000 / 1,000,000 tokens used\n            </p>\n          </Card>\n        </Col>\n        <Col span={12}>\n          <Card title=\"Recent Activity\" loading={loading}>\n            <p>Organization dashboard ready</p>\n          </Card>\n        </Col>\n      </Row>\n    </PageContainer>\n  );\n};\n",
-      "__isJSFile": true,
-      "__absFile": "D:/codes/chronic-disease-management/frontend/src/pages/organization/Dashboard/index.tsx"
+      "absPath": "/admin"
     },
     "14": {
-      "path": "/org/members",
-      "name": "Members",
-      "file": "@/pages/organization/Members/index.tsx",
-      "parentId": "11",
+      "path": "/admin",
+      "redirect": "/admin/dashboard",
+      "parentId": "13",
       "id": "14",
-      "absPath": "/org/members",
-      "__content": "import { PageContainer, ProTable } from '@ant-design/pro-components';\nimport { Tag } from 'antd';\nimport { getOrganizationMembers } from '@/services/api/admin';\nimport type { ProColumns } from '@ant-design/pro-components';\n\nconst columns: ProColumns[] = [\n  { title: 'Email', dataIndex: 'email', copyable: true },\n  { title: 'Name', dataIndex: 'name' },\n  {\n    title: 'Type',\n    dataIndex: 'user_type',\n    render: (_, record: any) => (\n      <Tag color={record.user_type === 'staff' ? 'blue' : 'green'}>\n        {record.user_type}\n      </Tag>\n    ),\n    filters: [\n      { text: 'Staff', value: 'staff' },\n      { text: 'Patient', value: 'patient' },\n    ],\n  },\n  {\n    title: 'Roles',\n    dataIndex: 'roles',\n    render: (_, record: any) =>\n      (record.roles || []).map((r: string) => <Tag key={r}>{r}</Tag>),\n  },\n];\n\nexport default () => {\n  const orgId = localStorage.getItem('currentOrgId') || '';\n\n  return (\n    <PageContainer>\n      <ProTable\n        columns={columns}\n        request={async () => {\n          if (!orgId) return { data: [], success: true };\n          const data = await getOrganizationMembers(orgId);\n          return { data, success: true, total: data.length };\n        }}\n        rowKey=\"user_id\"\n        search={false}\n        headerTitle=\"Organization Members\"\n      />\n    </PageContainer>\n  );\n};\n",
-      "__isJSFile": true,
-      "__absFile": "D:/codes/chronic-disease-management/frontend/src/pages/organization/Members/index.tsx"
+      "absPath": "/admin"
     },
     "15": {
-      "path": "/org/roles",
-      "name": "Roles & Permissions",
-      "file": "@/pages/organization/Roles/index.tsx",
-      "parentId": "11",
+      "path": "/admin/dashboard",
+      "file": "@/pages/admin/Dashboard/index.tsx",
+      "parentId": "13",
       "id": "15",
-      "absPath": "/org/roles",
-      "__content": "import { PageContainer } from '@ant-design/pro-components';\nimport { Card, Tag, List, Spin, Empty } from 'antd';\nimport { useEffect, useState } from 'react';\nimport { listRoles } from '@/services/api/organization';\n\nexport default () => {\n  const [roles, setRoles] = useState<any[]>([]);\n  const [loading, setLoading] = useState(true);\n\n  useEffect(() => {\n    listRoles()\n      .then(setRoles)\n      .catch(() => setRoles([]))\n      .finally(() => setLoading(false));\n  }, []);\n\n  return (\n    <PageContainer>\n      <Spin spinning={loading}>\n        {roles.length === 0 ? (\n          <Empty description=\"No roles found or API not available\" />\n        ) : (\n          <List\n            grid={{ gutter: 16, xs: 1, sm: 1, md: 2, lg: 2, xl: 3 }}\n            dataSource={roles}\n            renderItem={(role: any) => (\n              <List.Item>\n                <Card title={role.name} extra={role.is_system ? <Tag color=\"blue\">System</Tag> : null}>\n                  <p style={{ color: '#666' }}>{role.description}</p>\n                  <div>\n                    <p style={{ fontWeight: 'bold', marginBottom: 4 }}>Permissions:</p>\n                    {(role.permissions || []).map((p: any) => (\n                      <Tag key={p.code || p} style={{ marginBottom: 4 }}>\n                        {p.name || p}\n                      </Tag>\n                    ))}\n                  </div>\n                </Card>\n              </List.Item>\n            )}\n          />\n        )}\n      </Spin>\n    </PageContainer>\n  );\n};\n",
+      "absPath": "/admin/dashboard",
+      "__content": "import { PageContainer, StatisticCard } from '@ant-design/pro-components';\nimport { Row, Col, Badge, Alert } from 'antd';\nimport { useEffect, useState } from 'react';\nimport { getDashboardStats } from '@/services/api/admin';\nimport { Line } from '@ant-design/charts';\n\nconst { Divider } = StatisticCard;\n\nexport default () => {\n  const [stats, setStats] = useState<any>({});\n  const [loading, setLoading] = useState(true);\n\n  useEffect(() => {\n    getDashboardStats()\n      .then(setStats)\n      .finally(() => setLoading(false));\n  }, []);\n\n  const config = {\n    data: stats.token_usage_trend || [],\n    padding: 'auto' as any,\n    xField: 'date',\n    yField: 'tokens',\n    xAxis: {\n      tickCount: 7,\n    },\n    smooth: true,\n  };\n\n  return (\n    <PageContainer>\n      {stats.recent_failed_docs > 0 && (\n        <Alert\n          message={`Attention: ${stats.recent_failed_docs} document(s) failed to process in the last batch.`}\n          type=\"warning\"\n          showIcon\n          closable\n          style={{ marginBottom: 16 }}\n        />\n      )}\n\n      <StatisticCard.Group direction=\"row\">\n        <StatisticCard\n          statistic={{\n            title: 'Total Organizations',\n            value: stats.total_organizations,\n            status: 'processing',\n          }}\n        />\n        <Divider type=\"vertical\" />\n        <StatisticCard\n          statistic={{\n            title: 'Active Users (24h)',\n            value: stats.active_users_24h,\n            status: 'success',\n          }}\n        />\n        <Divider type=\"vertical\" />\n        <StatisticCard\n          statistic={{\n            title: 'Total Conversations',\n            value: stats.total_conversations,\n          }}\n        />\n        <Divider type=\"vertical\" />\n        <StatisticCard\n          statistic={{\n            title: 'Total Tokens',\n            value: stats.total_tokens_used,\n            precision: 0,\n            suffix: 'T',\n          }}\n        />\n      </StatisticCard.Group>\n\n      <Row gutter={16} style={{ marginTop: 16 }}>\n        <Col span={16}>\n          <StatisticCard\n            title=\"Token Usage Trend (Last 7 Days)\"\n            chart={\n              <div style={{ height: 300, marginTop: 20 }}>\n                {stats.token_usage_trend ? <Line {...config} /> : null}\n              </div>\n            }\n          />\n        </Col>\n        <Col span={8}>\n          <StatisticCard\n            title=\"System Pulse\"\n            style={{ height: '100%' }}\n            footer={\n              <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 16 }}>\n                <Badge status=\"processing\" text=\"LLM Service: Healthy\" />\n                <br />\n                <Badge status=\"processing\" text=\"Vector DB: Connected\" />\n                <br />\n                <Badge status=\"processing\" text=\"Storage: 14% Used\" />\n              </div>\n            }\n          >\n            <StatisticCard\n              statistic={{\n                title: 'Total Patients Managed',\n                value: stats.total_patients,\n                description: <Badge status=\"default\" text=\"Across all tenants\" />,\n              }}\n              chartPlacement=\"left\"\n            />\n          </StatisticCard>\n        </Col>\n      </Row>\n    </PageContainer>\n  );\n};\n",
       "__isJSFile": true,
-      "__absFile": "D:/codes/chronic-disease-management/frontend/src/pages/organization/Roles/index.tsx"
+      "__absFile": "D:/codes/chronic-disease-management/frontend/src/pages/admin/Dashboard/index.tsx"
     },
     "16": {
-      "path": "/org/patients",
-      "name": "Patients",
-      "file": "@/pages/organization/Patients/index.tsx",
-      "parentId": "11",
+      "path": "/admin/organizations",
+      "file": "@/pages/admin/Organizations/index.tsx",
+      "parentId": "13",
       "id": "16",
-      "absPath": "/org/patients",
-      "__content": "import { PageContainer, ProTable } from '@ant-design/pro-components';\nimport { listPatients } from '@/services/api/organization';\nimport type { ProColumns } from '@ant-design/pro-components';\n\nconst columns: ProColumns[] = [\n  { title: 'Name', dataIndex: 'real_name' },\n  { title: 'Gender', dataIndex: 'gender', filters: [\n    { text: 'Male', value: 'male' },\n    { text: 'Female', value: 'female' },\n  ]},\n  { title: 'Birth Date', dataIndex: 'birth_date', valueType: 'date' },\n  {\n    title: 'Created At',\n    dataIndex: 'created_at',\n    valueType: 'dateTime',\n    sorter: true,\n  },\n];\n\nexport default () => {\n  return (\n    <PageContainer>\n      <ProTable\n        columns={columns}\n        request={async (params) => {\n          const data = await listPatients({\n            skip: ((params.current || 1) - 1) * (params.pageSize || 20),\n            limit: params.pageSize || 20,\n            search: params.real_name,\n          });\n          return { data, success: true, total: data.length };\n        }}\n        rowKey=\"id\"\n        search={{ labelWidth: 'auto' }}\n        pagination={{ pageSize: 20 }}\n        headerTitle=\"Patients\"\n      />\n    </PageContainer>\n  );\n};\n",
+      "absPath": "/admin/organizations",
+      "__content": "import { PlusOutlined } from '@ant-design/icons';\nimport {\n  ModalForm,\n  PageContainer,\n  ProFormDigit,\n  ProFormSelect,\n  ProFormText,\n  ProTable,\n} from '@ant-design/pro-components';\nimport { Button, message, Popconfirm, Progress, Space, Tag } from 'antd';\nimport {\n  listOrganizations,\n  createOrganization,\n  updateOrganization,\n  deleteOrganization,\n} from '@/services/api/admin';\nimport type { ProColumns, ActionType } from '@ant-design/pro-components';\nimport { useRef } from 'react';\n\nexport default () => {\n  const actionRef = useRef<ActionType>();\n\n  const columns: ProColumns[] = [\n    {\n      title: 'Organization Name',\n      dataIndex: 'name',\n      copyable: true,\n      formItemProps: {\n        rules: [{ required: true, message: 'Organization name is required' }],\n      },\n    },\n    {\n      title: 'Plan',\n      dataIndex: 'plan_type',\n      filters: true,\n      valueEnum: {\n        free: { text: 'Free', status: 'Default' },\n        pro: { text: 'Pro', status: 'Success' },\n        enterprise: { text: 'Enterprise', status: 'Processing' },\n      },\n      render: (_, record) => {\n        const color =\n          record.plan_type === 'enterprise' ? 'purple' : record.plan_type === 'pro' ? 'blue' : 'default';\n        return <Tag color={color}>{record.plan_type.toUpperCase()}</Tag>;\n      },\n    },\n    {\n      title: 'Token Usage',\n      dataIndex: 'quota_tokens_used',\n      hideInSearch: true,\n      render: (_, record) => (\n        <div style={{ width: 150 }}>\n          <Progress\n            percent={record.quota_usage_percent}\n            size=\"small\"\n            status={record.quota_usage_percent > 90 ? 'exception' : 'active'}\n          />\n          <small>\n            {record.quota_tokens_used.toLocaleString()} / {record.quota_tokens_limit.toLocaleString()}\n          </small>\n        </div>\n      ),\n    },\n    {\n      title: 'Created At',\n      dataIndex: 'created_at',\n      valueType: 'dateTime',\n      sorter: true,\n      hideInForm: true,\n    },\n    {\n      title: 'Operations',\n      valueType: 'option',\n      key: 'option',\n      render: (text, record, _, action) => [\n        <ModalForm\n          key=\"edit\"\n          title=\"Edit Organization\"\n          trigger={<a>Edit</a>}\n          initialValues={record}\n          onFinish={async (values) => {\n            await updateOrganization(record.id, values);\n            message.success('Updated successfully');\n            actionRef.current?.reload();\n            return true;\n          }}\n        >\n          <ProFormText name=\"name\" label=\"Name\" />\n          <ProFormSelect\n            name=\"plan_type\"\n            label=\"Plan\"\n            options={[\n              { label: 'Free', value: 'free' },\n              { label: 'Pro', value: 'pro' },\n              { label: 'Enterprise', value: 'enterprise' },\n            ]}\n          />\n          <ProFormDigit name=\"quota_tokens_limit\" label=\"Token Quota\" />\n        </ModalForm>,\n        <Popconfirm\n          key=\"delete\"\n          title=\"Delete organization?\"\n          description=\"This action cannot be undone.\"\n          onConfirm={async () => {\n            await deleteOrganization(record.id);\n            message.success('Deleted');\n            actionRef.current?.reload();\n          }}\n        >\n          <a style={{ color: 'red' }}>Delete</a>\n        </Popconfirm>,\n      ],\n    },\n  ];\n\n  return (\n    <PageContainer>\n      <ProTable\n        columns={columns}\n        actionRef={actionRef}\n        request={async (params, sort, filter) => {\n          const data = await listOrganizations({\n            skip: ((params.current || 1) - 1) * (params.pageSize || 20),\n            limit: params.pageSize || 20,\n            search: params.name,\n          });\n          return {\n            data,\n            success: true,\n            total: data.length, // In a real app, backend should return total\n          };\n        }}\n        rowKey=\"id\"\n        search={{ labelWidth: 'auto' }}\n        headerTitle=\"System Organizations\"\n        toolBarRender={() => [\n          <ModalForm\n            key=\"create\"\n            title=\"Create New Organization\"\n            trigger={\n              <Button type=\"primary\">\n                <PlusOutlined /> New Organization\n              </Button>\n            }\n            onFinish={async (values: any) => {\n              await createOrganization(values);\n              message.success('Created successfully');\n              actionRef.current?.reload();\n              return true;\n            }}\n          >\n            <ProFormText name=\"name\" label=\"Name\" placeholder=\"Enter organization name\" />\n            <ProFormSelect\n              name=\"plan_type\"\n              label=\"Plan\"\n              initialValue=\"free\"\n              options={[\n                { label: 'Free', value: 'free' },\n                { label: 'Pro', value: 'pro' },\n                { label: 'Enterprise', value: 'enterprise' },\n              ]}\n            />\n          </ModalForm>,\n        ]}\n      />\n    </PageContainer>\n  );\n};\n",
       "__isJSFile": true,
-      "__absFile": "D:/codes/chronic-disease-management/frontend/src/pages/organization/Patients/index.tsx"
+      "__absFile": "D:/codes/chronic-disease-management/frontend/src/pages/admin/Organizations/index.tsx"
     },
     "17": {
-      "path": "/org/managers",
-      "name": "Managers",
-      "file": "@/pages/organization/Managers/index.tsx",
-      "parentId": "11",
+      "path": "/admin/users",
+      "file": "@/pages/admin/Users/index.tsx",
+      "parentId": "13",
       "id": "17",
-      "absPath": "/org/managers",
-      "__content": "import { PageContainer, ProTable } from '@ant-design/pro-components';\nimport { Tag } from 'antd';\nimport { listManagers } from '@/services/api/organization';\nimport type { ProColumns } from '@ant-design/pro-components';\n\nconst columns: ProColumns[] = [\n  { title: 'Name', dataIndex: 'name' },\n  { title: 'Email', dataIndex: 'email', copyable: true },\n  { title: 'Title', dataIndex: 'title' },\n  {\n    title: 'Status',\n    dataIndex: 'is_active',\n    render: (_, record: any) => (\n      <Tag color={record.is_active ? 'green' : 'red'}>\n        {record.is_active ? 'Active' : 'Inactive'}\n      </Tag>\n    ),\n  },\n  { title: 'Patients Assigned', dataIndex: 'assigned_patient_count' },\n];\n\nexport default () => {\n  return (\n    <PageContainer>\n      <ProTable\n        columns={columns}\n        request={async () => {\n          const data = await listManagers();\n          return { data, success: true, total: data.length };\n        }}\n        rowKey=\"id\"\n        search={false}\n        headerTitle=\"Managers\"\n      />\n    </PageContainer>\n  );\n};\n",
+      "absPath": "/admin/users",
+      "__content": "import { PlusOutlined } from '@ant-design/icons';\nimport {\n  ModalForm,\n  PageContainer,\n  ProFormText,\n  ProTable,\n} from '@ant-design/pro-components';\nimport { listUsers, updateUserStatus, createUser } from '@/services/api/admin';\nimport type { ProColumns, ActionType } from '@ant-design/pro-components';\nimport { Button, message, Popconfirm, Tag } from 'antd';\nimport { useRef } from 'react';\n\nexport default () => {\n  const actionRef = useRef<ActionType>();\n\n  const columns: ProColumns[] = [\n    {\n      title: 'User Info',\n      dataIndex: 'email',\n      copyable: true,\n      render: (text, record) => (\n        <div>\n          <div style={{ fontWeight: 'bold' }}>{record.name || 'Anonymous'}</div>\n          <div style={{ fontSize: '12px', color: '#666' }}>{record.email}</div>\n        </div>\n      ),\n    },\n    {\n      title: 'Tenants',\n      dataIndex: 'org_count',\n      sorter: true,\n      render: (count) => <Tag color=\"blue\">{count} Orgs</Tag>,\n    },\n    {\n      title: 'Status',\n      dataIndex: 'is_active',\n      hideInSearch: true,\n      render: (_, record) => (\n        <Tag color={record.deleted_at ? 'error' : 'success'}>\n          {record.deleted_at ? 'Inactive' : 'Active'}\n        </Tag>\n      ),\n    },\n    {\n      title: 'Created At',\n      dataIndex: 'created_at',\n      valueType: 'dateTime',\n      sorter: true,\n    },\n    {\n      title: 'Operations',\n      valueType: 'option',\n      key: 'option',\n      render: (text, record) => [\n        <Popconfirm\n          key=\"toggle\"\n          title={record.deleted_at ? 'Reactivate user?' : 'Disable user?'}\n          onConfirm={async () => {\n            await updateUserStatus(record.id, !!record.deleted_at);\n            message.success('Status updated');\n            actionRef.current?.reload();\n          }}\n        >\n          <a style={{ color: record.deleted_at ? 'green' : 'red' }}>\n            {record.deleted_at ? 'Activate' : 'Disable'}\n          </a>\n        </Popconfirm>,\n      ],\n    },\n  ];\n\n  return (\n    <PageContainer>\n      <ProTable\n        columns={columns}\n        actionRef={actionRef}\n        request={async (params) => {\n          const data = await listUsers({\n            skip: ((params.current || 1) - 1) * (params.pageSize || 20),\n            limit: params.pageSize || 20,\n            search: params.email,\n          });\n          return { data, success: true, total: data.length };\n        }}\n        rowKey=\"id\"\n        search={{ labelWidth: 'auto' }}\n        pagination={{ pageSize: 20 }}\n        headerTitle=\"Global User Management\"\n        toolBarRender={() => [\n          <ModalForm\n            key=\"create\"\n            title=\"Register New User\"\n            trigger={\n              <Button type=\"primary\">\n                <PlusOutlined /> New User\n              </Button>\n            }\n            onFinish={async (values: any) => {\n              await createUser(values);\n              message.success('User registered successfully');\n              actionRef.current?.reload();\n              return true;\n            }}\n          >\n            <ProFormText\n              name=\"email\"\n              label=\"Email\"\n              placeholder=\"user@example.com\"\n              rules={[{ required: true, type: 'email' }]}\n            />\n            <ProFormText\n              name=\"name\"\n              label=\"Full Name\"\n              placeholder=\"Enter name\"\n            />\n            <ProFormText.Password\n              name=\"password\"\n              label=\"Password\"\n              rules={[{ required: true, min: 6 }]}\n            />\n          </ModalForm>,\n        ]}\n      />\n    </PageContainer>\n  );\n};\n",
       "__isJSFile": true,
-      "__absFile": "D:/codes/chronic-disease-management/frontend/src/pages/organization/Managers/index.tsx"
+      "__absFile": "D:/codes/chronic-disease-management/frontend/src/pages/admin/Users/index.tsx"
     },
     "18": {
-      "path": "/org/knowledge-bases",
-      "name": "Knowledge Bases",
-      "file": "@/pages/organization/KnowledgeBases/index.tsx",
-      "parentId": "11",
+      "path": "/admin/settings",
+      "file": "@/pages/admin/Settings/index.tsx",
+      "parentId": "13",
       "id": "18",
-      "absPath": "/org/knowledge-bases",
-      "__content": "import { PageContainer } from '@ant-design/pro-components';\nimport { Card, Col, Row, Tag, Empty, Spin } from 'antd';\nimport { useEffect, useState } from 'react';\nimport { listKnowledgeBases } from '@/services/api/organization';\n\nexport default () => {\n  const [kbs, setKbs] = useState<any[]>([]);\n  const [loading, setLoading] = useState(true);\n\n  useEffect(() => {\n    listKnowledgeBases()\n      .then(setKbs)\n      .finally(() => setLoading(false));\n  }, []);\n\n  return (\n    <PageContainer>\n      <Spin spinning={loading}>\n        {kbs.length === 0 ? (\n          <Empty description=\"No knowledge bases\" />\n        ) : (\n          <Row gutter={[16, 16]}>\n            {kbs.map((kb) => (\n              <Col key={kb.id} xs={24} sm={12} md={8} lg={6}>\n                <Card\n                  title={kb.name}\n                  extra={<Tag>{kb.document_count} docs</Tag>}\n                  hoverable\n                >\n                  <p>{kb.description || 'No description'}</p>\n                  <p style={{ color: '#999', fontSize: 12 }}>\n                    Created: {new Date(kb.created_at).toLocaleDateString()}\n                  </p>\n                </Card>\n              </Col>\n            ))}\n          </Row>\n        )}\n      </Spin>\n    </PageContainer>\n  );\n};\n",
+      "absPath": "/admin/settings",
+      "__content": "import {\n  PageContainer,\n  ProForm,\n  ProFormDigit,\n  ProFormGroup,\n  ProFormSelect,\n  ProFormSwitch,\n  ProFormText,\n} from '@ant-design/pro-components';\nimport { Card, message, Spin } from 'antd';\nimport { useEffect, useState } from 'react';\nimport { getSettings, updateSettings } from '@/services/api/admin';\n\nexport default () => {\n  const [initialValues, setInitialValues] = useState<any>(null);\n  const [loading, setLoading] = useState(true);\n\n  useEffect(() => {\n    getSettings()\n      .then(setInitialValues)\n      .finally(() => setLoading(false));\n  }, []);\n\n  if (loading) return <Spin size=\"large\" />;\n\n  return (\n    <PageContainer>\n      <Card title=\"System Configuration\" style={{ maxWidth: 800, margin: '0 auto' }}>\n        <ProForm\n          initialValues={initialValues}\n          onFinish={async (values) => {\n            await updateSettings(values);\n            message.success('Settings saved successfully');\n            return true;\n          }}\n        >\n          <ProFormGroup title=\"Model & RAG\" size={24}>\n            <ProFormSelect\n              name=\"llm_default_model\"\n              label=\"Default LLM Model\"\n              width=\"md\"\n              options={[\n                { label: 'GPT-4o Mini', value: 'gpt-4o-mini' },\n                { label: 'GPT-4o', value: 'gpt-4o' },\n                { label: 'Claude 3.5 Sonnet', value: 'claude-3-5-sonnet' },\n              ]}\n            />\n            <ProFormDigit\n              name=\"rag_max_chunks\"\n              label=\"Max Retrieval Chunks\"\n              min={1}\n              max={20}\n              width=\"xs\"\n            />\n          </ProFormGroup>\n\n          <ProFormGroup title=\"System Policies\" size={24}>\n            <ProFormSwitch\n              name=\"system_maintenance_mode\"\n              label=\"Maintenance Mode\"\n              extra=\"Disable all user access temporarily\"\n            />\n            <ProFormSwitch\n              name=\"allow_new_registrations\"\n              label=\"Allow New Registrations\"\n              extra=\"Whether to allow users to sign up via public page\"\n            />\n          </ProFormGroup>\n\n          <ProFormGroup title=\"Resource Quotas\" size={24}>\n            <ProFormDigit\n              name=\"default_org_token_quota\"\n              label=\"Default Org Token Quota\"\n              width=\"md\"\n              addonAfter=\"Tokens\"\n            />\n          </ProFormGroup>\n        </ProForm>\n      </Card>\n    </PageContainer>\n  );\n};\n",
       "__isJSFile": true,
-      "__absFile": "D:/codes/chronic-disease-management/frontend/src/pages/organization/KnowledgeBases/index.tsx"
+      "__absFile": "D:/codes/chronic-disease-management/frontend/src/pages/admin/Settings/index.tsx"
     },
     "19": {
-      "path": "/org/conversations",
-      "name": "Conversations",
-      "file": "@/pages/organization/Conversations/index.tsx",
-      "parentId": "11",
-      "id": "19",
-      "absPath": "/org/conversations",
-      "__content": "import { PageContainer, ProTable } from '@ant-design/pro-components';\nimport { listConversations } from '@/services/api/organization';\nimport type { ProColumns } from '@ant-design/pro-components';\n\nconst columns: ProColumns[] = [\n  { title: 'Title', dataIndex: 'title', ellipsis: true },\n  { title: 'User ID', dataIndex: 'user_id', copyable: true },\n  {\n    title: 'Created At',\n    dataIndex: 'created_at',\n    valueType: 'dateTime',\n    sorter: true,\n  },\n];\n\nexport default () => {\n  return (\n    <PageContainer>\n      <ProTable\n        columns={columns}\n        request={async (params) => {\n          const data = await listConversations({\n            skip: ((params.current || 1) - 1) * (params.pageSize || 20),\n            limit: params.pageSize || 20,\n          });\n          return { data, success: true, total: data.length };\n        }}\n        rowKey=\"id\"\n        search={false}\n        pagination={{ pageSize: 20 }}\n        headerTitle=\"Conversations\"\n      />\n    </PageContainer>\n  );\n};\n",
-      "__isJSFile": true,
-      "__absFile": "D:/codes/chronic-disease-management/frontend/src/pages/organization/Conversations/index.tsx"
-    },
-    "20": {
-      "path": "/org/usage",
-      "name": "Usage",
-      "file": "@/pages/organization/Usage/index.tsx",
-      "parentId": "11",
-      "id": "20",
-      "absPath": "/org/usage",
-      "__content": "import { PageContainer, ProTable } from '@ant-design/pro-components';\nimport { listOrgAuditLogs } from '@/services/api/organization';\nimport type { ProColumns } from '@ant-design/pro-components';\n\nconst columns: ProColumns[] = [\n  { title: 'Action', dataIndex: 'action', filters: true },\n  { title: 'Resource', dataIndex: 'resource_type', filters: true },\n  { title: 'User ID', dataIndex: 'user_id', copyable: true },\n  {\n    title: 'Time',\n    dataIndex: 'created_at',\n    valueType: 'dateTime',\n    sorter: true,\n  },\n];\n\nexport default () => {\n  return (\n    <PageContainer>\n      <ProTable\n        columns={columns}\n        request={async (params) => {\n          const data = await listOrgAuditLogs({\n            skip: ((params.current || 1) - 1) * (params.pageSize || 20),\n            limit: params.pageSize || 20,\n            action: params.action,\n            resource_type: params.resource_type,\n          });\n          return { data, success: true, total: data.length };\n        }}\n        rowKey=\"id\"\n        search={{ labelWidth: 'auto' }}\n        pagination={{ pageSize: 20 }}\n        headerTitle=\"Organization Audit Logs\"\n      />\n    </PageContainer>\n  );\n};\n",
-      "__isJSFile": true,
-      "__absFile": "D:/codes/chronic-disease-management/frontend/src/pages/organization/Usage/index.tsx"
-    },
-    "21": {
-      "path": "/org/audit-logs",
-      "name": "Audit Logs",
-      "file": "@/pages/organization/AuditLogs/index.tsx",
-      "parentId": "11",
-      "id": "21",
-      "absPath": "/org/audit-logs",
-      "__content": "import { PageContainer, ProTable } from '@ant-design/pro-components';\nimport { listOrgAuditLogs } from '@/services/api/organization';\nimport type { ProColumns } from '@ant-design/pro-components';\n\nconst columns: ProColumns[] = [\n  { title: 'Action', dataIndex: 'action', filters: true },\n  { title: 'Resource', dataIndex: 'resource_type', filters: true },\n  { title: 'Resource ID', dataIndex: 'resource_id', copyable: true },\n  { title: 'Details', dataIndex: 'details', ellipsis: true },\n  { title: 'IP Address', dataIndex: 'ip_address' },\n  {\n    title: 'Time',\n    dataIndex: 'created_at',\n    valueType: 'dateTime',\n    sorter: true,\n  },\n];\n\nexport default () => {\n  return (\n    <PageContainer>\n      <ProTable\n        columns={columns}\n        request={async (params) => {\n          const data = await listOrgAuditLogs({\n            skip: ((params.current || 1) - 1) * (params.pageSize || 20),\n            limit: params.pageSize || 20,\n            action: params.action,\n            resource_type: params.resource_type,\n          });\n          return { data, success: true, total: data.length };\n        }}\n        rowKey=\"id\"\n        search={{ labelWidth: 'auto' }}\n        pagination={{ pageSize: 20 }}\n        headerTitle=\"Organization Audit Logs\"\n      />\n    </PageContainer>\n  );\n};\n",
-      "__isJSFile": true,
-      "__absFile": "D:/codes/chronic-disease-management/frontend/src/pages/organization/AuditLogs/index.tsx"
-    },
-    "22": {
-      "path": "/",
-      "redirect": "/org/dashboard",
-      "parentId": "ant-design-pro-layout",
-      "id": "22",
-      "absPath": "/"
-    },
-    "23": {
       "file": "@/pages/404.tsx",
       "parentId": "ant-design-pro-layout",
-      "id": "23",
+      "id": "19",
       "absPath": "/",
       "__content": "import { Button, Result } from 'antd';\nimport { history } from '@umijs/max';\n\nexport default () => (\n  <Result\n    status=\"404\"\n    title=\"404\"\n    subTitle=\"Sorry, the page you visited does not exist.\"\n    extra={\n      <Button type=\"primary\" onClick={() => history.push('/')}>\n        Back Home\n      </Button>\n    }\n  />\n);\n",
       "__isJSFile": true,
@@ -5492,15 +5249,10 @@
             "format": "esm"
           },
           "src/.umi/plugin-layout/icons.tsx": {
-            "bytes": 554,
+            "bytes": 334,
             "imports": [
               {
                 "path": "D:/codes/chronic-disease-management/frontend/node_modules/.pnpm/@ant-design+icons@4.8.3_rea_19faa62653f401826ad5c42b19a83e78/node_modules/@ant-design/icons/es/icons/CrownOutlined",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "D:/codes/chronic-disease-management/frontend/node_modules/.pnpm/@ant-design+icons@4.8.3_rea_19faa62653f401826ad5c42b19a83e78/node_modules/@ant-design/icons/es/icons/TeamOutlined",
                 "kind": "import-statement",
                 "external": true
               }
@@ -5849,6 +5601,121 @@
             ],
             "format": "esm"
           },
+          "src/services/api/organization.ts": {
+            "bytes": 2249,
+            "imports": [
+              {
+                "path": "src/.umi/exports.ts",
+                "kind": "import-statement",
+                "original": "@umijs/max"
+              }
+            ],
+            "format": "esm"
+          },
+          "src/pages/dashboard/index.tsx": {
+            "bytes": 1847,
+            "imports": [
+              {
+                "path": "@ant-design/pro-components",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "antd",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "react",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "src/services/api/organization.ts",
+                "kind": "import-statement",
+                "original": "@/services/api/organization"
+              },
+              {
+                "path": "react/jsx-runtime",
+                "kind": "import-statement",
+                "external": true
+              }
+            ],
+            "format": "esm"
+          },
+          "src/pages/patients/index.tsx": {
+            "bytes": 1174,
+            "imports": [
+              {
+                "path": "@ant-design/pro-components",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "src/services/api/organization.ts",
+                "kind": "import-statement",
+                "original": "@/services/api/organization"
+              },
+              {
+                "path": "react/jsx-runtime",
+                "kind": "import-statement",
+                "external": true
+              }
+            ],
+            "format": "esm"
+          },
+          "src/pages/knowledge/index.tsx": {
+            "bytes": 1269,
+            "imports": [
+              {
+                "path": "@ant-design/pro-components",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "antd",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "react",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "src/services/api/organization.ts",
+                "kind": "import-statement",
+                "original": "@/services/api/organization"
+              },
+              {
+                "path": "react/jsx-runtime",
+                "kind": "import-statement",
+                "external": true
+              }
+            ],
+            "format": "esm"
+          },
+          "src/pages/chat/index.tsx": {
+            "bytes": 1001,
+            "imports": [
+              {
+                "path": "@ant-design/pro-components",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "src/services/api/organization.ts",
+                "kind": "import-statement",
+                "original": "@/services/api/organization"
+              },
+              {
+                "path": "react/jsx-runtime",
+                "kind": "import-statement",
+                "external": true
+              }
+            ],
+            "format": "esm"
+          },
           "src/services/api/admin.ts": {
             "bytes": 2205,
             "imports": [
@@ -5860,7 +5727,132 @@
             ],
             "format": "esm"
           },
-          "src/pages/platform/Dashboard/index.tsx": {
+          "src/pages/members/index.tsx": {
+            "bytes": 1335,
+            "imports": [
+              {
+                "path": "@ant-design/pro-components",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "antd",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "src/services/api/admin.ts",
+                "kind": "import-statement",
+                "original": "@/services/api/admin"
+              },
+              {
+                "path": "react/jsx-runtime",
+                "kind": "import-statement",
+                "external": true
+              }
+            ],
+            "format": "esm"
+          },
+          "src/pages/roles/index.tsx": {
+            "bytes": 1515,
+            "imports": [
+              {
+                "path": "@ant-design/pro-components",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "antd",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "react",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "src/services/api/organization.ts",
+                "kind": "import-statement",
+                "original": "@/services/api/organization"
+              },
+              {
+                "path": "react/jsx-runtime",
+                "kind": "import-statement",
+                "external": true
+              }
+            ],
+            "format": "esm"
+          },
+          "src/pages/audit/index.tsx": {
+            "bytes": 1295,
+            "imports": [
+              {
+                "path": "@ant-design/pro-components",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "src/services/api/organization.ts",
+                "kind": "import-statement",
+                "original": "@/services/api/organization"
+              },
+              {
+                "path": "react/jsx-runtime",
+                "kind": "import-statement",
+                "external": true
+              }
+            ],
+            "format": "esm"
+          },
+          "src/pages/managers/index.tsx": {
+            "bytes": 1043,
+            "imports": [
+              {
+                "path": "@ant-design/pro-components",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "antd",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "src/services/api/organization.ts",
+                "kind": "import-statement",
+                "original": "@/services/api/organization"
+              },
+              {
+                "path": "react/jsx-runtime",
+                "kind": "import-statement",
+                "external": true
+              }
+            ],
+            "format": "esm"
+          },
+          "src/pages/usage/index.tsx": {
+            "bytes": 1173,
+            "imports": [
+              {
+                "path": "@ant-design/pro-components",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "src/services/api/organization.ts",
+                "kind": "import-statement",
+                "original": "@/services/api/organization"
+              },
+              {
+                "path": "react/jsx-runtime",
+                "kind": "import-statement",
+                "external": true
+              }
+            ],
+            "format": "esm"
+          },
+          "src/pages/admin/Dashboard/index.tsx": {
             "bytes": 3253,
             "imports": [
               {
@@ -5896,7 +5888,7 @@
             ],
             "format": "esm"
           },
-          "src/pages/platform/Organizations/index.tsx": {
+          "src/pages/admin/Organizations/index.tsx": {
             "bytes": 4990,
             "imports": [
               {
@@ -5932,7 +5924,7 @@
             ],
             "format": "esm"
           },
-          "src/pages/platform/Users/index.tsx": {
+          "src/pages/admin/Users/index.tsx": {
             "bytes": 3614,
             "imports": [
               {
@@ -5968,54 +5960,7 @@
             ],
             "format": "esm"
           },
-          "src/pages/platform/Usage/index.tsx": {
-            "bytes": 901,
-            "imports": [
-              {
-                "path": "@ant-design/pro-components",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "src/services/api/admin.ts",
-                "kind": "import-statement",
-                "original": "@/services/api/admin"
-              },
-              {
-                "path": "react/jsx-runtime",
-                "kind": "import-statement",
-                "external": true
-              }
-            ],
-            "format": "esm"
-          },
-          "src/pages/platform/AuditLogs/index.tsx": {
-            "bytes": 1897,
-            "imports": [
-              {
-                "path": "@ant-design/pro-components",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "src/services/api/admin.ts",
-                "kind": "import-statement",
-                "original": "@/services/api/admin"
-              },
-              {
-                "path": "antd",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "react/jsx-runtime",
-                "kind": "import-statement",
-                "external": true
-              }
-            ],
-            "format": "esm"
-          },
-          "src/pages/platform/Settings/index.tsx": {
+          "src/pages/admin/Settings/index.tsx": {
             "bytes": 2447,
             "imports": [
               {
@@ -6037,246 +5982,6 @@
                 "path": "src/services/api/admin.ts",
                 "kind": "import-statement",
                 "original": "@/services/api/admin"
-              },
-              {
-                "path": "react/jsx-runtime",
-                "kind": "import-statement",
-                "external": true
-              }
-            ],
-            "format": "esm"
-          },
-          "src/services/api/organization.ts": {
-            "bytes": 2249,
-            "imports": [
-              {
-                "path": "src/.umi/exports.ts",
-                "kind": "import-statement",
-                "original": "@umijs/max"
-              }
-            ],
-            "format": "esm"
-          },
-          "src/pages/organization/Dashboard/index.tsx": {
-            "bytes": 1847,
-            "imports": [
-              {
-                "path": "@ant-design/pro-components",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "antd",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "react",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "src/services/api/organization.ts",
-                "kind": "import-statement",
-                "original": "@/services/api/organization"
-              },
-              {
-                "path": "react/jsx-runtime",
-                "kind": "import-statement",
-                "external": true
-              }
-            ],
-            "format": "esm"
-          },
-          "src/pages/organization/Members/index.tsx": {
-            "bytes": 1335,
-            "imports": [
-              {
-                "path": "@ant-design/pro-components",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "antd",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "src/services/api/admin.ts",
-                "kind": "import-statement",
-                "original": "@/services/api/admin"
-              },
-              {
-                "path": "react/jsx-runtime",
-                "kind": "import-statement",
-                "external": true
-              }
-            ],
-            "format": "esm"
-          },
-          "src/pages/organization/Roles/index.tsx": {
-            "bytes": 1515,
-            "imports": [
-              {
-                "path": "@ant-design/pro-components",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "antd",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "react",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "src/services/api/organization.ts",
-                "kind": "import-statement",
-                "original": "@/services/api/organization"
-              },
-              {
-                "path": "react/jsx-runtime",
-                "kind": "import-statement",
-                "external": true
-              }
-            ],
-            "format": "esm"
-          },
-          "src/pages/organization/Patients/index.tsx": {
-            "bytes": 1174,
-            "imports": [
-              {
-                "path": "@ant-design/pro-components",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "src/services/api/organization.ts",
-                "kind": "import-statement",
-                "original": "@/services/api/organization"
-              },
-              {
-                "path": "react/jsx-runtime",
-                "kind": "import-statement",
-                "external": true
-              }
-            ],
-            "format": "esm"
-          },
-          "src/pages/organization/Managers/index.tsx": {
-            "bytes": 1043,
-            "imports": [
-              {
-                "path": "@ant-design/pro-components",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "antd",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "src/services/api/organization.ts",
-                "kind": "import-statement",
-                "original": "@/services/api/organization"
-              },
-              {
-                "path": "react/jsx-runtime",
-                "kind": "import-statement",
-                "external": true
-              }
-            ],
-            "format": "esm"
-          },
-          "src/pages/organization/KnowledgeBases/index.tsx": {
-            "bytes": 1269,
-            "imports": [
-              {
-                "path": "@ant-design/pro-components",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "antd",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "react",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "src/services/api/organization.ts",
-                "kind": "import-statement",
-                "original": "@/services/api/organization"
-              },
-              {
-                "path": "react/jsx-runtime",
-                "kind": "import-statement",
-                "external": true
-              }
-            ],
-            "format": "esm"
-          },
-          "src/pages/organization/Conversations/index.tsx": {
-            "bytes": 1001,
-            "imports": [
-              {
-                "path": "@ant-design/pro-components",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "src/services/api/organization.ts",
-                "kind": "import-statement",
-                "original": "@/services/api/organization"
-              },
-              {
-                "path": "react/jsx-runtime",
-                "kind": "import-statement",
-                "external": true
-              }
-            ],
-            "format": "esm"
-          },
-          "src/pages/organization/Usage/index.tsx": {
-            "bytes": 1173,
-            "imports": [
-              {
-                "path": "@ant-design/pro-components",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "src/services/api/organization.ts",
-                "kind": "import-statement",
-                "original": "@/services/api/organization"
-              },
-              {
-                "path": "react/jsx-runtime",
-                "kind": "import-statement",
-                "external": true
-              }
-            ],
-            "format": "esm"
-          },
-          "src/pages/organization/AuditLogs/index.tsx": {
-            "bytes": 1295,
-            "imports": [
-              {
-                "path": "@ant-design/pro-components",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "src/services/api/organization.ts",
-                "kind": "import-statement",
-                "original": "@/services/api/organization"
               },
               {
                 "path": "react/jsx-runtime",
@@ -6376,7 +6081,7 @@
             "format": "esm"
           },
           "src/.umi/plugin-layout/Layout.tsx": {
-            "bytes": 5731,
+            "bytes": 5728,
             "imports": [
               {
                 "path": "src/.umi/exports.ts",
@@ -6432,7 +6137,7 @@
             "format": "esm"
           },
           "src/.umi/core/route.tsx": {
-            "bytes": 4713,
+            "bytes": 3721,
             "imports": [
               {
                 "path": "react",
@@ -6455,99 +6160,79 @@
                 "original": "./EmptyRoute"
               },
               {
-                "path": "src/.umi/core/EmptyRoute.tsx",
+                "path": "src/pages/dashboard/index.tsx",
                 "kind": "dynamic-import",
-                "original": "./EmptyRoute"
+                "original": "@/pages/dashboard/index.tsx"
               },
               {
-                "path": "src/pages/platform/Dashboard/index.tsx",
+                "path": "src/pages/patients/index.tsx",
                 "kind": "dynamic-import",
-                "original": "@/pages/platform/Dashboard/index.tsx"
+                "original": "@/pages/patients/index.tsx"
               },
               {
-                "path": "src/pages/platform/Organizations/index.tsx",
+                "path": "src/pages/knowledge/index.tsx",
                 "kind": "dynamic-import",
-                "original": "@/pages/platform/Organizations/index.tsx"
+                "original": "@/pages/knowledge/index.tsx"
               },
               {
-                "path": "src/pages/platform/Users/index.tsx",
+                "path": "src/pages/chat/index.tsx",
                 "kind": "dynamic-import",
-                "original": "@/pages/platform/Users/index.tsx"
+                "original": "@/pages/chat/index.tsx"
               },
               {
-                "path": "src/pages/platform/Usage/index.tsx",
+                "path": "src/pages/members/index.tsx",
                 "kind": "dynamic-import",
-                "original": "@/pages/platform/Usage/index.tsx"
+                "original": "@/pages/members/index.tsx"
               },
               {
-                "path": "src/pages/platform/AuditLogs/index.tsx",
+                "path": "src/pages/roles/index.tsx",
                 "kind": "dynamic-import",
-                "original": "@/pages/platform/AuditLogs/index.tsx"
+                "original": "@/pages/roles/index.tsx"
               },
               {
-                "path": "src/pages/platform/Settings/index.tsx",
+                "path": "src/pages/audit/index.tsx",
                 "kind": "dynamic-import",
-                "original": "@/pages/platform/Settings/index.tsx"
+                "original": "@/pages/audit/index.tsx"
               },
               {
-                "path": "src/.umi/core/EmptyRoute.tsx",
+                "path": "src/pages/managers/index.tsx",
                 "kind": "dynamic-import",
-                "original": "./EmptyRoute"
+                "original": "@/pages/managers/index.tsx"
               },
               {
-                "path": "src/.umi/core/EmptyRoute.tsx",
+                "path": "src/pages/usage/index.tsx",
                 "kind": "dynamic-import",
-                "original": "./EmptyRoute"
-              },
-              {
-                "path": "src/pages/organization/Dashboard/index.tsx",
-                "kind": "dynamic-import",
-                "original": "@/pages/organization/Dashboard/index.tsx"
-              },
-              {
-                "path": "src/pages/organization/Members/index.tsx",
-                "kind": "dynamic-import",
-                "original": "@/pages/organization/Members/index.tsx"
-              },
-              {
-                "path": "src/pages/organization/Roles/index.tsx",
-                "kind": "dynamic-import",
-                "original": "@/pages/organization/Roles/index.tsx"
-              },
-              {
-                "path": "src/pages/organization/Patients/index.tsx",
-                "kind": "dynamic-import",
-                "original": "@/pages/organization/Patients/index.tsx"
-              },
-              {
-                "path": "src/pages/organization/Managers/index.tsx",
-                "kind": "dynamic-import",
-                "original": "@/pages/organization/Managers/index.tsx"
-              },
-              {
-                "path": "src/pages/organization/KnowledgeBases/index.tsx",
-                "kind": "dynamic-import",
-                "original": "@/pages/organization/KnowledgeBases/index.tsx"
-              },
-              {
-                "path": "src/pages/organization/Conversations/index.tsx",
-                "kind": "dynamic-import",
-                "original": "@/pages/organization/Conversations/index.tsx"
-              },
-              {
-                "path": "src/pages/organization/Usage/index.tsx",
-                "kind": "dynamic-import",
-                "original": "@/pages/organization/Usage/index.tsx"
-              },
-              {
-                "path": "src/pages/organization/AuditLogs/index.tsx",
-                "kind": "dynamic-import",
-                "original": "@/pages/organization/AuditLogs/index.tsx"
+                "original": "@/pages/usage/index.tsx"
               },
               {
                 "path": "src/.umi/core/EmptyRoute.tsx",
                 "kind": "dynamic-import",
                 "original": "./EmptyRoute"
+              },
+              {
+                "path": "src/.umi/core/EmptyRoute.tsx",
+                "kind": "dynamic-import",
+                "original": "./EmptyRoute"
+              },
+              {
+                "path": "src/pages/admin/Dashboard/index.tsx",
+                "kind": "dynamic-import",
+                "original": "@/pages/admin/Dashboard/index.tsx"
+              },
+              {
+                "path": "src/pages/admin/Organizations/index.tsx",
+                "kind": "dynamic-import",
+                "original": "@/pages/admin/Organizations/index.tsx"
+              },
+              {
+                "path": "src/pages/admin/Users/index.tsx",
+                "kind": "dynamic-import",
+                "original": "@/pages/admin/Users/index.tsx"
+              },
+              {
+                "path": "src/pages/admin/Settings/index.tsx",
+                "kind": "dynamic-import",
+                "original": "@/pages/admin/Settings/index.tsx"
               },
               {
                 "path": "src/pages/404.tsx",
@@ -6688,11 +6373,6 @@
                 "external": true
               },
               {
-                "path": "D:/codes/chronic-disease-management/frontend/node_modules/.pnpm/@ant-design+icons@4.8.3_rea_19faa62653f401826ad5c42b19a83e78/node_modules/@ant-design/icons/es/icons/TeamOutlined",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
                 "path": "react",
                 "kind": "import-statement",
                 "external": true
@@ -6813,6 +6493,136 @@
                 "external": true
               },
               {
+                "path": "react/jsx-runtime",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "@ant-design/pro-components",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "react/jsx-runtime",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "@ant-design/pro-components",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "antd",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "react",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "react/jsx-runtime",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "@ant-design/pro-components",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "react/jsx-runtime",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "@ant-design/pro-components",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "antd",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "react/jsx-runtime",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "@ant-design/pro-components",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "antd",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "react",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "react/jsx-runtime",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "@ant-design/pro-components",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "react/jsx-runtime",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "@ant-design/pro-components",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "antd",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "react/jsx-runtime",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "@ant-design/pro-components",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "react/jsx-runtime",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "@ant-design/pro-components",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "antd",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "react",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
                 "path": "@ant-design/charts",
                 "kind": "import-statement",
                 "external": true
@@ -6878,167 +6688,12 @@
                 "external": true
               },
               {
-                "path": "react/jsx-runtime",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "@ant-design/pro-components",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "antd",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "react/jsx-runtime",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "@ant-design/pro-components",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
                 "path": "antd",
                 "kind": "import-statement",
                 "external": true
               },
               {
                 "path": "react",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "react/jsx-runtime",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "@ant-design/pro-components",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "antd",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "react",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "react/jsx-runtime",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "@ant-design/pro-components",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "antd",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "react/jsx-runtime",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "@ant-design/pro-components",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "antd",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "react",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "react/jsx-runtime",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "@ant-design/pro-components",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "react/jsx-runtime",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "@ant-design/pro-components",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "antd",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "react/jsx-runtime",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "@ant-design/pro-components",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "antd",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "react",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "react/jsx-runtime",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "@ant-design/pro-components",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "react/jsx-runtime",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "@ant-design/pro-components",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "react/jsx-runtime",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "@ant-design/pro-components",
                 "kind": "import-statement",
                 "external": true
               },
@@ -8243,7 +7898,7 @@
                 "bytesInOutput": 395
               },
               "src/.umi/plugin-layout/icons.tsx": {
-                "bytesInOutput": 578
+                "bytesInOutput": 358
               },
               "src/.umi/plugin-layout/runtime.tsx": {
                 "bytesInOutput": 813
@@ -8284,56 +7939,50 @@
               "src/pages/auth/Login/index.tsx": {
                 "bytesInOutput": 2561
               },
-              "src/services/api/admin.ts": {
-                "bytesInOutput": 1631
-              },
-              "src/pages/platform/Dashboard/index.tsx": {
-                "bytesInOutput": 4558
-              },
-              "src/pages/platform/Organizations/index.tsx": {
-                "bytesInOutput": 6603
-              },
-              "src/pages/platform/Users/index.tsx": {
-                "bytesInOutput": 4910
-              },
-              "src/pages/platform/Usage/index.tsx": {
-                "bytesInOutput": 1177
-              },
-              "src/pages/platform/AuditLogs/index.tsx": {
-                "bytesInOutput": 2408
-              },
-              "src/pages/platform/Settings/index.tsx": {
-                "bytesInOutput": 3422
-              },
               "src/services/api/organization.ts": {
                 "bytesInOutput": 754
               },
-              "src/pages/organization/Dashboard/index.tsx": {
-                "bytesInOutput": 2690
+              "src/pages/dashboard/index.tsx": {
+                "bytesInOutput": 2583
               },
-              "src/pages/organization/Members/index.tsx": {
-                "bytesInOutput": 1680
+              "src/pages/patients/index.tsx": {
+                "bytesInOutput": 1478
               },
-              "src/pages/organization/Roles/index.tsx": {
-                "bytesInOutput": 1884
+              "src/pages/knowledge/index.tsx": {
+                "bytesInOutput": 1725
               },
-              "src/pages/organization/Patients/index.tsx": {
-                "bytesInOutput": 1519
+              "src/pages/chat/index.tsx": {
+                "bytesInOutput": 1280
               },
-              "src/pages/organization/Managers/index.tsx": {
-                "bytesInOutput": 1370
+              "src/services/api/admin.ts": {
+                "bytesInOutput": 1417
               },
-              "src/pages/organization/KnowledgeBases/index.tsx": {
-                "bytesInOutput": 1809
+              "src/pages/members/index.tsx": {
+                "bytesInOutput": 1667
               },
-              "src/pages/organization/Conversations/index.tsx": {
-                "bytesInOutput": 1358
+              "src/pages/roles/index.tsx": {
+                "bytesInOutput": 1879
               },
-              "src/pages/organization/Usage/index.tsx": {
-                "bytesInOutput": 1489
+              "src/pages/audit/index.tsx": {
+                "bytesInOutput": 1598
               },
-              "src/pages/organization/AuditLogs/index.tsx": {
-                "bytesInOutput": 1649
+              "src/pages/managers/index.tsx": {
+                "bytesInOutput": 1355
+              },
+              "src/pages/usage/index.tsx": {
+                "bytesInOutput": 1468
+              },
+              "src/pages/admin/Dashboard/index.tsx": {
+                "bytesInOutput": 4622
+              },
+              "src/pages/admin/Organizations/index.tsx": {
+                "bytesInOutput": 6639
+              },
+              "src/pages/admin/Users/index.tsx": {
+                "bytesInOutput": 4909
+              },
+              "src/pages/admin/Settings/index.tsx": {
+                "bytesInOutput": 3445
               },
               "src/pages/404.tsx": {
                 "bytesInOutput": 597
@@ -8348,10 +7997,10 @@
                 "bytesInOutput": 2903
               },
               "src/.umi/plugin-layout/Layout.tsx": {
-                "bytesInOutput": 5838
+                "bytesInOutput": 5835
               },
               "src/.umi/core/route.tsx": {
-                "bytesInOutput": 4737
+                "bytesInOutput": 3894
               },
               "src/.umi/core/polyfill.ts": {
                 "bytesInOutput": 31318
@@ -8360,7 +8009,7 @@
                 "bytesInOutput": 2020
               }
             },
-            "bytes": 135295
+            "bytes": 129908
           }
         }
       }
@@ -11237,19 +10886,6 @@
           ],
           "start": 93,
           "type": "ImportDeclaration"
-        },
-        {
-          "end": 506,
-          "importKind": "value",
-          "source": "D:/codes/chronic-disease-management/frontend/node_modules/.pnpm/@ant-design+icons@4.8.3_rea_19faa62653f401826ad5c42b19a83e78/node_modules/@ant-design/icons/es/icons/TeamOutlined",
-          "specifiers": [
-            {
-              "local": "TeamOutlined",
-              "type": "ImportDefaultSpecifier"
-            }
-          ],
-          "start": 301,
-          "type": "ImportDeclaration"
         }
       ],
       "D:\\codes\\chronic-disease-management\\frontend\\src\\.umi\\plugin-layout\\rightRender.tsx": [
@@ -11977,730 +11613,7 @@
           "type": "ImportDeclaration"
         }
       ],
-      "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\auth\\Login\\index.tsx": [
-        {
-          "end": 605,
-          "source": "@/services/api/auth",
-          "start": 584,
-          "type": "DynamicImport"
-        },
-        {
-          "end": 69,
-          "importKind": "value",
-          "source": "@ant-design/pro-components",
-          "specifiers": [
-            {
-              "imported": "LoginForm",
-              "local": "LoginForm",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "ProFormText",
-              "local": "ProFormText",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 1,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 117,
-          "importKind": "value",
-          "source": "@umijs/max",
-          "specifiers": [
-            {
-              "imported": "history",
-              "local": "history",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "useModel",
-              "local": "useModel",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 70,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 149,
-          "importKind": "value",
-          "source": "antd",
-          "specifiers": [
-            {
-              "imported": "message",
-              "local": "message",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 118,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 194,
-          "importKind": "value",
-          "source": "@/services/api/auth",
-          "specifiers": [
-            {
-              "imported": "login",
-              "local": "login",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 150,
-          "type": "ImportDeclaration"
-        }
-      ],
-      "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\organization\\AuditLogs\\index.tsx": [
-        {
-          "end": 70,
-          "importKind": "value",
-          "source": "@ant-design/pro-components",
-          "specifiers": [
-            {
-              "imported": "PageContainer",
-              "local": "PageContainer",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "ProTable",
-              "local": "ProTable",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 1,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 134,
-          "importKind": "value",
-          "source": "@/services/api/organization",
-          "specifiers": [
-            {
-              "imported": "listOrgAuditLogs",
-              "local": "listOrgAuditLogs",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 71,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 196,
-          "importKind": "type",
-          "source": "@ant-design/pro-components",
-          "specifiers": [
-            {
-              "imported": "ProColumns",
-              "local": "ProColumns",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 135,
-          "type": "ImportDeclaration"
-        }
-      ],
-      "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\organization\\Conversations\\index.tsx": [
-        {
-          "end": 70,
-          "importKind": "value",
-          "source": "@ant-design/pro-components",
-          "specifiers": [
-            {
-              "imported": "PageContainer",
-              "local": "PageContainer",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "ProTable",
-              "local": "ProTable",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 1,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 135,
-          "importKind": "value",
-          "source": "@/services/api/organization",
-          "specifiers": [
-            {
-              "imported": "listConversations",
-              "local": "listConversations",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 71,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 197,
-          "importKind": "type",
-          "source": "@ant-design/pro-components",
-          "specifiers": [
-            {
-              "imported": "ProColumns",
-              "local": "ProColumns",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 136,
-          "type": "ImportDeclaration"
-        }
-      ],
-      "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\organization\\Dashboard\\index.tsx": [
-        {
-          "end": 75,
-          "importKind": "value",
-          "source": "@ant-design/pro-components",
-          "specifiers": [
-            {
-              "imported": "PageContainer",
-              "local": "PageContainer",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "StatisticCard",
-              "local": "StatisticCard",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 1,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 124,
-          "importKind": "value",
-          "source": "antd",
-          "specifiers": [
-            {
-              "imported": "Row",
-              "local": "Row",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "Col",
-              "local": "Col",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "Card",
-              "local": "Card",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "Progress",
-              "local": "Progress",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 76,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 169,
-          "importKind": "value",
-          "source": "react",
-          "specifiers": [
-            {
-              "imported": "useEffect",
-              "local": "useEffect",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "useState",
-              "local": "useState",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 125,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 268,
-          "importKind": "value",
-          "source": "@/services/api/organization",
-          "specifiers": [
-            {
-              "imported": "listPatients",
-              "local": "listPatients",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "listKnowledgeBases",
-              "local": "listKnowledgeBases",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "listConversations",
-              "local": "listConversations",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 170,
-          "type": "ImportDeclaration"
-        }
-      ],
-      "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\organization\\KnowledgeBases\\index.tsx": [
-        {
-          "end": 60,
-          "importKind": "value",
-          "source": "@ant-design/pro-components",
-          "specifiers": [
-            {
-              "imported": "PageContainer",
-              "local": "PageContainer",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 1,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 117,
-          "importKind": "value",
-          "source": "antd",
-          "specifiers": [
-            {
-              "imported": "Card",
-              "local": "Card",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "Col",
-              "local": "Col",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "Row",
-              "local": "Row",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "Tag",
-              "local": "Tag",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "Empty",
-              "local": "Empty",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "Spin",
-              "local": "Spin",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 61,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 162,
-          "importKind": "value",
-          "source": "react",
-          "specifiers": [
-            {
-              "imported": "useEffect",
-              "local": "useEffect",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "useState",
-              "local": "useState",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 118,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 228,
-          "importKind": "value",
-          "source": "@/services/api/organization",
-          "specifiers": [
-            {
-              "imported": "listKnowledgeBases",
-              "local": "listKnowledgeBases",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 163,
-          "type": "ImportDeclaration"
-        }
-      ],
-      "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\organization\\Managers\\index.tsx": [
-        {
-          "end": 70,
-          "importKind": "value",
-          "source": "@ant-design/pro-components",
-          "specifiers": [
-            {
-              "imported": "PageContainer",
-              "local": "PageContainer",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "ProTable",
-              "local": "ProTable",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 1,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 98,
-          "importKind": "value",
-          "source": "antd",
-          "specifiers": [
-            {
-              "imported": "Tag",
-              "local": "Tag",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 71,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 158,
-          "importKind": "value",
-          "source": "@/services/api/organization",
-          "specifiers": [
-            {
-              "imported": "listManagers",
-              "local": "listManagers",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 99,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 220,
-          "importKind": "type",
-          "source": "@ant-design/pro-components",
-          "specifiers": [
-            {
-              "imported": "ProColumns",
-              "local": "ProColumns",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 159,
-          "type": "ImportDeclaration"
-        }
-      ],
-      "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\organization\\Members\\index.tsx": [
-        {
-          "end": 70,
-          "importKind": "value",
-          "source": "@ant-design/pro-components",
-          "specifiers": [
-            {
-              "imported": "PageContainer",
-              "local": "PageContainer",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "ProTable",
-              "local": "ProTable",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 1,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 98,
-          "importKind": "value",
-          "source": "antd",
-          "specifiers": [
-            {
-              "imported": "Tag",
-              "local": "Tag",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 71,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 161,
-          "importKind": "value",
-          "source": "@/services/api/admin",
-          "specifiers": [
-            {
-              "imported": "getOrganizationMembers",
-              "local": "getOrganizationMembers",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 99,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 223,
-          "importKind": "type",
-          "source": "@ant-design/pro-components",
-          "specifiers": [
-            {
-              "imported": "ProColumns",
-              "local": "ProColumns",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 162,
-          "type": "ImportDeclaration"
-        }
-      ],
-      "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\organization\\Patients\\index.tsx": [
-        {
-          "end": 70,
-          "importKind": "value",
-          "source": "@ant-design/pro-components",
-          "specifiers": [
-            {
-              "imported": "PageContainer",
-              "local": "PageContainer",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "ProTable",
-              "local": "ProTable",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 1,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 130,
-          "importKind": "value",
-          "source": "@/services/api/organization",
-          "specifiers": [
-            {
-              "imported": "listPatients",
-              "local": "listPatients",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 71,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 192,
-          "importKind": "type",
-          "source": "@ant-design/pro-components",
-          "specifiers": [
-            {
-              "imported": "ProColumns",
-              "local": "ProColumns",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 131,
-          "type": "ImportDeclaration"
-        }
-      ],
-      "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\organization\\Roles\\index.tsx": [
-        {
-          "end": 60,
-          "importKind": "value",
-          "source": "@ant-design/pro-components",
-          "specifiers": [
-            {
-              "imported": "PageContainer",
-              "local": "PageContainer",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 1,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 113,
-          "importKind": "value",
-          "source": "antd",
-          "specifiers": [
-            {
-              "imported": "Card",
-              "local": "Card",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "Tag",
-              "local": "Tag",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "List",
-              "local": "List",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "Spin",
-              "local": "Spin",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "Empty",
-              "local": "Empty",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 61,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 158,
-          "importKind": "value",
-          "source": "react",
-          "specifiers": [
-            {
-              "imported": "useEffect",
-              "local": "useEffect",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "useState",
-              "local": "useState",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 114,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 215,
-          "importKind": "value",
-          "source": "@/services/api/organization",
-          "specifiers": [
-            {
-              "imported": "listRoles",
-              "local": "listRoles",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 159,
-          "type": "ImportDeclaration"
-        }
-      ],
-      "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\organization\\Usage\\index.tsx": [
-        {
-          "end": 70,
-          "importKind": "value",
-          "source": "@ant-design/pro-components",
-          "specifiers": [
-            {
-              "imported": "PageContainer",
-              "local": "PageContainer",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "ProTable",
-              "local": "ProTable",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 1,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 134,
-          "importKind": "value",
-          "source": "@/services/api/organization",
-          "specifiers": [
-            {
-              "imported": "listOrgAuditLogs",
-              "local": "listOrgAuditLogs",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 71,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 196,
-          "importKind": "type",
-          "source": "@ant-design/pro-components",
-          "specifiers": [
-            {
-              "imported": "ProColumns",
-              "local": "ProColumns",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 135,
-          "type": "ImportDeclaration"
-        }
-      ],
-      "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\platform\\AuditLogs\\index.tsx": [
-        {
-          "end": 70,
-          "importKind": "value",
-          "source": "@ant-design/pro-components",
-          "specifiers": [
-            {
-              "imported": "PageContainer",
-              "local": "PageContainer",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "ProTable",
-              "local": "ProTable",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 1,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 124,
-          "importKind": "value",
-          "source": "@/services/api/admin",
-          "specifiers": [
-            {
-              "imported": "listAuditLogs",
-              "local": "listAuditLogs",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 71,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 186,
-          "importKind": "type",
-          "source": "@ant-design/pro-components",
-          "specifiers": [
-            {
-              "imported": "ProColumns",
-              "local": "ProColumns",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 125,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 214,
-          "importKind": "value",
-          "source": "antd",
-          "specifiers": [
-            {
-              "imported": "Tag",
-              "local": "Tag",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 187,
-          "type": "ImportDeclaration"
-        }
-      ],
-      "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\platform\\Dashboard\\index.tsx": [
+      "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\admin\\Dashboard\\index.tsx": [
         {
           "end": 75,
           "importKind": "value",
@@ -12797,7 +11710,7 @@
           "type": "ImportDeclaration"
         }
       ],
-      "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\platform\\Organizations\\index.tsx": [
+      "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\admin\\Organizations\\index.tsx": [
         {
           "end": 50,
           "importKind": "value",
@@ -12953,7 +11866,7 @@
           "type": "ImportDeclaration"
         }
       ],
-      "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\platform\\Settings\\index.tsx": [
+      "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\admin\\Settings\\index.tsx": [
         {
           "end": 155,
           "importKind": "value",
@@ -13061,56 +11974,7 @@
           "type": "ImportDeclaration"
         }
       ],
-      "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\platform\\Usage\\index.tsx": [
-        {
-          "end": 70,
-          "importKind": "value",
-          "source": "@ant-design/pro-components",
-          "specifiers": [
-            {
-              "imported": "PageContainer",
-              "local": "PageContainer",
-              "type": "ImportSpecifier"
-            },
-            {
-              "imported": "ProTable",
-              "local": "ProTable",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 1,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 126,
-          "importKind": "value",
-          "source": "@/services/api/admin",
-          "specifiers": [
-            {
-              "imported": "getUsageSummary",
-              "local": "getUsageSummary",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 71,
-          "type": "ImportDeclaration"
-        },
-        {
-          "end": 188,
-          "importKind": "type",
-          "source": "@ant-design/pro-components",
-          "specifiers": [
-            {
-              "imported": "ProColumns",
-              "local": "ProColumns",
-              "type": "ImportSpecifier"
-            }
-          ],
-          "start": 127,
-          "type": "ImportDeclaration"
-        }
-      ],
-      "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\platform\\Users\\index.tsx": [
+      "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\admin\\Users\\index.tsx": [
         {
           "end": 50,
           "importKind": "value",
@@ -13238,6 +12102,666 @@
             }
           ],
           "start": 365,
+          "type": "ImportDeclaration"
+        }
+      ],
+      "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\audit\\index.tsx": [
+        {
+          "end": 70,
+          "importKind": "value",
+          "source": "@ant-design/pro-components",
+          "specifiers": [
+            {
+              "imported": "PageContainer",
+              "local": "PageContainer",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "ProTable",
+              "local": "ProTable",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 1,
+          "type": "ImportDeclaration"
+        },
+        {
+          "end": 134,
+          "importKind": "value",
+          "source": "@/services/api/organization",
+          "specifiers": [
+            {
+              "imported": "listOrgAuditLogs",
+              "local": "listOrgAuditLogs",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 71,
+          "type": "ImportDeclaration"
+        },
+        {
+          "end": 196,
+          "importKind": "type",
+          "source": "@ant-design/pro-components",
+          "specifiers": [
+            {
+              "imported": "ProColumns",
+              "local": "ProColumns",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 135,
+          "type": "ImportDeclaration"
+        }
+      ],
+      "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\auth\\Login\\index.tsx": [
+        {
+          "end": 605,
+          "source": "@/services/api/auth",
+          "start": 584,
+          "type": "DynamicImport"
+        },
+        {
+          "end": 69,
+          "importKind": "value",
+          "source": "@ant-design/pro-components",
+          "specifiers": [
+            {
+              "imported": "LoginForm",
+              "local": "LoginForm",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "ProFormText",
+              "local": "ProFormText",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 1,
+          "type": "ImportDeclaration"
+        },
+        {
+          "end": 117,
+          "importKind": "value",
+          "source": "@umijs/max",
+          "specifiers": [
+            {
+              "imported": "history",
+              "local": "history",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "useModel",
+              "local": "useModel",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 70,
+          "type": "ImportDeclaration"
+        },
+        {
+          "end": 149,
+          "importKind": "value",
+          "source": "antd",
+          "specifiers": [
+            {
+              "imported": "message",
+              "local": "message",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 118,
+          "type": "ImportDeclaration"
+        },
+        {
+          "end": 194,
+          "importKind": "value",
+          "source": "@/services/api/auth",
+          "specifiers": [
+            {
+              "imported": "login",
+              "local": "login",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 150,
+          "type": "ImportDeclaration"
+        }
+      ],
+      "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\chat\\index.tsx": [
+        {
+          "end": 70,
+          "importKind": "value",
+          "source": "@ant-design/pro-components",
+          "specifiers": [
+            {
+              "imported": "PageContainer",
+              "local": "PageContainer",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "ProTable",
+              "local": "ProTable",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 1,
+          "type": "ImportDeclaration"
+        },
+        {
+          "end": 135,
+          "importKind": "value",
+          "source": "@/services/api/organization",
+          "specifiers": [
+            {
+              "imported": "listConversations",
+              "local": "listConversations",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 71,
+          "type": "ImportDeclaration"
+        },
+        {
+          "end": 197,
+          "importKind": "type",
+          "source": "@ant-design/pro-components",
+          "specifiers": [
+            {
+              "imported": "ProColumns",
+              "local": "ProColumns",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 136,
+          "type": "ImportDeclaration"
+        }
+      ],
+      "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\dashboard\\index.tsx": [
+        {
+          "end": 75,
+          "importKind": "value",
+          "source": "@ant-design/pro-components",
+          "specifiers": [
+            {
+              "imported": "PageContainer",
+              "local": "PageContainer",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "StatisticCard",
+              "local": "StatisticCard",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 1,
+          "type": "ImportDeclaration"
+        },
+        {
+          "end": 124,
+          "importKind": "value",
+          "source": "antd",
+          "specifiers": [
+            {
+              "imported": "Row",
+              "local": "Row",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "Col",
+              "local": "Col",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "Card",
+              "local": "Card",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "Progress",
+              "local": "Progress",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 76,
+          "type": "ImportDeclaration"
+        },
+        {
+          "end": 169,
+          "importKind": "value",
+          "source": "react",
+          "specifiers": [
+            {
+              "imported": "useEffect",
+              "local": "useEffect",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "useState",
+              "local": "useState",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 125,
+          "type": "ImportDeclaration"
+        },
+        {
+          "end": 268,
+          "importKind": "value",
+          "source": "@/services/api/organization",
+          "specifiers": [
+            {
+              "imported": "listPatients",
+              "local": "listPatients",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "listKnowledgeBases",
+              "local": "listKnowledgeBases",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "listConversations",
+              "local": "listConversations",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 170,
+          "type": "ImportDeclaration"
+        }
+      ],
+      "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\knowledge\\index.tsx": [
+        {
+          "end": 60,
+          "importKind": "value",
+          "source": "@ant-design/pro-components",
+          "specifiers": [
+            {
+              "imported": "PageContainer",
+              "local": "PageContainer",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 1,
+          "type": "ImportDeclaration"
+        },
+        {
+          "end": 117,
+          "importKind": "value",
+          "source": "antd",
+          "specifiers": [
+            {
+              "imported": "Card",
+              "local": "Card",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "Col",
+              "local": "Col",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "Row",
+              "local": "Row",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "Tag",
+              "local": "Tag",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "Empty",
+              "local": "Empty",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "Spin",
+              "local": "Spin",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 61,
+          "type": "ImportDeclaration"
+        },
+        {
+          "end": 162,
+          "importKind": "value",
+          "source": "react",
+          "specifiers": [
+            {
+              "imported": "useEffect",
+              "local": "useEffect",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "useState",
+              "local": "useState",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 118,
+          "type": "ImportDeclaration"
+        },
+        {
+          "end": 228,
+          "importKind": "value",
+          "source": "@/services/api/organization",
+          "specifiers": [
+            {
+              "imported": "listKnowledgeBases",
+              "local": "listKnowledgeBases",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 163,
+          "type": "ImportDeclaration"
+        }
+      ],
+      "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\managers\\index.tsx": [
+        {
+          "end": 70,
+          "importKind": "value",
+          "source": "@ant-design/pro-components",
+          "specifiers": [
+            {
+              "imported": "PageContainer",
+              "local": "PageContainer",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "ProTable",
+              "local": "ProTable",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 1,
+          "type": "ImportDeclaration"
+        },
+        {
+          "end": 98,
+          "importKind": "value",
+          "source": "antd",
+          "specifiers": [
+            {
+              "imported": "Tag",
+              "local": "Tag",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 71,
+          "type": "ImportDeclaration"
+        },
+        {
+          "end": 158,
+          "importKind": "value",
+          "source": "@/services/api/organization",
+          "specifiers": [
+            {
+              "imported": "listManagers",
+              "local": "listManagers",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 99,
+          "type": "ImportDeclaration"
+        },
+        {
+          "end": 220,
+          "importKind": "type",
+          "source": "@ant-design/pro-components",
+          "specifiers": [
+            {
+              "imported": "ProColumns",
+              "local": "ProColumns",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 159,
+          "type": "ImportDeclaration"
+        }
+      ],
+      "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\members\\index.tsx": [
+        {
+          "end": 70,
+          "importKind": "value",
+          "source": "@ant-design/pro-components",
+          "specifiers": [
+            {
+              "imported": "PageContainer",
+              "local": "PageContainer",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "ProTable",
+              "local": "ProTable",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 1,
+          "type": "ImportDeclaration"
+        },
+        {
+          "end": 98,
+          "importKind": "value",
+          "source": "antd",
+          "specifiers": [
+            {
+              "imported": "Tag",
+              "local": "Tag",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 71,
+          "type": "ImportDeclaration"
+        },
+        {
+          "end": 161,
+          "importKind": "value",
+          "source": "@/services/api/admin",
+          "specifiers": [
+            {
+              "imported": "getOrganizationMembers",
+              "local": "getOrganizationMembers",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 99,
+          "type": "ImportDeclaration"
+        },
+        {
+          "end": 223,
+          "importKind": "type",
+          "source": "@ant-design/pro-components",
+          "specifiers": [
+            {
+              "imported": "ProColumns",
+              "local": "ProColumns",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 162,
+          "type": "ImportDeclaration"
+        }
+      ],
+      "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\patients\\index.tsx": [
+        {
+          "end": 70,
+          "importKind": "value",
+          "source": "@ant-design/pro-components",
+          "specifiers": [
+            {
+              "imported": "PageContainer",
+              "local": "PageContainer",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "ProTable",
+              "local": "ProTable",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 1,
+          "type": "ImportDeclaration"
+        },
+        {
+          "end": 130,
+          "importKind": "value",
+          "source": "@/services/api/organization",
+          "specifiers": [
+            {
+              "imported": "listPatients",
+              "local": "listPatients",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 71,
+          "type": "ImportDeclaration"
+        },
+        {
+          "end": 192,
+          "importKind": "type",
+          "source": "@ant-design/pro-components",
+          "specifiers": [
+            {
+              "imported": "ProColumns",
+              "local": "ProColumns",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 131,
+          "type": "ImportDeclaration"
+        }
+      ],
+      "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\roles\\index.tsx": [
+        {
+          "end": 60,
+          "importKind": "value",
+          "source": "@ant-design/pro-components",
+          "specifiers": [
+            {
+              "imported": "PageContainer",
+              "local": "PageContainer",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 1,
+          "type": "ImportDeclaration"
+        },
+        {
+          "end": 113,
+          "importKind": "value",
+          "source": "antd",
+          "specifiers": [
+            {
+              "imported": "Card",
+              "local": "Card",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "Tag",
+              "local": "Tag",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "List",
+              "local": "List",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "Spin",
+              "local": "Spin",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "Empty",
+              "local": "Empty",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 61,
+          "type": "ImportDeclaration"
+        },
+        {
+          "end": 158,
+          "importKind": "value",
+          "source": "react",
+          "specifiers": [
+            {
+              "imported": "useEffect",
+              "local": "useEffect",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "useState",
+              "local": "useState",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 114,
+          "type": "ImportDeclaration"
+        },
+        {
+          "end": 215,
+          "importKind": "value",
+          "source": "@/services/api/organization",
+          "specifiers": [
+            {
+              "imported": "listRoles",
+              "local": "listRoles",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 159,
+          "type": "ImportDeclaration"
+        }
+      ],
+      "D:\\codes\\chronic-disease-management\\frontend\\src\\pages\\usage\\index.tsx": [
+        {
+          "end": 70,
+          "importKind": "value",
+          "source": "@ant-design/pro-components",
+          "specifiers": [
+            {
+              "imported": "PageContainer",
+              "local": "PageContainer",
+              "type": "ImportSpecifier"
+            },
+            {
+              "imported": "ProTable",
+              "local": "ProTable",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 1,
+          "type": "ImportDeclaration"
+        },
+        {
+          "end": 134,
+          "importKind": "value",
+          "source": "@/services/api/organization",
+          "specifiers": [
+            {
+              "imported": "listOrgAuditLogs",
+              "local": "listOrgAuditLogs",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 71,
+          "type": "ImportDeclaration"
+        },
+        {
+          "end": 196,
+          "importKind": "type",
+          "source": "@ant-design/pro-components",
+          "specifiers": [
+            {
+              "imported": "ProColumns",
+              "local": "ProColumns",
+              "type": "ImportSpecifier"
+            }
+          ],
+          "start": 135,
           "type": "ImportDeclaration"
         }
       ],

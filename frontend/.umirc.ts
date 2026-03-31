@@ -18,29 +18,17 @@ export default defineConfig({
         { path: '/user/login', component: './auth/Login' },
       ],
     },
-    // Main Business Routes (Clean & Logical)
+    // Unified Business Routes - Flat & Logical
     { path: '/', redirect: '/dashboard' },
-    { path: '/dashboard', name: 'Dashboard', component: './organization/Dashboard' },
-    { path: '/patients', name: 'Patients', component: './organization/Patients' },
-    { path: '/knowledge', name: 'Knowledge', component: './organization/KnowledgeBases' },
-    { path: '/chat', name: 'Chat', component: './organization/Conversations' },
-    { path: '/members', name: 'Members', component: './organization/Members' },
-    { path: '/roles', name: 'Roles', component: './organization/Roles' },
-    { path: '/audit-logs', name: 'Audit', component: './organization/AuditLogs' },
+    { path: '/dashboard', name: 'Dashboard', component: './dashboard' },
+    { path: '/patients', name: 'Patients', component: './patients' },
+    { path: '/knowledge', name: 'Knowledge', component: './knowledge' },
+    { path: '/chat', name: 'Chat', component: './chat' },
+    { path: '/members', name: 'Members', component: './members' },
+    { path: '/roles', name: 'Roles', component: './roles' },
+    { path: '/audit-logs', name: 'Audit', component: './audit' },
+    { path: '/usage', name: 'Usage', component: './usage' },
     
-    // Platform-level (Kept separate for super admins)
-    {
-      path: '/platform',
-      name: 'Platform',
-      icon: 'crown',
-      routes: [
-        { path: '/platform', redirect: '/platform/dashboard' },
-        { path: '/platform/dashboard', component: './platform/Dashboard' },
-        { path: '/platform/organizations', component: './platform/Organizations' },
-        { path: '/platform/users', component: './platform/Users' },
-        { path: '/platform/settings', component: './platform/Settings' },
-      ],
-    },
     { component: './404' },
   ],
   proxy: {

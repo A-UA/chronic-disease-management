@@ -1,0 +1,153 @@
+from typing import Any, List, Optional
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+from pydantic import BaseModel, ConfigDict
+
+from app.api.deps import get_db, get_current_user, get_current_org, check_permission
+from app.db.models import (
+    User, 
+    PatientProfile, 
+    PatientManagerAssignment, 
+    ManagementSuggestion,
+    ManagerProfile
+)
+
+router = APIRouter()
+
+# --- Schemas ---
+class ManagerDetailRead(BaseModel):
+    id: int
+    user_id: int
+    name: Optional[str] = None
+    email: Optional[str] = None
+    title: Optional[str] = None
+    is_active: bool
+    assigned_patient_count: int = 0
+    model_config = ConfigDict(from_attributes=True)
+
+class PatientBriefRead(BaseModel):
+    id: int
+    user_id: int
+    real_name: str
+    gender: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
+
+class SuggestionCreate(BaseModel):
+    content: str
+    suggestion_type: str = "general"
+
+class SuggestionRead(BaseModel):
+    id: int
+    manager_id: int
+    patient_id: int
+    content: str
+    suggestion_type: str
+    created_at: Any
+    model_config = ConfigDict(from_attributes=True)
+
+class AssignmentCreate(BaseModel):
+    patient_id: int
+    manager_id: int
+    assignment_role: str = "main"
+
+# --- Unified Endpoints ---
+
+@router.get("/", response_model=List[ManagerDetailRead])
+async def list_org_managers(
+    org_id: int = Depends(get_current_org),
+    _permission=Depends(check_permission("org_member:manage")),
+    db: AsyncSession = Depends(get_db),
+):
+    """[管理视图] 列出本机构所有管理师及其工作负荷"""
+    stmt = (
+        select(ManagerProfile)
+        .options(selectinload(ManagerProfile.user))
+        .where(ManagerProfile.org_id == org_id)
+    )
+    result = await db.execute(stmt)
+    managers = result.scalars().all()
+
+    reads = []
+    for m in managers:
+        count_stmt = select(func.count(PatientManagerAssignment.id)).where(
+            PatientManagerAssignment.manager_id == m.user_id
+        )
+        count = (await db.execute(count_stmt)).scalar() or 0
+        reads.append(ManagerDetailRead(
+            id=m.id, user_id=m.user_id, title=m.title, is_active=m.is_active,
+            name=m.user.name, email=m.user.email, assigned_patient_count=count
+        ))
+    return reads
+
+@router.get("/my-patients", response_model=List[PatientBriefRead])
+async def get_my_assigned_patients(
+    current_user: User = Depends(get_current_user),
+    org_id: int = Depends(get_current_org),
+    db: AsyncSession = Depends(get_db)
+) -> Any:
+    """[管理师视图] 查看分配给我的患者"""
+    stmt = (
+        select(PatientProfile)
+        .join(PatientManagerAssignment, PatientProfile.id == PatientManagerAssignment.patient_id)
+        .where(
+            PatientManagerAssignment.manager_id == current_user.id,
+            PatientManagerAssignment.org_id == org_id
+        )
+    )
+    result = await db.execute(stmt)
+    return result.scalars().all()
+
+@router.post("/assignments")
+async def create_assignment(
+    data: AssignmentCreate,
+    org_id: int = Depends(get_current_org),
+    _permission=Depends(check_permission("org_member:manage")),
+    db: AsyncSession = Depends(get_db),
+):
+    """[管理视图] 分配患者给管理师 (SSD 兼容)"""
+    from sqlalchemy.dialects.postgresql import insert
+    stmt = (
+        insert(PatientManagerAssignment)
+        .values(
+            org_id=org_id, manager_id=data.manager_id, 
+            patient_id=data.patient_id, assignment_role=data.assignment_role
+        )
+        .on_conflict_do_update(
+            index_elements=["manager_id", "patient_id"],
+            set_={"assignment_role": data.assignment_role}
+        )
+    )
+    await db.execute(stmt)
+    await db.commit()
+    return {"status": "ok"}
+
+@router.post("/patients/{patient_id}/suggestions", response_model=SuggestionRead)
+async def create_patient_suggestion(
+    patient_id: int,
+    suggest_in: SuggestionCreate,
+    current_user: User = Depends(get_current_user),
+    org_id: int = Depends(get_current_org),
+    _ = Depends(check_permission("suggestion:create")),
+    db: AsyncSession = Depends(get_db)
+) -> Any:
+    """[管理师视图] 为患者创建管理建议"""
+    # 校验分配关系
+    stmt = select(PatientManagerAssignment).where(
+        PatientManagerAssignment.manager_id == current_user.id,
+        PatientManagerAssignment.patient_id == patient_id,
+        PatientManagerAssignment.org_id == org_id
+    )
+    if not (await db.execute(stmt)).scalar_one_or_none():
+        raise HTTPException(status_code=403, detail="Not assigned to this patient")
+
+    suggestion = ManagementSuggestion(
+        org_id=org_id, manager_id=current_user.id,
+        patient_id=patient_id, content=suggest_in.content,
+        suggestion_type=suggest_in.suggestion_type
+    )
+    db.add(suggestion)
+    await db.commit()
+    await db.refresh(suggestion)
+    return suggestion

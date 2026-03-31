@@ -5,7 +5,7 @@ from sqlalchemy.orm import selectinload
 from app.db.session import AsyncSessionLocal as SessionLocal
 from app.db.models.rbac import Permission, Role, Resource, Action
 
-# 1. Define Resources
+# 1. Define Resources (Tenant-only focus)
 RESOURCES = [
     {"name": "Patient Profile", "code": "patient", "description": "患者档案数据"},
     {"name": "Management Suggestion", "code": "suggestion", "description": "慢病管理建议"},
@@ -14,31 +14,28 @@ RESOURCES = [
     {"name": "Organization User", "code": "org_member", "description": "机构成员管理"},
     {"name": "Organization Usage", "code": "org_usage", "description": "机构配额与使用量"},
     {"name": "AI Chat", "code": "chat", "description": "AI 问答服务"},
-    {"name": "Platform Settings", "code": "platform_settings", "description": "平台全局设置"},
     {"name": "Audit Log", "code": "audit_log", "description": "审计日志"},
-    {"name": "Menu System", "code": "menu", "description": "UI 导航菜单"},
+    {"name": "Tenant Menu", "code": "menu", "description": "B端机构菜单"},
 ]
 
 # 2. Define Actions
 ACTIONS = [
-    {"name": "Create", "code": "create"},
-    {"name": "Read", "code": "read"},
-    {"name": "Update", "code": "update"},
-    {"name": "Delete", "code": "delete"},
     {"name": "Manage", "code": "manage"},
     {"name": "Use", "code": "use"},
-    {"name": "View", "code": "view"},
+    {"name": "Read", "code": "read"},
+    {"name": "Update", "code": "update"},
     {"name": "Dashboard", "code": "dashboard"},
     {"name": "Patients", "code": "patients"},
     {"name": "Knowledge", "code": "kb"},
     {"name": "Chat", "code": "chat"},
-    {"name": "Settings", "code": "settings"},
     {"name": "Members", "code": "members"},
     {"name": "Roles", "code": "roles"},
+    {"name": "Settings", "code": "settings"},
 ]
 
-# 3. Define Permissions (Logical Paths)
+# 3. Define Permissions (Flat, Logical Paths)
 PERMISSION_MAP = [
+    # --- API Permissions ---
     ("patient", "read", "查看患者", "api", None),
     ("patient", "update", "修改患者", "api", None),
     ("suggestion", "create", "创建建议", "api", None),
@@ -48,34 +45,29 @@ PERMISSION_MAP = [
     ("org_member", "manage", "管理成员", "api", None),
     ("org_usage", "read", "查看使用量", "api", None),
     ("chat", "use", "使用 AI 对话", "api", None),
-    ("platform_settings", "manage", "管理系统设置", "api", None),
     ("audit_log", "read", "查看审计日志", "api", None),
     
-    # Simple, logical menu paths
+    # --- Unified B-Side Tenant Menus ---
     ("menu", "dashboard", "控制台", "menu", {"path": "/dashboard", "icon": "DashboardOutlined", "sort": 1}),
     ("menu", "patients", "患者管理", "menu", {"path": "/patients", "icon": "TeamOutlined", "sort": 2}),
-    ("menu", "kb", "知识库", "menu", {"path": "/knowledge", "icon": "BookOutlined", "sort": 3}),
+    ("menu", "kb", "知识库管理", "menu", {"path": "/knowledge", "icon": "BookOutlined", "sort": 3}),
     ("menu", "chat", "AI 问答", "menu", {"path": "/chat", "icon": "MessageOutlined", "sort": 4}),
     ("menu", "members", "成员管理", "menu", {"path": "/members", "icon": "UserOutlined", "sort": 5}),
     ("menu", "roles", "角色权限", "menu", {"path": "/roles", "icon": "LockOutlined", "sort": 6}),
     ("menu", "settings", "操作审计", "menu", {"path": "/audit-logs", "icon": "SettingOutlined", "sort": 10}),
 ]
 
-# 4. Define Roles with Inheritance
+# 4. Define Roles with Inheritance (Pure Tenant Architecture)
 ROLES = [
     ("staff", "基础成员", "机构基础职员", ["chat:use", "patient:read", "suggestion:read", "menu:dashboard", "menu:patients", "menu:chat"], None),
     ("manager", "管理人员", "健康管理师/主治医", ["suggestion:create", "patient:update"], "staff"),
     ("admin", "管理员", "机构系统管理员", ["kb:manage", "doc:manage", "org_member:manage", "org_usage:read", "menu:kb", "menu:members", "menu:roles", "menu:settings"], "manager"),
     ("owner", "所有者", "机构主账户", [], "admin"),
-    
-    # Platform Roles
-    ("platform_viewer", "平台查看者", "平台级只读权限", ["audit_log:read"], None),
-    ("platform_admin", "平台管理员", "平台最高管理员", ["platform_settings:manage"], "platform_viewer"),
 ]
 
 async def seed_rbac():
     async with SessionLocal() as db:
-        print("--- RBAC 3.0 Seeding (v4: Logical Naming) Started ---")
+        print("--- RBAC 3.0 Seeding (v6: Tenant Equality) Started ---")
 
         # 1. Seed Resources
         resource_objs = {}
@@ -151,7 +143,7 @@ async def seed_rbac():
                 role_objs[r_code].parent_role_id = role_objs[parent_code].id
 
         await db.commit()
-        print("--- RBAC 3.0 Seeding (v4: Logical Naming) Complete! ---")
+        print("--- RBAC 3.0 Seeding (v6: Tenant Equality) Complete! ---")
 
 if __name__ == "__main__":
     asyncio.run(seed_rbac())

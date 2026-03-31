@@ -1,25 +1,22 @@
-export default function access(initialState: { currentUser?: any } | undefined) {
-  const { currentUser } = initialState || {};
-  const permissions = currentUser?.permissions || [];
+/**
+ * @see https://umijs.org/docs/max/access
+ * */
+export default function access(initialState: { permissions?: string[] } | undefined) {
+  const { permissions = [] } = initialState || {};
 
   return {
-    // 1. Generic check function
-    can: (code: string) => permissions.includes(code),
+    // 租户基础权限
+    canViewDashboard: permissions.includes('menu:dashboard'),
+    canViewPatients: permissions.includes('menu:patients'),
+    canViewKB: permissions.includes('menu:knowledge'),
+    canViewChat: permissions.includes('menu:chat'),
+    canViewMembers: permissions.includes('menu:members'),
+    canViewRoles: permissions.includes('menu:roles'),
+    canViewAudit: permissions.includes('menu:settings'),
 
-    // 2. Predefined semantic access rules
-    canViewPatients: permissions.includes('patient:read'),
+    // 数据操作权限
     canUpdatePatient: permissions.includes('patient:update'),
-    
     canManageKB: permissions.includes('kb:manage'),
-    canManageDocs: permissions.includes('doc:manage'),
-    
-    canUseChat: permissions.includes('chat:use'),
-    
-    canManageOrg: permissions.includes('org_member:manage'),
-    canViewUsage: permissions.includes('org_usage:read'),
-
-    // 3. Platform level
-    isPlatformAdmin: permissions.includes('platform_settings:manage'),
-    isPlatformViewer: permissions.includes('audit_log:read'),
+    canManageMembers: permissions.includes('org_member:manage'),
   };
 }

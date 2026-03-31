@@ -4,27 +4,29 @@
 import React from 'react';
 
 export async function getRoutes() {
-  const routes = {"1":{"path":"/user","layout":false,"id":"1"},"2":{"path":"/user/login","parentId":"1","id":"2"},"3":{"path":"/","redirect":"/dashboard","parentId":"ant-design-pro-layout","id":"3"},"4":{"path":"/dashboard","name":"Dashboard","parentId":"ant-design-pro-layout","id":"4"},"5":{"path":"/patients","name":"Patients","parentId":"ant-design-pro-layout","id":"5"},"6":{"path":"/knowledge","name":"Knowledge","parentId":"ant-design-pro-layout","id":"6"},"7":{"path":"/chat","name":"Chat","parentId":"ant-design-pro-layout","id":"7"},"8":{"path":"/members","name":"Members","parentId":"ant-design-pro-layout","id":"8"},"9":{"path":"/roles","name":"Roles","parentId":"ant-design-pro-layout","id":"9"},"10":{"path":"/audit-logs","name":"Audit","parentId":"ant-design-pro-layout","id":"10"},"11":{"path":"/platform","name":"Platform","icon":"crown","parentId":"ant-design-pro-layout","id":"11"},"12":{"path":"/platform","redirect":"/platform/dashboard","parentId":"11","id":"12"},"13":{"path":"/platform/dashboard","parentId":"11","id":"13"},"14":{"path":"/platform/organizations","parentId":"11","id":"14"},"15":{"path":"/platform/users","parentId":"11","id":"15"},"16":{"path":"/platform/settings","parentId":"11","id":"16"},"17":{"parentId":"ant-design-pro-layout","id":"17"},"ant-design-pro-layout":{"id":"ant-design-pro-layout","path":"/","isLayout":true}} as const;
+  const routes = {"1":{"path":"/user","layout":false,"id":"1"},"2":{"path":"/user/login","parentId":"1","id":"2"},"3":{"path":"/","redirect":"/dashboard","parentId":"ant-design-pro-layout","id":"3"},"4":{"path":"/dashboard","name":"Dashboard","parentId":"ant-design-pro-layout","id":"4"},"5":{"path":"/patients","name":"Patients","parentId":"ant-design-pro-layout","id":"5"},"6":{"path":"/knowledge","name":"Knowledge","parentId":"ant-design-pro-layout","id":"6"},"7":{"path":"/chat","name":"Chat","parentId":"ant-design-pro-layout","id":"7"},"8":{"path":"/members","name":"Members","parentId":"ant-design-pro-layout","id":"8"},"9":{"path":"/roles","name":"Roles","parentId":"ant-design-pro-layout","id":"9"},"10":{"path":"/audit-logs","name":"Audit","parentId":"ant-design-pro-layout","id":"10"},"11":{"path":"/managers","name":"Managers","parentId":"ant-design-pro-layout","id":"11"},"12":{"path":"/usage","name":"Usage","parentId":"ant-design-pro-layout","id":"12"},"13":{"path":"/admin","name":"Platform Admin","icon":"crown","parentId":"ant-design-pro-layout","id":"13"},"14":{"path":"/admin","redirect":"/admin/dashboard","parentId":"13","id":"14"},"15":{"path":"/admin/dashboard","parentId":"13","id":"15"},"16":{"path":"/admin/organizations","parentId":"13","id":"16"},"17":{"path":"/admin/users","parentId":"13","id":"17"},"18":{"path":"/admin/settings","parentId":"13","id":"18"},"19":{"parentId":"ant-design-pro-layout","id":"19"},"ant-design-pro-layout":{"id":"ant-design-pro-layout","path":"/","isLayout":true}} as const;
   return {
     routes,
     routeComponents: {
 '1': React.lazy(() => import('./EmptyRoute')),
 '2': React.lazy(() => import(/* webpackChunkName: "p__auth__Login__index" */'@/pages/auth/Login/index.tsx')),
 '3': React.lazy(() => import('./EmptyRoute')),
-'4': React.lazy(() => import(/* webpackChunkName: "p__organization__Dashboard__index" */'@/pages/organization/Dashboard/index.tsx')),
-'5': React.lazy(() => import(/* webpackChunkName: "p__organization__Patients__index" */'@/pages/organization/Patients/index.tsx')),
-'6': React.lazy(() => import(/* webpackChunkName: "p__organization__KnowledgeBases__index" */'@/pages/organization/KnowledgeBases/index.tsx')),
-'7': React.lazy(() => import(/* webpackChunkName: "p__organization__Conversations__index" */'@/pages/organization/Conversations/index.tsx')),
-'8': React.lazy(() => import(/* webpackChunkName: "p__organization__Members__index" */'@/pages/organization/Members/index.tsx')),
-'9': React.lazy(() => import(/* webpackChunkName: "p__organization__Roles__index" */'@/pages/organization/Roles/index.tsx')),
-'10': React.lazy(() => import(/* webpackChunkName: "p__organization__AuditLogs__index" */'@/pages/organization/AuditLogs/index.tsx')),
-'11': React.lazy(() => import('./EmptyRoute')),
-'12': React.lazy(() => import('./EmptyRoute')),
-'13': React.lazy(() => import(/* webpackChunkName: "p__platform__Dashboard__index" */'@/pages/platform/Dashboard/index.tsx')),
-'14': React.lazy(() => import(/* webpackChunkName: "p__platform__Organizations__index" */'@/pages/platform/Organizations/index.tsx')),
-'15': React.lazy(() => import(/* webpackChunkName: "p__platform__Users__index" */'@/pages/platform/Users/index.tsx')),
-'16': React.lazy(() => import(/* webpackChunkName: "p__platform__Settings__index" */'@/pages/platform/Settings/index.tsx')),
-'17': React.lazy(() => import(/* webpackChunkName: "p__404" */'@/pages/404.tsx')),
+'4': React.lazy(() => import(/* webpackChunkName: "p__dashboard__index" */'@/pages/dashboard/index.tsx')),
+'5': React.lazy(() => import(/* webpackChunkName: "p__patients__index" */'@/pages/patients/index.tsx')),
+'6': React.lazy(() => import(/* webpackChunkName: "p__knowledge__index" */'@/pages/knowledge/index.tsx')),
+'7': React.lazy(() => import(/* webpackChunkName: "p__chat__index" */'@/pages/chat/index.tsx')),
+'8': React.lazy(() => import(/* webpackChunkName: "p__members__index" */'@/pages/members/index.tsx')),
+'9': React.lazy(() => import(/* webpackChunkName: "p__roles__index" */'@/pages/roles/index.tsx')),
+'10': React.lazy(() => import(/* webpackChunkName: "p__audit__index" */'@/pages/audit/index.tsx')),
+'11': React.lazy(() => import(/* webpackChunkName: "p__managers__index" */'@/pages/managers/index.tsx')),
+'12': React.lazy(() => import(/* webpackChunkName: "p__usage__index" */'@/pages/usage/index.tsx')),
+'13': React.lazy(() => import('./EmptyRoute')),
+'14': React.lazy(() => import('./EmptyRoute')),
+'15': React.lazy(() => import(/* webpackChunkName: "p__admin__Dashboard__index" */'@/pages/admin/Dashboard/index.tsx')),
+'16': React.lazy(() => import(/* webpackChunkName: "p__admin__Organizations__index" */'@/pages/admin/Organizations/index.tsx')),
+'17': React.lazy(() => import(/* webpackChunkName: "p__admin__Users__index" */'@/pages/admin/Users/index.tsx')),
+'18': React.lazy(() => import(/* webpackChunkName: "p__admin__Settings__index" */'@/pages/admin/Settings/index.tsx')),
+'19': React.lazy(() => import(/* webpackChunkName: "p__404" */'@/pages/404.tsx')),
 'ant-design-pro-layout': React.lazy(() => import(/* webpackChunkName: "umi__plugin-layout__Layout" */'D:/codes/chronic-disease-management/frontend/src/.umi/plugin-layout/Layout.tsx')),
 },
   };
