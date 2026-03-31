@@ -1,12 +1,12 @@
 from datetime import timedelta
-from typing import Any
+from typing import Any, List
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import get_db, get_current_user
+from app.api.deps import get_db, get_current_user, get_current_org_user
 from app.core import security
 from app.core.config import settings
 from app.db.models import (
@@ -15,8 +15,11 @@ from app.db.models import (
     OrganizationUser,
     OrganizationUserRole,
     Role,
+    Permission,
 )
+from app.services.rbac import RBACService
 from app.schemas.user import UserCreate, Token, UserRead
+from app.schemas.rbac import MenuRead
 from pydantic import BaseModel, EmailStr
 
 router = APIRouter()
@@ -63,16 +66,13 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)) -> A
     # 6. If this is the first user in the system, assign platform_admin role
     stmt_user_count = select(func.count(User.id))
     user_count_res = await db.execute(stmt_user_count)
-    if user_count_res.scalar() == 1:  # The user we just added is already in DB but not committed
+    if user_count_res.scalar() == 1:
         stmt_platform_role = select(Role).where(
             Role.code == "platform_admin", Role.org_id.is_(None)
         )
         res_platform = await db.execute(stmt_platform_role)
         platform_role = res_platform.scalar_one_or_none()
         if platform_role:
-            # Platform roles don't necessarily need an org context in OrganizationUserRole table
-            # but our current schema uses org_id as part of the primary key in some tables.
-            # However, for platform_admin, we can link it to their first org.
             role_link_platform = OrganizationUserRole(
                 org_id=org.id, user_id=user.id, role_id=platform_role.id
             )
@@ -108,21 +108,73 @@ async def login_access_token(
 
 @router.get("/me", response_model=UserRead)
 async def read_current_user(
-    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user: User = Depends(get_current_user), 
+    db: AsyncSession = Depends(get_db)
 ) -> Any:
-    """获取当前登录用户信息"""
-    # 显式加载组织信息以填充 org_id
+    """获取当前登录用户信息 (包含组织 ID 和递归有效权限)"""
+    # 1. 显式加载组织信息
     stmt = (
         select(User)
-        .options(selectinload(User.organizations))
+        .options(selectinload(User.organizations).selectinload(OrganizationUser.rbac_roles))
         .where(User.id == current_user.id)
     )
     res = await db.execute(stmt)
     full_user = res.scalar_one()
 
-    # 将第一个组织 ID 注入响应
+    # 2. 注入响应数据
     user_data = UserRead.model_validate(full_user)
     if full_user.organizations:
-        user_data.org_id = full_user.organizations[0].org_id
+        org_user = full_user.organizations[0]
+        user_data.org_id = org_user.org_id
+        
+        # 3. 计算该组织下的递归有效权限
+        if org_user.rbac_roles:
+            role_ids = [r.id for r in org_user.rbac_roles]
+            user_data.permissions = list(await RBACService.get_effective_permissions(db, role_ids))
+        else:
+            user_data.permissions = []
+    else:
+        user_data.permissions = []
 
     return user_data
+
+
+@router.get("/menu-tree", response_model=List[MenuRead])
+async def get_menu_tree(
+    db: AsyncSession = Depends(get_db),
+    org_user: OrganizationUser = Depends(get_current_org_user),
+) -> Any:
+    """获取当前用户的动态导航菜单"""
+    # 1. 计算所有有效角色 (包含继承)
+    role_ids = [r.id for r in org_user.rbac_roles]
+    all_role_ids = await RBACService.get_all_role_ids(db, role_ids)
+
+    # 2. 查询所有菜单类型的权限
+    stmt = (
+        select(Permission)
+        .join(Permission.roles)
+        .where(
+            Role.id.in_(list(all_role_ids)),
+            Permission.permission_type == "menu"
+        )
+        .distinct()
+    )
+    result = await db.execute(stmt)
+    menu_perms = result.scalars().all()
+
+    # 3. 解析元数据并按排序字段排序
+    menus = []
+    for p in menu_perms:
+        meta = p.ui_metadata or {}
+        menus.append(
+            MenuRead(
+                id=p.id,
+                name=p.name,
+                code=p.code,
+                path=meta.get("path", "/"),
+                icon=meta.get("icon"),
+                sort=meta.get("sort", 100),
+            )
+        )
+
+    return sorted(menus, key=lambda x: x.sort)

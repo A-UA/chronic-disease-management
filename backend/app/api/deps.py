@@ -10,6 +10,7 @@ from app.core.security import ALGORITHM
 from app.db.session import get_db
 from sqlalchemy.orm import selectinload
 from app.db.models import User, OrganizationUser, Organization, ApiKey, Role, Permission
+from app.services.rbac import RBACService
 from app.services.quota import check_org_quota, check_api_key_rate_limit
 import hashlib
 import hmac
@@ -104,18 +105,21 @@ async def get_current_org(
 
 def check_permission(perm_code: str):
     async def permission_dependency(
+        db: AsyncSession = Depends(get_db),
         org_user: OrganizationUser = Depends(get_current_org_user),
     ) -> OrganizationUser:
         # 1. Functional RBAC is only for staff
         if org_user.user_type != "staff":
             raise HTTPException(status_code=403, detail="Access denied. Staff only.")
 
-        # 2. Standard RBAC check
+        # 2. Advanced RBAC check (Hierarchical)
         if not org_user.rbac_roles:
             raise HTTPException(status_code=403, detail="No roles assigned to user")
 
-        permissions = {p.code for role in org_user.rbac_roles for p in role.permissions}
-        if perm_code not in permissions:
+        role_ids = [r.id for r in org_user.rbac_roles]
+        effective_permissions = await RBACService.get_effective_permissions(db, role_ids)
+
+        if perm_code not in effective_permissions:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Missing required permission: {perm_code}",
@@ -218,14 +222,24 @@ def check_org_admin():
     """检查用户是否是当前组织的管理员 (owner/admin)"""
 
     async def _check(
+        db: AsyncSession = Depends(get_db),
         org_user: OrganizationUser = Depends(get_current_org_user),
     ) -> OrganizationUser:
         if org_user.user_type != "staff":
             raise HTTPException(status_code=403, detail="Access denied. Staff only.")
         if not org_user.rbac_roles:
             raise HTTPException(status_code=403, detail="No roles assigned to user")
-        role_codes = {r.code for r in org_user.rbac_roles}
-        if not role_codes.intersection({"owner", "admin"}):
+
+        # Resolve all inherited roles
+        role_ids = [r.id for r in org_user.rbac_roles]
+        all_role_ids = await RBACService.get_all_role_ids(db, role_ids)
+
+        # Get all role codes (direct + inherited)
+        stmt = select(Role.code).where(Role.id.in_(list(all_role_ids)))
+        result = await db.execute(stmt)
+        all_role_codes = {row[0] for row in result.fetchall()}
+
+        if not all_role_codes.intersection({"owner", "admin"}):
             raise HTTPException(
                 status_code=403, detail="Organization admin access required"
             )

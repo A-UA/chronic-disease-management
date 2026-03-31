@@ -1,9 +1,10 @@
 from pydantic import BaseModel, EmailStr, ConfigDict
 from datetime import datetime
+from typing import List, Optional
 
 class UserBase(BaseModel):
     email: EmailStr
-    name: str | None = None
+    name: Optional[str] = None
 
 class UserCreate(UserBase):
     password: str
@@ -11,7 +12,8 @@ class UserCreate(UserBase):
 class UserRead(UserBase):
     id: int
     created_at: datetime
-    org_id: int | None = None
+    org_id: Optional[int] = None
+    permissions: List[str] = []
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -20,4 +22,4 @@ class Token(BaseModel):
     token_type: str
 
 class TokenPayload(BaseModel):
-    sub: str | None = None
+    sub: Optional[str] = None

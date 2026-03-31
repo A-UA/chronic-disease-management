@@ -1,7 +1,7 @@
 from .base import Base
 from .user import User
 from .organization import Organization, OrganizationUser, OrganizationInvitation, PatientFamilyLink, OrganizationUserRole
-from .rbac import Role, Permission, RolePermission
+from .rbac import Role, Permission, RolePermission, Resource, Action, RoleConstraint
 from .knowledge import KnowledgeBase, Document, Chunk
 from .chat import Conversation, Message, UsageLog
 from .api_key import ApiKey
@@ -33,5 +33,8 @@ __all__ = [
     "SystemSetting",
     "Role",
     "Permission",
-    "RolePermission"
+    "RolePermission",
+    "Resource",
+    "Action",
+    "RoleConstraint"
 ]

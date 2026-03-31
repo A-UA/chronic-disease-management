@@ -1,43 +1,83 @@
 import { history } from '@umijs/max';
-import { message } from 'antd';
-import { getCurrentUser } from './services/api/auth';
+import { message, Space, Button } from 'antd';
+import { getCurrentUser, getMenuTree } from './services/api/auth';
+import React from 'react';
 
 export const getInitialState = async (): Promise<any> => {
   const token = localStorage.getItem('token');
   if (!token) {
-    return { currentUser: null };
+    if (window.location.pathname !== '/user/login') {
+      history.push('/user/login');
+    }
+    return { currentUser: null, menuTree: [] };
   }
+  
   try {
     const currentUser = await getCurrentUser();
-    return { currentUser };
+    const menuTree = await getMenuTree();
+    
+    // Auto sync currentOrgId if available
+    if (currentUser.org_id) {
+      localStorage.setItem('currentOrgId', currentUser.org_id);
+    }
+    
+    return { 
+      currentUser, 
+      menuTree,
+      fetchUserInfo: getCurrentUser,
+      fetchMenuTree: getMenuTree 
+    };
   } catch {
     localStorage.removeItem('token');
-    return { currentUser: null };
+    history.push('/user/login');
+    return { currentUser: null, menuTree: [] };
   }
 };
 
 export const layout = ({ initialState }: any) => {
   return {
     logo: 'https://img.alicdn.com/tfs/TB1YHEpwUT1gK0jSZFhXXaAtVXa-28-27.svg',
+    title: 'Chronic Disease AI',
     menu: {
       locale: false,
+    },
+    // Dynamic Menu from Backend
+    menuDataRender: () => {
+      const { menuTree } = initialState || {};
+      if (!menuTree || menuTree.length === 0) return [];
+      
+      return menuTree.map((item: any) => ({
+        name: item.name,
+        path: item.path,
+        icon: item.icon,
+        code: item.code,
+      }));
     },
     rightContentRender: () => {
       const user = initialState?.currentUser;
       if (!user) return null;
       return (
-        <div style={{ padding: '0 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span>{user.name || user.email}</span>
-          <a
+        <Space style={{ padding: '0 16px' }}>
+          <span style={{ fontWeight: 500 }}>{user.name || user.email}</span>
+          <Button
+            type="link"
+            size="small"
             onClick={() => {
               localStorage.removeItem('token');
+              localStorage.removeItem('currentOrgId');
               history.push('/user/login');
             }}
           >
             Logout
-          </a>
-        </div>
+          </Button>
+        </Space>
       );
+    },
+    onPageChange: () => {
+      const { location } = history;
+      if (!initialState?.currentUser && location.pathname !== '/user/login') {
+        history.push('/user/login');
+      }
     },
   };
 };
@@ -73,7 +113,10 @@ export const request = {
       } else if (response?.status === 403) {
         message.error('Access denied');
       } else {
-        message.error(error.message || 'Request failed');
+        // Only show message for real errors, not cancellations
+        if (error.name !== 'CanceledError') {
+          message.error(error.message || 'Request failed');
+        }
       }
     },
   },

@@ -21,3 +21,7 @@ export async function register(email: string, password: string, name?: string) {
 export async function getCurrentUser() {
   return request('/api/auth/me', { method: 'GET' });
 }
+
+export async function getMenuTree() {
+  return request('/api/auth/menu-tree', { method: 'GET' });
+}
