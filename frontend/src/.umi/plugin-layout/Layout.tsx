@@ -80,7 +80,7 @@ export default (props: any) => {
   };
   const { initialState, loading, setInitialState } = initialInfo;
   const userConfig = {
-  "title": "Chronic Disease Admin",
+  "title": "Chronic Disease AI",
   "locale": false
 };
 const formatMessage = undefined;

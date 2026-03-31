@@ -16,7 +16,6 @@ export const getInitialState = async (): Promise<any> => {
     const currentUser = await getCurrentUser();
     const menuTree = await getMenuTree();
     
-    // Auto sync currentOrgId if available
     if (currentUser.org_id) {
       localStorage.setItem('currentOrgId', currentUser.org_id);
     }
@@ -38,30 +37,37 @@ export const layout = ({ initialState }: any) => {
   return {
     logo: 'https://img.alicdn.com/tfs/TB1YHEpwUT1gK0jSZFhXXaAtVXa-28-27.svg',
     title: 'Chronic Disease AI',
+    layout: 'mix',
+    splitMenus: false,
     menu: {
       locale: false,
-    },
-    // Dynamic Menu from Backend
-    menuDataRender: () => {
-      const { menuTree } = initialState || {};
-      if (!menuTree || menuTree.length === 0) return [];
-      
-      return menuTree.map((item: any) => ({
-        name: item.name,
-        path: item.path,
-        icon: item.icon,
-        code: item.code,
-      }));
+      request: async () => {
+        // This effectively replaces static routes with dynamic ones from backend
+        // We ensure the paths match .umirc.ts for Umi to render the correct component
+        const { menuTree } = initialState || {};
+        if (!menuTree || menuTree.length === 0) return [];
+        
+        return menuTree.map((item: any) => ({
+          name: item.name,
+          path: item.path,
+          icon: item.icon,
+          code: item.code,
+        }));
+      }
     },
     rightContentRender: () => {
       const user = initialState?.currentUser;
       if (!user) return null;
       return (
         <Space style={{ padding: '0 16px' }}>
-          <span style={{ fontWeight: 500 }}>{user.name || user.email}</span>
+          <span style={{ fontWeight: 500, color: 'rgba(0,0,0,0.65)' }}>
+            {user.name || user.email}
+          </span>
           <Button
-            type="link"
+            type="primary"
+            danger
             size="small"
+            ghost
             onClick={() => {
               localStorage.removeItem('token');
               localStorage.removeItem('currentOrgId');
@@ -113,7 +119,6 @@ export const request = {
       } else if (response?.status === 403) {
         message.error('Access denied');
       } else {
-        // Only show message for real errors, not cancellations
         if (error.name !== 'CanceledError') {
           message.error(error.message || 'Request failed');
         }

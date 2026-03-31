@@ -28,16 +28,16 @@ ACTIONS = [
     {"name": "Manage", "code": "manage"},
     {"name": "Use", "code": "use"},
     {"name": "View", "code": "view"},
-    # Menu Actions
     {"name": "Dashboard", "code": "dashboard"},
     {"name": "Patients", "code": "patients"},
     {"name": "Knowledge", "code": "kb"},
     {"name": "Chat", "code": "chat"},
     {"name": "Settings", "code": "settings"},
+    {"name": "Members", "code": "members"},
+    {"name": "Roles", "code": "roles"},
 ]
 
-# 3. Define Permissions (Resource + Action + UI)
-# Format: (resource_code, action_code, permission_name, type, ui_metadata)
+# 3. Define Permissions (Logical Paths)
 PERMISSION_MAP = [
     ("patient", "read", "查看患者", "api", None),
     ("patient", "update", "修改患者", "api", None),
@@ -51,29 +51,31 @@ PERMISSION_MAP = [
     ("platform_settings", "manage", "管理系统设置", "api", None),
     ("audit_log", "read", "查看审计日志", "api", None),
     
-    # Menu Permissions
-    ("menu", "dashboard", "控制台菜单", "menu", {"path": "/dashboard", "icon": "DashboardOutlined", "sort": 1}),
-    ("menu", "patients", "患者管理菜单", "menu", {"path": "/patients", "icon": "TeamOutlined", "sort": 2}),
-    ("menu", "kb", "知识库菜单", "menu", {"path": "/knowledge", "icon": "BookOutlined", "sort": 3}),
-    ("menu", "chat", "AI 问答菜单", "menu", {"path": "/chat", "icon": "MessageOutlined", "sort": 4}),
-    ("menu", "settings", "设置菜单", "menu", {"path": "/settings", "icon": "SettingOutlined", "sort": 10}),
+    # Simple, logical menu paths
+    ("menu", "dashboard", "控制台", "menu", {"path": "/dashboard", "icon": "DashboardOutlined", "sort": 1}),
+    ("menu", "patients", "患者管理", "menu", {"path": "/patients", "icon": "TeamOutlined", "sort": 2}),
+    ("menu", "kb", "知识库", "menu", {"path": "/knowledge", "icon": "BookOutlined", "sort": 3}),
+    ("menu", "chat", "AI 问答", "menu", {"path": "/chat", "icon": "MessageOutlined", "sort": 4}),
+    ("menu", "members", "成员管理", "menu", {"path": "/members", "icon": "UserOutlined", "sort": 5}),
+    ("menu", "roles", "角色权限", "menu", {"path": "/roles", "icon": "LockOutlined", "sort": 6}),
+    ("menu", "settings", "操作审计", "menu", {"path": "/audit-logs", "icon": "SettingOutlined", "sort": 10}),
 ]
 
 # 4. Define Roles with Inheritance
 ROLES = [
     ("staff", "基础成员", "机构基础职员", ["chat:use", "patient:read", "suggestion:read", "menu:dashboard", "menu:patients", "menu:chat"], None),
     ("manager", "管理人员", "健康管理师/主治医", ["suggestion:create", "patient:update"], "staff"),
-    ("admin", "管理员", "机构系统管理员", ["kb:manage", "doc:manage", "org_member:manage", "org_usage:read", "menu:kb", "menu:settings"], "manager"),
+    ("admin", "管理员", "机构系统管理员", ["kb:manage", "doc:manage", "org_member:manage", "org_usage:read", "menu:kb", "menu:members", "menu:roles", "menu:settings"], "manager"),
     ("owner", "所有者", "机构主账户", [], "admin"),
     
-    # Platform Roles (org_id is NULL)
+    # Platform Roles
     ("platform_viewer", "平台查看者", "平台级只读权限", ["audit_log:read"], None),
     ("platform_admin", "平台管理员", "平台最高管理员", ["platform_settings:manage"], "platform_viewer"),
 ]
 
 async def seed_rbac():
     async with SessionLocal() as db:
-        print("--- RBAC 3.0 Seeding (v2: Menus) Started ---")
+        print("--- RBAC 3.0 Seeding (v4: Logical Naming) Started ---")
 
         # 1. Seed Resources
         resource_objs = {}
@@ -121,6 +123,7 @@ async def seed_rbac():
             else:
                 obj.permission_type = p_type
                 obj.ui_metadata = ui_meta
+                obj.name = p_name
             permission_objs[p_code] = obj
 
         # 4. Seed Roles
@@ -148,7 +151,7 @@ async def seed_rbac():
                 role_objs[r_code].parent_role_id = role_objs[parent_code].id
 
         await db.commit()
-        print("--- RBAC 3.0 Seeding (v2: Menus) Complete! ---")
+        print("--- RBAC 3.0 Seeding (v4: Logical Naming) Complete! ---")
 
 if __name__ == "__main__":
     asyncio.run(seed_rbac())

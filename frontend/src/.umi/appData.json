@@ -112,6 +112,8 @@
         "hooks": {
           "modifyRoutes": [
             0,
+            0,
+            0,
             0
           ]
         },
@@ -133,7 +135,8 @@
             2,
             3,
             2,
-            1
+            1,
+            2
           ]
         },
         "register": 1
@@ -154,7 +157,9 @@
           ],
           "onGenerateFiles": [
             1,
-            5
+            5,
+            5,
+            4
           ]
         },
         "register": 17
@@ -171,6 +176,8 @@
       "time": {
         "hooks": {
           "addEntryCode": [
+            0,
+            0,
             0,
             0
           ]
@@ -189,6 +196,7 @@
       "time": {
         "hooks": {
           "onCheckConfig": [
+            0,
             0
           ],
           "onCheck": [
@@ -199,9 +207,11 @@
             0,
             0,
             0,
+            0,
             0
           ],
           "onCheckCode": [
+            0,
             0,
             0,
             0,
@@ -307,6 +317,7 @@
       "time": {
         "hooks": {
           "modifyConfig": [
+            0,
             0
           ]
         },
@@ -1261,6 +1272,19 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0
           ]
         },
@@ -1279,9 +1303,13 @@
         "hooks": {
           "onGenerateFiles": [
             2,
-            0
+            0,
+            0,
+            1
           ],
           "addRuntimePlugin": [
+            0,
+            0,
             0,
             0
           ]
@@ -1358,9 +1386,15 @@
         "hooks": {
           "onGenerateFiles": [
             0,
+            0,
+            0,
             0
           ],
           "addEntryImports": [
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -1394,13 +1428,20 @@
       "time": {
         "hooks": {
           "modifyConfig": [
-            1
+            1,
+            0
           ],
           "onGenerateFiles": [
             49,
-            14
+            14,
+            11,
+            10
           ],
           "addPolyfillImports": [
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -1423,6 +1464,10 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
             0
           ]
         },
@@ -1441,6 +1486,8 @@
         "hooks": {
           "onGenerateFiles": [
             72,
+            0,
+            0,
             0
           ]
         },
@@ -1485,6 +1532,8 @@
         "hooks": {
           "onGenerateFiles": [
             0,
+            0,
+            0,
             0
           ],
           "addBeforeMiddlewares": [
@@ -1508,7 +1557,11 @@
             12,
             6,
             12,
-            4
+            4,
+            11,
+            3,
+            11,
+            3
           ]
         },
         "register": 4
@@ -1564,7 +1617,9 @@
         "hooks": {
           "onGenerateFiles": [
             294,
-            12
+            12,
+            4,
+            5
           ]
         },
         "register": 3
@@ -1650,7 +1705,9 @@
         "hooks": {
           "onGenerateFiles": [
             2,
-            0
+            0,
+            1,
+            1
           ]
         },
         "register": 1
@@ -1783,6 +1840,19 @@
       "time": {
         "hooks": {
           "addHTMLHeadScripts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -2151,11 +2221,15 @@
         "hooks": {
           "addRuntimePlugin": [
             0,
+            0,
+            0,
             0
           ],
           "onGenerateFiles": [
             1,
-            1
+            1,
+            0,
+            0
           ],
           "addTmpGenerateWatcherPaths": [
             0
@@ -2189,7 +2263,8 @@
       "time": {
         "hooks": {
           "modifyConfig": [
-            2
+            2,
+            0
           ],
           "modifyAppData": [
             0
@@ -2201,18 +2276,28 @@
             0,
             0,
             1,
+            0,
+            0,
+            0,
+            0,
             0
           ],
           "addRuntimePlugin": [
+            0,
+            0,
             0,
             0
           ],
           "addRuntimePluginKey": [
             0,
+            0,
+            0,
             0
           ],
           "onGenerateFiles": [
             3,
+            1,
+            1,
             1
           ],
           "addExtraBabelPlugins": [
@@ -2249,17 +2334,25 @@
         "hooks": {
           "addRuntimePlugin": [
             0,
+            0,
+            0,
             0
           ],
           "addRuntimePluginKey": [
+            0,
+            0,
             0,
             0
           ],
           "onGenerateFiles": [
             1,
+            0,
+            0,
             0
           ],
           "addExtraModels": [
+            0,
+            0,
             0,
             0
           ]
@@ -2280,9 +2373,12 @@
       "time": {
         "hooks": {
           "modifyConfig": [
+            0,
             0
           ],
           "addLayouts": [
+            0,
+            0,
             0,
             0
           ],
@@ -2291,14 +2387,20 @@
           ],
           "addRuntimePlugin": [
             0,
+            0,
+            0,
             0
           ],
           "addRuntimePluginKey": [
+            0,
+            0,
             0,
             0
           ],
           "onGenerateFiles": [
             4,
+            2,
+            1,
             2
           ]
         },
@@ -2343,11 +2445,15 @@
         "hooks": {
           "addRuntimePlugin": [
             0,
+            0,
+            0,
             0
           ],
           "onGenerateFiles": [
             18,
-            13
+            13,
+            11,
+            15
           ],
           "addTmpGenerateWatcherPaths": [
             0
@@ -2380,6 +2486,8 @@
       "time": {
         "hooks": {
           "addRuntimePluginKey": [
+            0,
+            0,
             0,
             0
           ]
@@ -2436,11 +2544,15 @@
         "hooks": {
           "addRuntimePluginKey": [
             0,
+            0,
+            0,
             0
           ],
           "onGenerateFiles": [
             3,
-            1
+            1,
+            1,
+            0
           ]
         },
         "register": 1
@@ -2496,6 +2608,7 @@
       "time": {
         "hooks": {
           "modifyConfig": [
+            0,
             0
           ]
         },
@@ -5244,7 +5357,7 @@
             "format": "esm"
           },
           "src/app.tsx": {
-            "bytes": 3378,
+            "bytes": 3560,
             "imports": [
               {
                 "path": "src/.umi/exports.ts",
@@ -8109,7 +8222,7 @@
                 "bytesInOutput": 954
               },
               "src/app.tsx": {
-                "bytesInOutput": 3915
+                "bytesInOutput": 4036
               },
               "src/.umi/core/helmetContext.ts": {
                 "bytesInOutput": 129
@@ -8247,7 +8360,7 @@
                 "bytesInOutput": 2020
               }
             },
-            "bytes": 135174
+            "bytes": 135295
           }
         }
       }
