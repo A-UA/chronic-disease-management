@@ -99,11 +99,12 @@ export const request = {
           Authorization: `Bearer ${token}`,
         };
       }
+      // Ensure orgId is handled as a string
       const orgId = localStorage.getItem('currentOrgId');
-      if (orgId) {
+      if (orgId && orgId !== 'undefined' && orgId !== 'null') {
         config.headers = {
           ...config.headers,
-          'X-Organization-ID': orgId,
+          'X-Organization-ID': String(orgId),
         };
       }
       return config;

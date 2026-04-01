@@ -117,22 +117,18 @@ async def get_current_org_user(
             """)
             tree_result = await db.execute(check_tree_stmt, {"root_ids": tuple(root_org_admin_ids), "target_id": requested_org_id})
             if tree_result.scalar():
-                # 是子组织！构造一个临时的 OrganizationUser 对象
-                # 角色继承自其管理的根组织（或者给予特定子组织角色，这里先继承根角色）
-                # 找到该根组织的 ou 记录
-                # (这里简化处理，直接返回一个新的 OU 对象，不入库)
-                # 注意：实际生产中建议在各层级显式授权，或者在这里精细化角色。
-                
-                # 找到用户在哪个根组织下拥有的权限
-                # (为了简单，我们取第一个匹配的根组织作为角色来源)
+                # 是子组织！找到用户在哪个根组织下拥有的权限
                 root_ou = next(ou for ou in user_orgs if ou.org_id in root_org_admin_ids)
+                
+                # 构造一个临时的 OrganizationUser 对象
+                # 手动克隆角色列表以防止延迟加载错误
+                roles_copy = [role for role in root_ou.rbac_roles]
                 
                 org_user = OrganizationUser(
                     org_id=requested_org_id,
                     user_id=current_user.id,
                     user_type=root_ou.user_type,
-                    # 复制角色
-                    rbac_roles=root_ou.rbac_roles
+                    rbac_roles=roles_copy
                 )
 
     if not org_user:
