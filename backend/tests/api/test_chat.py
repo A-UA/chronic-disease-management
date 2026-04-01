@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
 from app.api.deps import get_current_org, get_current_user, get_db, verify_quota
-from app.api.endpoints.biz.chat import router
+from app.api.endpoints.chat import router
 from app.db.models import Conversation, KnowledgeBase
 
 
@@ -84,11 +84,11 @@ async def test_chat_stream_full_flow(monkeypatch):
     fake_chunk.content = "诊断：血糖升高。"
 
     monkeypatch.setattr(
-        "app.api.endpoints.biz.chat.retrieve_chunks",
+        "app.api.endpoints.chat.retrieve_chunks",
         AsyncMock(return_value=[fake_chunk]),
     )
     monkeypatch.setattr(
-        "app.api.endpoints.biz.chat.build_rag_prompt",
+        "app.api.endpoints.chat.build_rag_prompt",
         lambda q, c: ("prompt", [{"doc_id": str(doc_id), "ref": "Doc 1", "page": 2,
                                    "chunk_id": "c1", "snippet": "s", "source_span": {}}]),
     )
@@ -105,10 +105,10 @@ async def test_chat_stream_full_flow(monkeypatch):
         return_value='{"statements":[{"text":"建议复查","refs":["Doc 1"]}]}'
     )
 
-    monkeypatch.setattr("app.api.endpoints.biz.chat.registry.get_llm", lambda: provider)
-    monkeypatch.setattr("app.api.endpoints.biz.chat.check_quota_during_stream", AsyncMock(return_value=True))
-    monkeypatch.setattr("app.api.endpoints.biz.chat.update_org_quota", AsyncMock())
-    monkeypatch.setattr("app.api.endpoints.biz.chat.count_tokens", lambda text, model="": len(text) // 4)
+    monkeypatch.setattr("app.api.endpoints.chat.registry.get_llm", lambda: provider)
+    monkeypatch.setattr("app.api.endpoints.chat.check_quota_during_stream", AsyncMock(return_value=True))
+    monkeypatch.setattr("app.api.endpoints.chat.update_org_quota", AsyncMock())
+    monkeypatch.setattr("app.api.endpoints.chat.count_tokens", lambda text, model="": len(text) // 4)
     dummy_db.objects[(KnowledgeBase, kb_id)] = MagicMock(org_id=current_org)
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
@@ -144,11 +144,11 @@ async def test_chat_with_empty_query(monkeypatch):
     kb_id = uuid4()
 
     monkeypatch.setattr(
-        "app.api.endpoints.biz.chat.retrieve_chunks",
+        "app.api.endpoints.chat.retrieve_chunks",
         AsyncMock(return_value=[]),
     )
     monkeypatch.setattr(
-        "app.api.endpoints.biz.chat.build_rag_prompt",
+        "app.api.endpoints.chat.build_rag_prompt",
         lambda q, c: ("prompt", []),
     )
 
@@ -160,10 +160,10 @@ async def test_chat_with_empty_query(monkeypatch):
 
     provider.stream_text = stream_text
     provider.complete_text = AsyncMock(return_value='{"statements":[]}')
-    monkeypatch.setattr("app.api.endpoints.biz.chat.registry.get_llm", lambda: provider)
-    monkeypatch.setattr("app.api.endpoints.biz.chat.check_quota_during_stream", AsyncMock(return_value=True))
-    monkeypatch.setattr("app.api.endpoints.biz.chat.update_org_quota", AsyncMock())
-    monkeypatch.setattr("app.api.endpoints.biz.chat.count_tokens", lambda text, model="": 10)
+    monkeypatch.setattr("app.api.endpoints.chat.registry.get_llm", lambda: provider)
+    monkeypatch.setattr("app.api.endpoints.chat.check_quota_during_stream", AsyncMock(return_value=True))
+    monkeypatch.setattr("app.api.endpoints.chat.update_org_quota", AsyncMock())
+    monkeypatch.setattr("app.api.endpoints.chat.count_tokens", lambda text, model="": 10)
     dummy_db.objects[(KnowledgeBase, kb_id)] = MagicMock(org_id=current_org)
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:

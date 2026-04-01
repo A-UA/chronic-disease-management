@@ -42,11 +42,11 @@ async def test_manager_workflow():
         # 2. Create PatientProfile for testing
         profile_data = {"real_name": "Test Patient", "gender": "male"}
         resp = await client.put(
-            "/biz/patients/me", json=profile_data, headers=manager_headers
+            "/patients/me", json=profile_data, headers=manager_headers
         )
         assert resp.status_code == 200
         patient_id = resp.json()["id"]
-        resp = await client.get("/biz/patients/me", headers=manager_headers)
+        resp = await client.get("/patients/me", headers=manager_headers)
         assert resp.status_code == 200
         assert resp.json()["id"] == str(patient_id)
 
@@ -61,7 +61,7 @@ async def test_manager_workflow():
             await db.commit()
 
         # 4. Test GET /managers/patients
-        resp = await client.get("/biz/managers/patients", headers=manager_headers)
+        resp = await client.get("/managers/patients", headers=manager_headers)
         assert resp.status_code == 200
         patients = resp.json()
         assert len(patients) > 0
@@ -70,7 +70,7 @@ async def test_manager_workflow():
         # 5. Test POST /managers/patients/{id}/suggestions
         suggest_data = {"content": "Drink more water.", "suggestion_type": "lifestyle"}
         resp = await client.post(
-            f"/biz/managers/patients/{patient_id}/suggestions",
+            f"/managers/patients/{patient_id}/suggestions",
             json=suggest_data,
             headers=manager_headers,
         )
@@ -78,7 +78,7 @@ async def test_manager_workflow():
 
         # 6. Test GET /managers/patients/{id}/suggestions
         resp = await client.get(
-            f"/biz/managers/patients/{patient_id}/suggestions", headers=manager_headers
+            f"/managers/patients/{patient_id}/suggestions", headers=manager_headers
         )
         assert resp.status_code == 200
         suggestions = resp.json()

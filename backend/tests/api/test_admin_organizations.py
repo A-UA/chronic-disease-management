@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
 from app.api.deps import get_current_user, get_db
-from app.api.endpoints.admin.organizations import router
+from app.api.endpoints.organizations import router
 
 
 app = FastAPI()

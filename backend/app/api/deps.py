@@ -44,6 +44,12 @@ async def get_current_user(
     return user
 
 
+async def get_current_active_user(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    return current_user
+
+
 async def get_current_org_user(
     x_organization_id: str | None = Header(None),
     current_user: User = Depends(get_current_user),

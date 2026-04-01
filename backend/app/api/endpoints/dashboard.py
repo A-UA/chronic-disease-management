@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, Depends, Header, Optional
+from fastapi import APIRouter, Depends, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, cast, Date
 
@@ -13,7 +13,7 @@ router = APIRouter()
 async def get_dashboard_stats(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
-    x_organization_id: Optional[int] = Header(None)
+    x_organization_id: int | None = Header(None)
 ):
     """
     通用 Dashboard 统计接口：
@@ -21,7 +21,7 @@ async def get_dashboard_stats(
     - 否则返回指定租户（或默认租户）的数据
     """
     is_platform_admin = current_user.role_code == "platform_admin"
-    
+
     # 确定查询范围（Scope）
     target_org_id = None if (is_platform_admin and not x_organization_id) else (x_organization_id or current_user.org_id)
 
@@ -61,10 +61,10 @@ async def get_dashboard_stats(
     )
     if target_org_id:
         trend_stmt = trend_stmt.where(UsageLog.org_id == target_org_id)
-        
+
     trend_res = await db.execute(trend_stmt)
     trend_data = {row.date.isoformat(): row.count for row in trend_res.all()}
-    
+
     full_trend = []
     for i in range(7):
         d = (since_7d + timedelta(days=i)).isoformat()
