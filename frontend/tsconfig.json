@@ -10,10 +10,12 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "declaration": true,
+    "declaration": false,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@@/*": ["src/.umi/*"],
+      "@umijs/max": ["src/.umi/exports", "node_modules/umi", "node_modules/@umijs/max"]
     }
   },
   "include": ["src/**/*", "config/**/*"],

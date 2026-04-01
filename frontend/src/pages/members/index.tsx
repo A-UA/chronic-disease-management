@@ -1,6 +1,6 @@
 import { PageContainer, ProTable } from '@ant-design/pro-components';
 import { Tag } from 'antd';
-import { getOrganizationMembers } from '@/services/api/admin';
+import { listOrgMembers } from '@/services/api/organization';
 import type { ProColumns } from '@ant-design/pro-components';
 
 const columns: ProColumns[] = [
@@ -36,7 +36,7 @@ export default () => {
         columns={columns}
         request={async () => {
           if (!orgId) return { data: [], success: true };
-          const data = await getOrganizationMembers(orgId);
+          const data = await listOrgMembers(orgId);
           return { data, success: true, total: data.length };
         }}
         rowKey="user_id"

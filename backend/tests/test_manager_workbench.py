@@ -5,7 +5,6 @@ import pytest
 from app.main import app
 from app.db.session import AsyncSessionLocal
 from app.db.models import PatientManagerAssignment
-from uuid import UUID
 
 BASE_URL = "http://testserver/api/v1"
 
@@ -53,15 +52,15 @@ async def test_manager_workflow():
         # 3. Create assignment in DB directly
         async with AsyncSessionLocal() as db:
             assignment = PatientManagerAssignment(
-                org_id=UUID(str(org_id)),
-                manager_id=UUID(str(manager_id)),
-                patient_id=UUID(str(patient_id)),
+                org_id=int(org_id),
+                manager_id=int(manager_id),
+                patient_id=int(patient_id),
             )
             db.add(assignment)
             await db.commit()
 
-        # 4. Test GET /managers/patients
-        resp = await client.get("/managers/patients", headers=manager_headers)
+        # 4. Test GET /managers/my-patients
+        resp = await client.get("/managers/my-patients", headers=manager_headers)
         assert resp.status_code == 200
         patients = resp.json()
         assert len(patients) > 0

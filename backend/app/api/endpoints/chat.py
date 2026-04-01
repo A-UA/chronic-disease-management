@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_org, get_current_user, get_db, verify_quota
 from app.db.models import Conversation, KnowledgeBase, Message, UsageLog, User
+from app.schemas.admin import ConversationRead
 from app.services.chat import RetrievalFilters, build_rag_prompt, extract_statement_citations_structured, retrieve_chunks
 from app.services.provider_registry import registry
 from app.services.quota import check_quota_during_stream, update_org_quota
@@ -27,6 +28,25 @@ class ChatRequest(BaseModel):
     document_ids: list[int] | None = None
     file_types: list[str] | None = None
     patient_id: int | None = None
+
+
+@router.get("/conversations", response_model=list[ConversationRead])
+async def list_conversations(
+    skip: int = 0,
+    limit: int = 50,
+    org_id: int = Depends(get_current_org),
+    db: AsyncSession = Depends(get_db),
+):
+    """获取当前组织的对话列表"""
+    stmt = (
+        select(Conversation)
+        .where(Conversation.org_id == org_id)
+        .offset(skip)
+        .limit(limit)
+        .order_by(Conversation.created_at.desc())
+    )
+    result = await db.execute(stmt)
+    return result.scalars().all()
 
 
 @router.post("")

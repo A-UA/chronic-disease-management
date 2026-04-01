@@ -1,7 +1,7 @@
 from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 from pydantic import BaseModel, ConfigDict
 
@@ -151,3 +151,18 @@ async def create_patient_suggestion(
     await db.commit()
     await db.refresh(suggestion)
     return suggestion
+
+@router.get("/patients/{patient_id}/suggestions", response_model=List[SuggestionRead])
+async def get_patient_suggestions(
+    patient_id: int,
+    org_id: int = Depends(get_current_org),
+    _ = Depends(check_permission("suggestion:read")),
+    db: AsyncSession = Depends(get_db)
+) -> Any:
+    """获取患者的管理建议"""
+    stmt = select(ManagementSuggestion).where(
+        ManagementSuggestion.patient_id == patient_id,
+        ManagementSuggestion.org_id == org_id
+    )
+    result = await db.execute(stmt)
+    return result.scalars().all()
