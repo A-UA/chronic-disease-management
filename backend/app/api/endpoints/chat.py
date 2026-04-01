@@ -217,9 +217,9 @@ async def chat_endpoint(
                     resource_id=conversation.id,
                 )
                 db_gen.add(usage)
+                await update_org_quota(db_gen, org_id, total_tokens)
                 await db_gen.commit()
 
-                await update_org_quota(db_gen, org_id, total_tokens)
                 yield f"event: done\ndata: {json.dumps({'tokens': total_tokens, 'statement_citations': done_statement_citations})}\n\n"
             except Exception:
                 logger.exception("Failed to save chat audit records")

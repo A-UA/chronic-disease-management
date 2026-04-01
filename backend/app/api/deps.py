@@ -1,3 +1,4 @@
+import json
 from fastapi import Depends, HTTPException, status, Header
 from fastapi.security import OAuth2PasswordBearer
 import jwt
@@ -11,7 +12,7 @@ from app.db.session import get_db
 from sqlalchemy.orm import selectinload
 from app.db.models import User, OrganizationUser, Organization, ApiKey, Role, Permission
 from app.services.rbac import RBACService
-from app.services.quota import check_org_quota, check_api_key_rate_limit
+from app.services.quota import check_org_quota, check_api_key_rate_limit, get_redis_client
 import hashlib
 import hmac
 
@@ -88,7 +89,6 @@ async def get_current_org_user(
     # 2. 如果没有显式身份，且传了 org_id，检查是否是租户超管穿透
     if not org_user and requested_org_id:
         # 查找用户所属的所有根组织且拥有 admin/owner 权限
-        # 这里为了简单，先查用户所属的所有组织身份
         all_stmt = select(OrganizationUser).options(
             selectinload(OrganizationUser.rbac_roles)
         ).where(OrganizationUser.user_id == current_user.id)
@@ -97,31 +97,61 @@ async def get_current_org_user(
 
         root_org_admin_ids = []
         for ou in user_orgs:
-            # 检查是否是管理员角色
-            is_admin = any(r.code in ["owner", "admin"] for r in ou.rbac_roles)
-            if is_admin:
-                # 检查该组织是否是根组织（或者我们也允许中间层管理员穿透？）
-                # 根据需求：租户下有组织，通常租户是顶级组织
+            if any(r.code in ["owner", "admin"] for r in ou.rbac_roles):
                 root_org_admin_ids.append(ou.org_id)
         
         if root_org_admin_ids:
             # 检查请求的 org_id 是否在这些管理组织的子树中
-            # 使用递归查询
-            check_tree_stmt = text("""
-                WITH RECURSIVE org_tree AS (
-                    SELECT id FROM organizations WHERE id IN :root_ids
-                    UNION ALL
-                    SELECT o.id FROM organizations o INNER JOIN org_tree ot ON o.parent_id = ot.id
-                )
-                SELECT 1 FROM org_tree WHERE id = :target_id LIMIT 1
-            """)
-            tree_result = await db.execute(check_tree_stmt, {"root_ids": tuple(root_org_admin_ids), "target_id": requested_org_id})
-            if tree_result.scalar():
+            # 引入 Redis 缓存以提高性能
+            redis = get_redis_client()
+            is_valid_child = False
+            root_id_of_access = None
+
+            for root_id in root_org_admin_ids:
+                cache_key = f"org:tree:{root_id}"
+                try:
+                    cached_data = await redis.get(cache_key)
+                    if cached_data:
+                        tree_ids = set(json.loads(cached_data))
+                    else:
+                        # 缓存缺失，执行递归查询并填充
+                        tree_stmt = text("""
+                            WITH RECURSIVE org_tree AS (
+                                SELECT id FROM organizations WHERE id = :root_id
+                                UNION ALL
+                                SELECT o.id FROM organizations o INNER JOIN org_tree ot ON o.parent_id = ot.id
+                            )
+                            SELECT id FROM org_tree
+                        """)
+                        tree_res = await db.execute(tree_stmt, {"root_id": root_id})
+                        tree_ids = {row[0] for row in tree_res.fetchall()}
+                        await redis.set(cache_key, json.dumps(list(tree_ids)), ex=3600)
+                    
+                    if requested_org_id in tree_ids:
+                        is_valid_child = True
+                        root_id_of_access = root_id
+                        break
+                except Exception as e:
+                    logger.warning(f"Redis cache access failed in get_current_org_user: {e}")
+                    # 回退到直接数据库检查
+                    check_stmt = text("""
+                        WITH RECURSIVE org_tree AS (
+                            SELECT id FROM organizations WHERE id = :root_id
+                            UNION ALL
+                            SELECT o.id FROM organizations o INNER JOIN org_tree ot ON o.parent_id = ot.id
+                        )
+                        SELECT 1 FROM org_tree WHERE id = :target_id LIMIT 1
+                    """)
+                    if (await db.execute(check_stmt, {"root_id": root_id, "target_id": requested_org_id})).scalar():
+                        is_valid_child = True
+                        root_id_of_access = root_id
+                        break
+            
+            if is_valid_child:
                 # 是子组织！找到用户在哪个根组织下拥有的权限
-                root_ou = next(ou for ou in user_orgs if ou.org_id in root_org_admin_ids)
+                root_ou = next(ou for ou in user_orgs if ou.org_id == root_id_of_access)
                 
                 # 构造一个临时的 OrganizationUser 对象
-                # 手动克隆角色列表以防止延迟加载错误
                 roles_copy = [role for role in root_ou.rbac_roles]
                 
                 org_user = OrganizationUser(

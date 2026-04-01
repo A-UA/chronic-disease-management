@@ -87,4 +87,3 @@ async def update_org_quota(db: AsyncSession, org_id: int, tokens_consumed: int):
         .values(quota_tokens_used=Organization.quota_tokens_used + tokens_consumed)
     )
     await db.execute(stmt)
-    await db.commit()

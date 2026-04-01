@@ -303,16 +303,17 @@ async def process_document(
             {"org_id": str(org_id)},
         )
 
-        document = await db.get(Document, document_id)
-        if not document:
-            return
-
-        chunk_metas = split_document_text(file_content, pages=pages)
-        embedding_provider: EmbeddingProvider = registry.get_embedding()
-        llm_provider = registry.get_llm()
-        model_name = getattr(embedding_provider, "model_name", settings.EMBEDDING_MODEL)
-
         try:
+            document = await db.get(Document, document_id)
+            if not document:
+                logger.error(f"Document {document_id} not found during ingestion")
+                return
+
+            chunk_metas = split_document_text(file_content, pages=pages)
+            embedding_provider: EmbeddingProvider = registry.get_embedding()
+            llm_provider = registry.get_llm()
+            model_name = getattr(embedding_provider, "model_name", settings.EMBEDDING_MODEL)
+
             # 增强：Contextual Ingestion
             enhanced_contents = []
             if settings.RAG_ENABLE_CONTEXTUAL_INGESTION:
@@ -358,11 +359,11 @@ async def process_document(
                     kb_id=document.kb_id,
                     org_id=document.org_id,
                     document_id=document.id,
-                    content=cm.content,  # 数据库存储原文，防止干扰展示
+                    content=cm.content,
                     page_number=cm.page_number,
                     chunk_index=i,
-                    embedding=emb,  # embedding 是基于 enhanced_content 生成的
-                    tsv_content=func.to_tsvector("chinese", enhanced_content),  # 检索基于增强内容
+                    embedding=emb,
+                    tsv_content=func.to_tsvector("chinese", enhanced_content),
                     metadata_={
                         "patient_id": str(document.patient_id)
                         if getattr(document, "patient_id", None)
@@ -391,6 +392,7 @@ async def process_document(
             )
             db.add(usage)
 
+            # 统一计费和状态更新
             await update_org_quota(db, document.org_id, total_tokens)
 
             document.status = "completed"
@@ -398,6 +400,14 @@ async def process_document(
             await db.commit()
         except Exception as exc:
             logger.exception(f"Failed to process document {document_id}")
-            document.status = "failed"
-            document.failed_reason = str(exc)[:500]
-            await db.commit()
+            # 这里需要重新获取 session 或者确保还能 commit
+            try:
+                # 重新获取 document 对象以防之前的 commit 失败或 session 状态问题
+                # 但在同一个 async with 块中通常没问题
+                document = await db.get(Document, document_id)
+                if document:
+                    document.status = "failed"
+                    document.failed_reason = str(exc)[:500]
+                    await db.commit()
+            except Exception:
+                logger.error("Double failure: could not even mark document as failed")

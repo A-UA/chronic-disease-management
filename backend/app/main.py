@@ -2,9 +2,14 @@ import logging
 import traceback
 import orjson
 from typing import Any
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse, ORJSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
+from fastapi.exception_handlers import (
+    http_exception_handler,
+    request_validation_exception_handler,
+)
 
 from app.core.config import settings
 from app.api.api import api_router
@@ -47,6 +52,26 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     default_response_class=SnowflakeJSONResponse  # 设置为默认响应类，全项目生效
 )
+
+# 注册异常处理器以保护大整数精度
+@app.exception_handler(HTTPException)
+async def custom_http_exception_handler(request: Request, exc: HTTPException):
+    response = await http_exception_handler(request, exc)
+    # 将标准 JSONResponse 内容提取并重新用 SnowflakeJSONResponse 封装
+    return SnowflakeJSONResponse(
+        status_code=response.status_code,
+        content=bigint_to_str(orjson.loads(response.body)),
+        headers=dict(response.headers)
+    )
+
+@app.exception_handler(RequestValidationError)
+async def custom_validation_exception_handler(request: Request, exc: RequestValidationError):
+    response = await request_validation_exception_handler(request, exc)
+    return SnowflakeJSONResponse(
+        status_code=response.status_code,
+        content=bigint_to_str(orjson.loads(response.body)),
+        headers=dict(response.headers)
+    )
 
 # 跨域配置
 app.add_middleware(
