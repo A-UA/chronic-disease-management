@@ -55,46 +55,92 @@ async def get_current_org_user(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> OrganizationUser:
-    org_uuid: int | None = None
+    """
+    获取当前用户在当前组织上下文中的身份。
+    支持租户超管穿透：如果用户是根组织的管理员，可以访问其所有子组织。
+    """
+    requested_org_id: int | None = None
     if x_organization_id:
         try:
-            org_uuid = int(x_organization_id)
+            requested_org_id = int(x_organization_id)
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid Organization ID")
 
-    if org_uuid:
-        # Verify user belongs to org and load RBAC info
-        stmt = (
-            select(OrganizationUser)
-            .options(
-                selectinload(OrganizationUser.rbac_roles).selectinload(Role.permissions)
-            )
-            .where(
-                OrganizationUser.org_id == org_uuid,
-                OrganizationUser.user_id == current_user.id,
-            )
+    # 1. 尝试直接获取该用户在该组织的显式身份
+    stmt = (
+        select(OrganizationUser)
+        .options(
+            selectinload(OrganizationUser.rbac_roles).selectinload(Role.permissions)
         )
-        result = await db.execute(stmt)
-        org_user = result.scalar_one_or_none()
+        .where(
+            OrganizationUser.user_id == current_user.id,
+        )
+    )
+    if requested_org_id:
+        stmt = stmt.where(OrganizationUser.org_id == requested_org_id)
     else:
-        # Fallback to the first organization the user belongs to
-        stmt = (
-            select(OrganizationUser)
-            .options(
-                selectinload(OrganizationUser.rbac_roles).selectinload(Role.permissions)
-            )
-            .where(OrganizationUser.user_id == current_user.id)
-            .limit(1)
-        )
-        result = await db.execute(stmt)
-        org_user = result.scalar_one_or_none()
+        # 如果没传，默认取第一个组织
+        stmt = stmt.limit(1)
+    
+    result = await db.execute(stmt)
+    org_user = result.scalar_one_or_none()
+
+    # 2. 如果没有显式身份，且传了 org_id，检查是否是租户超管穿透
+    if not org_user and requested_org_id:
+        # 查找用户所属的所有根组织且拥有 admin/owner 权限
+        # 这里为了简单，先查用户所属的所有组织身份
+        all_stmt = select(OrganizationUser).options(
+            selectinload(OrganizationUser.rbac_roles)
+        ).where(OrganizationUser.user_id == current_user.id)
+        all_result = await db.execute(all_stmt)
+        user_orgs = all_result.scalars().all()
+
+        root_org_admin_ids = []
+        for ou in user_orgs:
+            # 检查是否是管理员角色
+            is_admin = any(r.code in ["owner", "admin"] for r in ou.rbac_roles)
+            if is_admin:
+                # 检查该组织是否是根组织（或者我们也允许中间层管理员穿透？）
+                # 根据需求：租户下有组织，通常租户是顶级组织
+                root_org_admin_ids.append(ou.org_id)
+        
+        if root_org_admin_ids:
+            # 检查请求的 org_id 是否在这些管理组织的子树中
+            # 使用递归查询
+            check_tree_stmt = text("""
+                WITH RECURSIVE org_tree AS (
+                    SELECT id FROM organizations WHERE id IN :root_ids
+                    UNION ALL
+                    SELECT o.id FROM organizations o INNER JOIN org_tree ot ON o.parent_id = ot.id
+                )
+                SELECT 1 FROM org_tree WHERE id = :target_id LIMIT 1
+            """)
+            tree_result = await db.execute(check_tree_stmt, {"root_ids": tuple(root_org_admin_ids), "target_id": requested_org_id})
+            if tree_result.scalar():
+                # 是子组织！构造一个临时的 OrganizationUser 对象
+                # 角色继承自其管理的根组织（或者给予特定子组织角色，这里先继承根角色）
+                # 找到该根组织的 ou 记录
+                # (这里简化处理，直接返回一个新的 OU 对象，不入库)
+                # 注意：实际生产中建议在各层级显式授权，或者在这里精细化角色。
+                
+                # 找到用户在哪个根组织下拥有的权限
+                # (为了简单，我们取第一个匹配的根组织作为角色来源)
+                root_ou = next(ou for ou in user_orgs if ou.org_id in root_org_admin_ids)
+                
+                org_user = OrganizationUser(
+                    org_id=requested_org_id,
+                    user_id=current_user.id,
+                    user_type=root_ou.user_type,
+                    # 复制角色
+                    rbac_roles=root_ou.rbac_roles
+                )
 
     if not org_user:
         raise HTTPException(
             status_code=403, detail="Not enough permissions or no organization context"
         )
 
-    # Inject RLS context
+    # 3. 注入 RLS 上下文
     await db.execute(
         text("SELECT set_config('app.current_org_id', :org_id, true)"),
         {"org_id": str(org_user.org_id)},

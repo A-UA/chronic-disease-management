@@ -19,7 +19,7 @@ export async function getMyOrganizations() {
 export async function listAllUsers(params: any) {
   return request('/api/users', { method: 'GET', params });
 }
-export async function listOrgMembers(orgId: number) {
+export async function listOrgMembers(orgId: string) {
   return request(`/api/organizations/${orgId}/members`, { method: 'GET' });
 }
 

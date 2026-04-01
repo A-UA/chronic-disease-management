@@ -64,7 +64,7 @@ async def catch_exceptions_middleware(request: Request, call_next):
         return await call_next(request)
     except Exception:
         logger.error(traceback.format_exc())
-        return JSONResponse(
+        return SnowflakeJSONResponse(
             status_code=500, content={"detail": "Internal Server Error"}
         )
 
