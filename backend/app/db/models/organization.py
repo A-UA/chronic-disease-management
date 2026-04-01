@@ -14,6 +14,9 @@ class Organization(Base, IDMixin, TimestampMixin):
     __tablename__ = "organizations"
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
+    parent_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("organizations.id", ondelete="SET NULL"), nullable=True
+    )
     plan_type: Mapped[str] = mapped_column(
         String(50), default="free", server_default="free"
     )
@@ -26,6 +29,12 @@ class Organization(Base, IDMixin, TimestampMixin):
     )
 
     # Relationships
+    parent: Mapped["Organization | None"] = relationship(
+        remote_side="Organization.id", back_populates="children"
+    )
+    children: Mapped[list["Organization"]] = relationship(
+        back_populates="parent", cascade="all, delete-orphan"
+    )
     users: Mapped[list["OrganizationUser"]] = relationship(
         back_populates="organization"
     )
