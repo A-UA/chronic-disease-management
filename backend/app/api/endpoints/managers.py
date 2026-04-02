@@ -71,7 +71,7 @@ async def list_org_managers(
 
     reads = []
     for m in managers:
-        count_stmt = select(func.count(PatientManagerAssignment.id)).where(
+        count_stmt = select(func.count(PatientManagerAssignment.patient_id)).where(
             PatientManagerAssignment.manager_id == m.user_id
         )
         count = (await db.execute(count_stmt)).scalar() or 0

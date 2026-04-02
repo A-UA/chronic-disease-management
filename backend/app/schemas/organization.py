@@ -40,3 +40,21 @@ class PatientAssignmentCreate(BaseModel):
     patient_id: int
     manager_id: int
     role: str = "main"
+
+class OrganizationInvitationCreate(BaseModel):
+    email: str
+    role: str
+
+from datetime import datetime
+
+class OrganizationInvitationRead(BaseModel):
+    id: int
+    org_id: int
+    inviter_id: int
+    email: str
+    role: str
+    token: str
+    status: str
+    expires_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

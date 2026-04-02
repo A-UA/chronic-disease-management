@@ -7,7 +7,7 @@ from fastapi import (
     BackgroundTasks,
     Form,
 )
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_current_org, get_db
@@ -16,6 +16,7 @@ from app.db.models import User, Document, KnowledgeBase, PatientProfile
 from app.services.document_parser import DocumentParseError, parse_document
 from app.services.rag_ingestion import process_document
 from app.services.storage import get_storage_service
+from app.schemas.document import DocumentRead
 
 router = APIRouter()
 
@@ -93,3 +94,60 @@ async def upload_document(
         raise
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
+
+@router.get("/kb/{kb_id}/documents", response_model=list[DocumentRead])
+async def list_documents(
+    kb_id: int,
+    skip: int = 0,
+    limit: int = 50,
+    patient_id: int | None = None,
+    current_user: User = Depends(get_current_user),
+    org_id: int = Depends(get_current_org),
+    db: AsyncSession = Depends(get_db),
+):
+    """查询知识库下的文档列表"""
+    kb = await db.get(KnowledgeBase, kb_id)
+    if kb is None or kb.org_id != org_id:
+        raise HTTPException(status_code=404, detail="Knowledge base not found")
+
+    stmt = select(Document).where(Document.kb_id == kb_id, Document.org_id == org_id)
+    if patient_id is not None:
+        stmt = stmt.where(Document.patient_id == patient_id)
+        
+    stmt = stmt.offset(skip).limit(limit).order_by(Document.created_at.desc())
+    result = await db.execute(stmt)
+    return result.scalars().all()
+
+
+@router.get("/{document_id}", response_model=DocumentRead)
+async def get_document(
+    document_id: int,
+    current_user: User = Depends(get_current_user),
+    org_id: int = Depends(get_current_org),
+    db: AsyncSession = Depends(get_db),
+):
+    """获取指定文档详情"""
+    doc = await db.get(Document, document_id)
+    if doc is None or doc.org_id != org_id:
+        raise HTTPException(status_code=404, detail="Document not found")
+    return doc
+
+
+@router.delete("/{document_id}", response_model=dict)
+async def delete_document(
+    document_id: int,
+    current_user: User = Depends(get_current_user),
+    org_id: int = Depends(get_current_org),
+    db: AsyncSession = Depends(get_db),
+):
+    """删除文档（其包含的 Chunks 关联会自动清理）"""
+    doc = await db.get(Document, document_id)
+    if doc is None or doc.org_id != org_id:
+        raise HTTPException(status_code=404, detail="Document not found")
+        
+    # TODO: 异步清理 MinIO 中的文件 (doc.minio_url)
+    
+    stmt = delete(Document).where(Document.id == document_id)
+    await db.execute(stmt)
+    await db.commit()
+    return {"message": "Document deleted successfully"}

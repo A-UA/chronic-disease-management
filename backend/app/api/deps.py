@@ -48,6 +48,8 @@ async def get_current_user(
 async def get_current_active_user(
     current_user: User = Depends(get_current_user),
 ) -> User:
+    if current_user.deleted_at is not None:
+        raise HTTPException(status_code=403, detail="User account has been disabled")
     return current_user
 
 
@@ -232,6 +234,12 @@ async def get_api_key_context(
 
     if not api_key:
         raise HTTPException(status_code=401, detail="Invalid API Key")
+
+    # 过期校验
+    if api_key.expires_at is not None:
+        from datetime import datetime, timezone
+        if api_key.expires_at < datetime.now(timezone.utc):
+            raise HTTPException(status_code=401, detail="API Key has expired")
 
     # Rate Limiting
     await check_api_key_rate_limit(api_key.id, api_key.qps_limit)

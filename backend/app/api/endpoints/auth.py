@@ -18,7 +18,7 @@ from app.db.models import (
     Permission,
 )
 from app.services.rbac import RBACService
-from app.schemas.user import UserCreate, Token, UserRead
+from app.schemas.user import UserCreate, Token, UserRead, UserUpdatePassword
 from app.schemas.rbac import MenuRead
 from pydantic import BaseModel, EmailStr
 
@@ -178,3 +178,18 @@ async def get_menu_tree(
         )
 
     return sorted(menus, key=lambda x: x.sort)
+
+
+@router.put("/update-password", response_model=dict)
+async def update_password(
+    data: UserUpdatePassword,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """修改当前用户的密码"""
+    if not security.verify_password(data.current_password, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="Incorrect current password")
+        
+    current_user.password_hash = security.get_password_hash(data.new_password)
+    await db.commit()
+    return {"message": "Password updated successfully"}

@@ -1,12 +1,15 @@
 import json
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import update
 from pydantic import BaseModel
 
 from app.api.deps import get_api_key_context, get_db
-from app.db.models import ApiKey
+from app.db.models import ApiKey, UsageLog
 from app.services.provider_registry import registry
 from app.services.chat import retrieve_chunks, build_rag_prompt
+from app.services.rag_ingestion import count_tokens
+from app.services.quota import update_org_quota
 
 router = APIRouter()
 
@@ -28,23 +31,45 @@ async def external_chat_completions(
         query=request.query,
         kb_id=request.kb_id,
         org_id=api_key.org_id,
-        user_id=api_key.id, # Treating api key as user for cache/quota
+        user_id=api_key.id,
         limit=request.limit,
     )
 
     prompt, citations = build_rag_prompt(request.query, chunks)
     full_response = await llm_provider.complete_text(prompt)
 
-    prompt_tokens = len(prompt) // 4
-    completion_tokens = len(full_response) // 4
+    # 精确计算 token 数（与内部聊天保持一致）
+    prompt_tokens = count_tokens(prompt, llm_provider.model_name)
+    completion_tokens = count_tokens(full_response, llm_provider.model_name)
     total_tokens = prompt_tokens + completion_tokens
 
-    # 实际项目中这里还需要调用扣费逻辑
+    # 记录用量日志
+    usage = UsageLog(
+        org_id=api_key.org_id,
+        api_key_id=api_key.id,
+        model=llm_provider.model_name,
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
+        action_type="external_chat",
+    )
+    db.add(usage)
+
+    # 扣减组织配额
+    await update_org_quota(db, api_key.org_id, total_tokens)
+
+    # 更新 API Key 自身的 token 消耗累计
+    stmt = (
+        update(ApiKey)
+        .where(ApiKey.id == api_key.id)
+        .values(token_used=ApiKey.token_used + total_tokens)
+    )
+    await db.execute(stmt)
+    await db.commit()
 
     return {
         "id": "chatcmpl-ext",
         "object": "chat.completion",
-        "model": "rag-custom",
+        "model": llm_provider.model_name,
         "choices": [{
             "index": 0,
             "message": {
@@ -58,4 +83,4 @@ async def external_chat_completions(
             "completion_tokens": completion_tokens,
             "total_tokens": total_tokens
         }
-    }
+    }

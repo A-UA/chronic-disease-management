@@ -4,13 +4,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
+from sqlalchemy import delete
+import secrets
+from datetime import datetime, timedelta, timezone
+
 from app.api.deps import get_db, get_current_user, check_permission, get_current_org
-from app.db.models import Organization, OrganizationUser, User, Role
+from app.db.models import Organization, OrganizationUser, OrganizationUserRole, User, Role, OrganizationInvitation
 from app.schemas.organization import (
     OrganizationReadAdmin, 
     OrganizationCreate, 
     OrganizationUpdate,
-    OrganizationMemberRead
+    OrganizationMemberRead,
+    OrganizationInvitationCreate,
+    OrganizationInvitationRead
 )
 
 router = APIRouter()
@@ -69,8 +75,21 @@ async def get_organization_members(
         OrganizationUser.org_id == org_id,
         OrganizationUser.user_id == current_user.id
     )
-    if not (await db.execute(stmt_check)).scalar_one_or_none() and current_user.role_code != "platform_admin":
-        raise HTTPException(status_code=403, detail="Not authorized")
+    is_member = (await db.execute(stmt_check)).scalar_one_or_none()
+
+    if not is_member:
+        # 检查是否是平台管理员
+        stmt_platform = (
+            select(OrganizationUserRole)
+            .join(Role, Role.id == OrganizationUserRole.role_id)
+            .where(
+                OrganizationUserRole.user_id == current_user.id,
+                Role.code.in_(["platform_admin", "platform_viewer"]),
+                Role.org_id.is_(None),
+            )
+        )
+        if not (await db.execute(stmt_platform)).scalar_one_or_none():
+            raise HTTPException(status_code=403, detail="Not authorized")
 
     stmt = (
         select(OrganizationUser)
@@ -91,3 +110,139 @@ async def get_organization_members(
             "user_type": org_user.user_type,
         })
     return members
+
+@router.delete("/{org_id}/members/{user_id}", response_model=dict)
+async def remove_organization_member(
+    org_id: int,
+    user_id: int,
+    _org_member=Depends(check_permission("org:manage")),
+    db: AsyncSession = Depends(get_db)
+):
+    """[管理视图] 移除机构成员"""
+    # 不能移除最后一名成员的保护逻辑（可选），或直接删除关联
+    stmt = delete(OrganizationUser).where(
+        OrganizationUser.org_id == org_id,
+        OrganizationUser.user_id == user_id
+    )
+    result = await db.execute(stmt)
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Member not found in organization")
+    await db.commit()
+    return {"message": "Member removed successfully"}
+
+@router.get("/{org_id}/invitations", response_model=List[OrganizationInvitationRead])
+async def list_invitations(
+    org_id: int,
+    _org_member=Depends(check_permission("org:manage")),
+    db: AsyncSession = Depends(get_db)
+):
+    """[管理视图] 列出机构的待处理邀请"""
+    stmt = select(OrganizationInvitation).where(
+        OrganizationInvitation.org_id == org_id,
+        OrganizationInvitation.status == "pending"
+    )
+    result = await db.execute(stmt)
+    return result.scalars().all()
+
+@router.post("/{org_id}/invitations", response_model=OrganizationInvitationRead)
+async def create_invitation(
+    org_id: int,
+    invitation_in: OrganizationInvitationCreate,
+    current_user: User = Depends(get_current_user),
+    _org_member=Depends(check_permission("org:manage")),
+    db: AsyncSession = Depends(get_db)
+):
+    """[管理视图] 发起组织邀请"""
+    # 检查目标用户是否已经是组织成员
+    user_stmt = select(User).where(User.email == invitation_in.email)
+    target_user = (await db.execute(user_stmt)).scalar_one_or_none()
+    
+    if target_user:
+        member_stmt = select(OrganizationUser).where(
+            OrganizationUser.org_id == org_id,
+            OrganizationUser.user_id == target_user.id
+        )
+        if (await db.execute(member_stmt)).scalar_one_or_none():
+            raise HTTPException(status_code=400, detail="User is already a member")
+
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    
+    invitation = OrganizationInvitation(
+        org_id=org_id,
+        inviter_id=current_user.id,
+        email=invitation_in.email,
+        role=invitation_in.role,
+        token=token,
+        status="pending",
+        expires_at=expires_at
+    )
+    db.add(invitation)
+    await db.commit()
+    await db.refresh(invitation)
+    return invitation
+
+@router.post("/invitations/{token}/accept", response_model=dict)
+async def accept_invitation(
+    token: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """[通用] 接受组织邀请"""
+    stmt = select(OrganizationInvitation).where(
+        OrganizationInvitation.token == token,
+        OrganizationInvitation.status == "pending"
+    )
+    invitation = (await db.execute(stmt)).scalar_one_or_none()
+    
+    if not invitation:
+        raise HTTPException(status_code=404, detail="Invalid or expired invitation token")
+        
+    # Python 的 naive datetime 和 current_user 兼容处理
+    if invitation.expires_at.tzinfo is None:
+        now = datetime.utcnow()
+    else:
+        now = datetime.now(timezone.utc)
+        
+    if invitation.expires_at < now:
+        invitation.status = "expired"
+        await db.commit()
+        raise HTTPException(status_code=400, detail="Invitation has expired")
+        
+    if current_user.email != invitation.email:
+        raise HTTPException(status_code=403, detail="Invitation is for another email address")
+
+    # 创建组织成员关联
+    org_user = OrganizationUser(
+        org_id=invitation.org_id,
+        user_id=current_user.id,
+        user_type="staff"
+    )
+    db.add(org_user)
+    
+    # 查找邀请指定的角色
+    role_stmt = select(Role).where(
+        Role.code == invitation.role,
+        Role.org_id == invitation.org_id
+    )
+    role = (await db.execute(role_stmt)).scalar_one_or_none()
+    
+    # 回退到找系统级角色
+    if not role:
+        sys_role_stmt = select(Role).where(
+            Role.code == invitation.role,
+            Role.org_id.is_(None)
+        )
+        role = (await db.execute(sys_role_stmt)).scalar_one_or_none()
+
+    if role:
+        user_role = OrganizationUserRole(
+            org_id=invitation.org_id,
+            user_id=current_user.id,
+            role_id=role.id
+        )
+        db.add(user_role)
+
+    invitation.status = "accepted"
+    await db.commit()
+    return {"message": "You have joined the organization successfully"}

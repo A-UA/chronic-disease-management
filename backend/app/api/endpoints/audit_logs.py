@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List
 
-from app.api.deps import get_db, get_current_org, check_permission
+from app.api.deps import get_db, get_current_org, check_permission, get_platform_viewer
 from app.db.models import AuditLog
 from app.schemas.admin import AuditLogRead
 
@@ -36,13 +36,10 @@ async def list_global_audit_logs(
     limit: int = 50,
     action: str | None = None,
     org_id_filter: int | None = None,
+    _admin=Depends(get_platform_viewer),
     db: AsyncSession = Depends(get_db),
 ):
-    """Platform-level audit log endpoint (requires platform_viewer externally)"""
-    from app.api.deps import get_platform_viewer
-
-    # This endpoint is mounted under /admin/audit-logs/global
-    # The platform_viewer check is done at router level via dependency
+    """平台级审计日志端点（需要 platform_viewer 权限）"""
     stmt = select(AuditLog)
     if action:
         stmt = stmt.where(AuditLog.action == action)
