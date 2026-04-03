@@ -104,7 +104,7 @@ SYSTEM_MENUS = [
 
 CHILD_MENUS = {
     "patient-mgmt": [
-        {"code": "patient-list", "name": "患者列表", "menu_type": "page", "path": "/patients",
+        {"code": "patient-list", "name": "患者列表", "menu_type": "page", "path": "/patients/list",
          "sort": 1, "permission_code": "patient:read"},
         {"code": "patient-metrics", "name": "健康指标", "menu_type": "page", "path": "/patients/metrics",
          "sort": 2, "permission_code": "patient:read"},
@@ -112,7 +112,7 @@ CHILD_MENUS = {
          "sort": 3, "permission_code": "suggestion:read"},
     ],
     "kb-mgmt": [
-        {"code": "kb-list", "name": "知识库列表", "menu_type": "page", "path": "/knowledge",
+        {"code": "kb-list", "name": "知识库列表", "menu_type": "page", "path": "/knowledge/list",
          "sort": 1, "permission_code": "kb:manage"},
         {"code": "kb-documents", "name": "文档管理", "menu_type": "page", "path": "/knowledge/documents",
          "sort": 2, "permission_code": "doc:manage"},
