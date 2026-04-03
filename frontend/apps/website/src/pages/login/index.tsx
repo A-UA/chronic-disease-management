@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Navigate } from "react-router-dom";
 import { Button, Card, Form, Input, Typography, App } from "antd";
 import { LockOutlined, MailOutlined } from "@ant-design/icons";
 import { useAuthStore } from "@/stores/auth";
@@ -7,16 +8,23 @@ const { Title } = Typography;
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
+  const token = useAuthStore((s) => s.token);
+  const user = useAuthStore((s) => s.user);
   const login = useAuthStore((s) => s.login);
   const { message } = App.useApp();
+
+  // 已登录：声明式重定向（此时 router 已包含动态路由）
+  if (token && user) {
+    return <Navigate to="/" replace />;
+  }
 
   const onFinish = async (values: { email: string; password: string }) => {
     setLoading(true);
     try {
       await login(values.email, values.password);
       void message.success("登录成功");
-      // 用整页跳转确保 router 以完整的 menus 重建
-      window.location.replace("/");
+      // 不在此处导航 —— React 批量 re-render 后，
+      // 上方 if (token && user) 会声明式触发 <Navigate>
     } catch {
       void message.error("用户名或密码错误");
     } finally {
