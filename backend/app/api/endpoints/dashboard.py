@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, cast, Date, text
@@ -73,7 +73,7 @@ async def get_dashboard_stats(
     tokens = (await db.execute(usage_stmt)).scalar() or 0
 
     # 24 小时活跃用户（基于 UsageLog 去重统计）
-    since_24h = datetime.now(timezone.utc) - timedelta(hours=24)
+    since_24h = datetime.utcnow() - timedelta(hours=24)
     active_stmt = select(func.count(func.distinct(UsageLog.user_id))).where(
         UsageLog.created_at >= since_24h,
         UsageLog.user_id.isnot(None),
@@ -83,7 +83,7 @@ async def get_dashboard_stats(
     active_users = (await db.execute(active_stmt)).scalar() or 0
 
     # 2. Token 趋势统计
-    since_7d = (datetime.now(timezone.utc) - timedelta(days=6)).date()
+    since_7d = (datetime.utcnow() - timedelta(days=6)).date()
     trend_stmt = (
         select(
             cast(UsageLog.created_at, Date).label("date"),
