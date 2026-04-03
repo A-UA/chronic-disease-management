@@ -4,21 +4,19 @@ import { useAuthStore } from "@/stores/auth";
 import PageLoading from "@/components/PageLoading";
 
 export default function AuthRoute() {
-  const { user, loading, fetchUserInfo, hydrate } = useAuthStore();
+  const token = useAuthStore((s) => s.token);
+  const user = useAuthStore((s) => s.user);
+  const loading = useAuthStore((s) => s.loading);
+  const fetchUserInfo = useAuthStore((s) => s.fetchUserInfo);
   const location = useLocation();
-  const currentToken = useAuthStore((s) => s.token);
 
   useEffect(() => {
-    hydrate();
-  }, [hydrate]);
-
-  useEffect(() => {
-    if (currentToken && !user && !loading) {
+    if (token && !user && !loading) {
       void fetchUserInfo();
     }
-  }, [currentToken, user, loading, fetchUserInfo]);
+  }, [token, user, loading, fetchUserInfo]);
 
-  if (!currentToken) {
+  if (!token) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 

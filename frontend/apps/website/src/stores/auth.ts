@@ -13,22 +13,14 @@ interface AuthState {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   fetchUserInfo: () => Promise<void>;
-  hydrate: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
-  token: null,
+  token: getStoredToken(),
   user: null,
   menus: [],
   permissions: [],
   loading: false,
-
-  hydrate: () => {
-    const token = getStoredToken();
-    if (token) {
-      set({ token });
-    }
-  },
 
   login: async (email, password) => {
     const res = await loginApi(email, password);

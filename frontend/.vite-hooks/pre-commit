@@ -1,1 +1,3 @@
+#!/usr/bin/env sh
+cd "$(dirname "$(dirname "$0")")" || exit 1
 vp staged

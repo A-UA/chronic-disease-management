@@ -1,21 +1,20 @@
-*,
-*::before,
-*::after {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+@import "tailwindcss";
 
-html,
-body,
-#root {
-  height: 100%;
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+/* Ant Design 与 Tailwind 兼容：防止 preflight 重置 antd 样式 */
+@layer base {
+  /* 保留 Tailwind 的基础重置，antd 组件不受影响 */
+  *,
+  ::after,
+  ::before {
+    box-sizing: border-box;
+  }
 
-#root {
-  min-height: 100vh;
+  body {
+    margin: 0;
+    font-family:
+      -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans",
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 }
