@@ -20,7 +20,7 @@ async def _load_patient_profile(db: AsyncSession, user_id: int, org_id: int) -> 
 
 # --- Unified Endpoints ---
 
-@router.get("/", response_model=List[PatientProfileRead])
+@router.get("", response_model=List[PatientProfileRead])
 async def list_patients(
     skip: int = 0,
     limit: int = 50,

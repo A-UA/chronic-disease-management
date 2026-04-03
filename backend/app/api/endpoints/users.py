@@ -13,7 +13,7 @@ router = APIRouter()
 from app.core import security
 from app.schemas.user import UserCreate
 
-@router.post("/", response_model=UserAdminRead)
+@router.post("", response_model=UserAdminRead)
 async def create_user(
     user_in: UserCreate,
     _admin=Depends(get_platform_admin),
@@ -46,7 +46,7 @@ async def create_user(
     )
 
 
-@router.get("/", response_model=List[UserAdminRead])
+@router.get("", response_model=List[UserAdminRead])
 async def list_users(
     skip: int = 0,
     limit: int = 50,

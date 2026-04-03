@@ -49,7 +49,7 @@ class ConversationUpdate(BaseModel):
 
 # ── Endpoints ──
 
-@router.get("/", response_model=List[ConversationRead])
+@router.get("", response_model=List[ConversationRead])
 async def list_conversations(
     skip: int = 0,
     limit: int = 50,

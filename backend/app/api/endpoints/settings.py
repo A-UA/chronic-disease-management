@@ -9,7 +9,7 @@ from app.services.settings import SettingsService
 router = APIRouter()
 
 
-@router.get("/", response_model=DynamicSettings)
+@router.get("", response_model=DynamicSettings)
 async def get_settings(
     _admin=Depends(get_platform_admin),
     db: AsyncSession = Depends(get_db),
@@ -18,7 +18,7 @@ async def get_settings(
     return await SettingsService.get_all(db)
 
 
-@router.put("/", response_model=DynamicSettings)
+@router.put("", response_model=DynamicSettings)
 async def update_settings(
     data: dict[str, Any],
     _admin=Depends(get_platform_admin),

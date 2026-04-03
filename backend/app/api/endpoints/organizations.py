@@ -35,7 +35,7 @@ async def get_my_organizations(
     result = await db.execute(stmt)
     return result.scalars().all()
 
-@router.get("/", response_model=List[OrganizationReadAdmin])
+@router.get("", response_model=List[OrganizationReadAdmin])
 async def list_organizations(
     skip: int = 0,
     limit: int = 100,
@@ -50,7 +50,7 @@ async def list_organizations(
     result = await db.execute(stmt)
     return result.scalars().all()
 
-@router.post("/", response_model=OrganizationReadAdmin)
+@router.post("", response_model=OrganizationReadAdmin)
 async def create_organization(
     org_in: OrganizationCreate,
     _permission=Depends(check_permission("platform:manage")),

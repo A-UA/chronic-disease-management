@@ -14,7 +14,7 @@ from app.schemas.api_key import ApiKeyCreate, ApiKeyUpdate, ApiKeyRead, ApiKeyCr
 
 router = APIRouter()
 
-@router.post("/", response_model=ApiKeyCreateResponse)
+@router.post("", response_model=ApiKeyCreateResponse)
 async def create_api_key(
     data: ApiKeyCreate,
     org_id: int = Depends(get_current_org),
@@ -63,7 +63,7 @@ async def create_api_key(
     return response_dict
 
 
-@router.get("/", response_model=List[ApiKeyRead])
+@router.get("", response_model=List[ApiKeyRead])
 async def list_api_keys(
     skip: int = 0,
     limit: int = 50,

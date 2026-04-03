@@ -26,7 +26,7 @@ class KBRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-@router.post("/", response_model=KBRead)
+@router.post("", response_model=KBRead)
 async def create_knowledge_base(
     kb_in: KBCreate,
     current_user: User = Depends(get_current_user),
@@ -46,7 +46,7 @@ async def create_knowledge_base(
     return kb
 
 
-@router.get("/", response_model=List[KBRead])
+@router.get("", response_model=List[KBRead])
 async def list_knowledge_bases(
     skip: int = 0,
     limit: int = 100,

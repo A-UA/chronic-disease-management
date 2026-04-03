@@ -57,7 +57,7 @@ async def _get_my_patient(db: AsyncSession, user_id: int, org_id: int) -> Patien
 
 # ── Endpoints ──
 
-@router.post("/")
+@router.post("")
 async def create_health_metric(
     data: HealthMetricCreate,
     current_user: User = Depends(get_current_user),

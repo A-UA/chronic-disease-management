@@ -54,7 +54,7 @@ class AssignmentCreate(BaseModel):
 
 # --- Unified Endpoints ---
 
-@router.get("/", response_model=List[ManagerDetailRead])
+@router.get("", response_model=List[ManagerDetailRead])
 async def list_org_managers(
     org_id: int = Depends(get_current_org),
     _permission=Depends(check_permission("org_member:manage")),

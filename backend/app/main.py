@@ -3,7 +3,7 @@ import traceback
 import orjson
 from typing import Any
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import JSONResponse, ORJSONResponse
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.exception_handlers import (
@@ -31,7 +31,7 @@ def bigint_to_str(obj: Any) -> Any:
         return [bigint_to_str(v) for v in obj]
     return obj
 
-class SnowflakeJSONResponse(ORJSONResponse):
+class SnowflakeJSONResponse(JSONResponse):
     """
     自定义响应类：
     1. 使用 orjson 提供极致的性能
@@ -50,7 +50,7 @@ class SnowflakeJSONResponse(ORJSONResponse):
 app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
-    default_response_class=SnowflakeJSONResponse  # 设置为默认响应类，全项目生效
+    default_response_class=SnowflakeJSONResponse
 )
 
 # 注册异常处理器以保护大整数精度
