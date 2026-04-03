@@ -10,6 +10,7 @@ from .manager import ManagerProfile, PatientManagerAssignment, ManagementSuggest
 from .audit import AuditLog
 from .settings import SystemSetting
 from .health_metric import HealthMetric
+from .menu import Menu
 
 # Ensure all models are in metadata for migrations
 __all__ = [
@@ -37,5 +38,6 @@ __all__ = [
     "RolePermission",
     "Resource",
     "Action",
-    "RoleConstraint"
+    "RoleConstraint",
+    "Menu",
 ]
