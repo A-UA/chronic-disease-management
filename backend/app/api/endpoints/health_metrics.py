@@ -194,3 +194,40 @@ async def update_health_metric(
     await db.commit()
     return {"status": "ok", "id": metric.id}
 
+
+# ── 管理端接口 ──
+
+from app.api.deps import check_permission
+
+
+@router.get("/patients/{patient_id}/trend")
+async def get_patient_trend(
+    patient_id: int,
+    metric_type: str,
+    days: int = 30,
+    _perm=Depends(check_permission("patient:read")),
+    org_id: int = Depends(get_current_org),
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """[管理端] 查看指定患者的健康指标趋势"""
+    from datetime import timedelta, timezone
+
+    if metric_type not in ALLOWED_METRIC_TYPES:
+        raise HTTPException(status_code=400, detail=f"Invalid metric_type: {metric_type}")
+
+    patient = await db.get(PatientProfile, patient_id)
+    if not patient or patient.org_id != org_id:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+    stmt = (
+        select(HealthMetric)
+        .where(
+            HealthMetric.patient_id == patient_id,
+            HealthMetric.metric_type == metric_type,
+            HealthMetric.measured_at >= since,
+        )
+        .order_by(HealthMetric.measured_at.asc())
+    )
+    result = await db.execute(stmt)
+    return result.scalars().all()

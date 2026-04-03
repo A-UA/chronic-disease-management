@@ -19,7 +19,8 @@ from app.db.models import (
 )
 from app.services.rbac import RBACService
 from app.schemas.user import UserCreate, Token, UserRead, UserUpdatePassword
-from app.schemas.rbac import MenuRead
+from app.schemas.menu import MenuRead as MenuTreeRead
+from app.db.models.menu import Menu
 from pydantic import BaseModel, EmailStr
 
 router = APIRouter()
@@ -139,45 +140,67 @@ async def read_current_user(
     return user_data
 
 
-@router.get("/menu-tree", response_model=List[MenuRead])
+@router.get("/menu-tree")
 async def get_menu_tree(
     db: AsyncSession = Depends(get_db),
     org_user: OrganizationUser = Depends(get_current_org_user),
 ) -> Any:
-    """获取当前用户的动态导航菜单"""
-    # 1. 计算所有有效角色 (包含继承)
+    """获取当前用户的动态导航菜单（从 menus 表读取，树形嵌套返回）"""
+    # 1. 计算用户的所有有效权限编码
     role_ids = [r.id for r in org_user.rbac_roles]
     all_role_ids = await RBACService.get_all_role_ids(db, role_ids)
 
-    # 2. 查询所有菜单类型的权限
     stmt = (
-        select(Permission)
+        select(Permission.code)
         .join(Permission.roles)
-        .where(
-            Role.id.in_(list(all_role_ids)),
-            Permission.permission_type == "menu"
-        )
+        .where(Role.id.in_(list(all_role_ids)))
         .distinct()
     )
     result = await db.execute(stmt)
-    menu_perms = result.scalars().all()
+    user_permission_codes = {row[0] for row in result.all()}
 
-    # 3. 解析元数据并按排序字段排序
-    menus = []
-    for p in menu_perms:
-        meta = p.ui_metadata or {}
-        menus.append(
-            MenuRead(
-                id=p.id,
-                name=p.name,
-                code=p.code,
-                path=meta.get("path", "/"),
-                icon=meta.get("icon"),
-                sort=meta.get("sort", 100),
-            )
+    # 2. 查询所有系统级菜单（org_id IS NULL）+ 本租户定制菜单
+    stmt = (
+        select(Menu)
+        .where(
+            Menu.is_enabled == True,
+            Menu.deleted_at.is_(None),
+            (Menu.org_id.is_(None)) | (Menu.org_id == org_user.org_id),
         )
+        .order_by(Menu.sort)
+    )
+    result = await db.execute(stmt)
+    all_menus = result.scalars().all()
 
-    return sorted(menus, key=lambda x: x.sort)
+    # 3. 过滤权限：无 permission_code 的菜单所有人可见，有的需匹配
+    visible_menus = []
+    for menu in all_menus:
+        if not menu.permission_code or menu.permission_code in user_permission_codes:
+            visible_menus.append(menu)
+
+    # 4. 组装树形结构
+    menu_map = {
+        m.id: {**MenuTreeRead.model_validate(m).model_dump(), "children": []}
+        for m in visible_menus
+    }
+    roots = []
+    visible_ids = {m.id for m in visible_menus}
+
+    for m in visible_menus:
+        node = menu_map[m.id]
+        if m.parent_id and m.parent_id in visible_ids:
+            menu_map[m.parent_id]["children"].append(node)
+        else:
+            roots.append(node)
+
+    # 5. 移除没有子节点的 directory 类型菜单
+    def prune(items):
+        return [
+            item for item in items
+            if item["menu_type"] != "directory" or len(item.get("children", [])) > 0
+        ]
+
+    return prune(roots)
 
 
 @router.put("/update-password", response_model=dict)
