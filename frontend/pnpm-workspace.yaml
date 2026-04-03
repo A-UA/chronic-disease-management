@@ -1,0 +1,36 @@
+packages:
+  - apps/*
+  - packages/*
+  - tools/*
+
+catalog:
+  '@ant-design/charts': ^2.6.7
+  '@ant-design/icons': ^6.1.1
+  '@ant-design/pro-components': ^2.8.10
+  '@tanstack/react-query': ^5.96.2
+  "@types/node": ^24
+  '@types/react': ^19.2.14
+  '@types/react-dom': ^19.2.3
+  '@vitejs/plugin-react': ^6.0.1
+  antd: ^6.3.5
+  ky: ^1.14.3
+  react: ^19.2.4
+  react-dom: ^19.2.4
+  react-router-dom: ^7.14.0
+  typescript: ^5
+  vite: npm:@voidzero-dev/vite-plus-core@latest
+  vite-plus: latest
+  vitest: npm:@voidzero-dev/vite-plus-test@latest
+  zustand: ^5.0.12
+
+catalogMode: prefer
+overrides:
+  vite: "catalog:"
+  vitest: "catalog:"
+peerDependencyRules:
+  allowAny:
+    - vite
+    - vitest
+  allowedVersions:
+    vite: "*"
+    vitest: "*"

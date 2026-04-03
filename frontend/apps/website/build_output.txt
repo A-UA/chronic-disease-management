@@ -1,0 +1,47 @@
+﻿VITE+ - The Unified Toolchain for the Web
+
+[36mvite v8.0.3 [32mbuilding client environment for production...[36m[39m
+[2K
+transforming...鉁?7108 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                        0.79 kB 鈹?gzip:   0.40 kB
+dist/assets/index-BB59IMi_.css                         0.27 kB 鈹?gzip:   0.22 kB
+dist/assets/row-CFkvP_vf.js                            0.07 kB 鈹?gzip:   0.08 kB
+dist/assets/createForOfIteratorHelper-Bxe4MSsl.js      0.67 kB 鈹?gzip:   0.42 kB
+dist/assets/dashboard-BfEh_CWf.js                      5.63 kB 鈹?gzip:   2.65 kB
+dist/assets/react-dom-BEBJkuFv.js                     11.67 kB 鈹?gzip:   4.19 kB
+dist/assets/_id_-Czttnz2f.js                          17.47 kB 鈹?gzip:   6.32 kB
+dist/assets/patients-BYwAbwPd.js                      67.04 kB 鈹?gzip:  23.61 kB
+dist/assets/chunk-QFMPRPBF-C5Iy4N1g.js               134.46 kB 鈹?gzip:  43.28 kB
+dist/assets/client-DQc_K58V.js                       178.87 kB 鈹?gzip:  56.47 kB
+dist/assets/index-BgDvIrvl.js                        507.33 kB 鈹?gzip: 163.81 kB
+dist/assets/patients-CkaaGkuo.js                     963.88 kB 鈹?gzip: 276.80 kB
+dist/assets/es-BzZ9qiuX.js                         1,246.55 kB 鈹?gzip: 280.85 kB
+dist/assets/line-D1SvVKHQ.js                       1,460.86 kB 鈹?gzip: 427.09 kB
+
+vp : [33m[33m[PLUGIN_TIMINGS] Warning:[0m Your build spent 
+significant time in plugins. Here is a breakdown:
+所在位置 行:1 字符: 1
++ vp build 2>&1 | Out-File -FilePath .\build_output.txt -Encod
+ing utf8
++ ~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([33m[33m[PLUG..
+.    is a breakdown::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  - vite:css-post (58%)
+  - rolldown:vite-resolve (25%)
+See https://rolldown.rs/options/checks#plugintimings for more 
+details.
+[39m
+[33m[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Con
+sider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve ch
+unking: https://rolldown.rs/reference/OutputOptions.codeSplitt
+ing
+- Adjust chunk size limit for this warning via build.chunkSize
+WarningLimit.[39m
+[32m鉁?built in 11.02s[39m
