@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { Button, Card, Form, Input, message, Typography } from "antd";
+import { Button, Card, Form, Input, Typography, App } from "antd";
 import { LockOutlined, MailOutlined } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/auth";
 
 const { Title } = Typography;
@@ -9,16 +8,17 @@ const { Title } = Typography;
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const login = useAuthStore((s) => s.login);
-  const navigate = useNavigate();
+  const { message } = App.useApp();
 
   const onFinish = async (values: { email: string; password: string }) => {
     setLoading(true);
     try {
       await login(values.email, values.password);
-      message.success("登录成功");
-      void navigate("/");
+      void message.success("登录成功");
+      // 用整页跳转确保 router 以完整的 menus 重建
+      window.location.replace("/");
     } catch {
-      message.error("用户名或密码错误");
+      void message.error("用户名或密码错误");
     } finally {
       setLoading(false);
     }
