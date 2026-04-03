@@ -6,6 +6,7 @@ from functools import lru_cache
 
 from sqlalchemy import func
 
+from app.core.config import settings
 from app.db.models import Chunk, Document, UsageLog
 from app.db.session import AsyncSessionLocal
 from app.services.provider_registry import registry
