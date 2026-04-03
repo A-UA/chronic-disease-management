@@ -8,6 +8,7 @@ from app.api.endpoints import (
     family,
     managers,
     chat,
+    conversations,
     dashboard,
     audit_logs,
     usage,
@@ -33,6 +34,7 @@ api_router.include_router(patients.router, prefix="/patients", tags=["patients"]
 api_router.include_router(family.router, prefix="/family", tags=["family"])
 api_router.include_router(managers.router, prefix="/managers", tags=["managers"])
 api_router.include_router(chat.router, prefix="/chat", tags=["chat"])
+api_router.include_router(conversations.router, prefix="/conversations", tags=["conversations"])
 api_router.include_router(documents.router, prefix="/documents", tags=["documents"])
 api_router.include_router(knowledge_bases.router, prefix="/kb", tags=["knowledge-bases"])
 api_router.include_router(audit_logs.router, prefix="/audit-logs", tags=["audit-logs"])

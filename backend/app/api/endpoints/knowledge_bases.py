@@ -78,3 +78,45 @@ async def delete_knowledge_base(
     await db.delete(kb)
     await db.commit()
     return {"status": "ok"}
+
+
+@router.get("/{kb_id}/stats")
+async def get_knowledge_base_stats(
+    kb_id: int,
+    org_id: int = Depends(get_current_org),
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """获取知识库统计信息：文档数、chunk 数、总 token 数"""
+    from sqlalchemy import func
+    from app.db.models import Document, Chunk
+
+    kb = await db.get(KnowledgeBase, kb_id)
+    if not kb:
+        raise HTTPException(status_code=404, detail="Knowledge base not found")
+    if kb.org_id != org_id:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+
+    # 文档数
+    doc_count = (await db.execute(
+        select(func.count(Document.id)).where(Document.kb_id == kb_id)
+    )).scalar() or 0
+
+    # chunk 数
+    chunk_count = (await db.execute(
+        select(func.count(Chunk.id)).where(Chunk.kb_id == kb_id)
+    )).scalar() or 0
+
+    # 总 token 数（从 chunk metadata 的 token_count 聚合）
+    total_tokens = (await db.execute(
+        select(func.coalesce(
+            func.sum(Chunk.metadata_["token_count"].as_integer()), 0
+        )).where(Chunk.kb_id == kb_id)
+    )).scalar() or 0
+
+    return {
+        "kb_id": kb_id,
+        "document_count": doc_count,
+        "chunk_count": chunk_count,
+        "total_tokens": total_tokens,
+    }
+

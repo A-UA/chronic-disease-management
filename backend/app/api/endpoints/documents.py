@@ -166,3 +166,24 @@ async def delete_document(
     await db.execute(stmt)
     await db.commit()
     return {"message": "Document deleted successfully"}
+
+
+@router.get("/{document_id}/status")
+async def get_document_status(
+    document_id: int,
+    current_user: User = Depends(get_current_user),
+    org_id: int = Depends(get_current_org),
+    db: AsyncSession = Depends(get_db),
+):
+    """查询文档处理状态（轮询端点）"""
+    doc = await db.get(Document, document_id)
+    if doc is None or doc.org_id != org_id:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    return {
+        "document_id": doc.id,
+        "status": doc.status,
+        "failed_reason": doc.failed_reason,
+        "file_name": doc.file_name,
+    }
+
