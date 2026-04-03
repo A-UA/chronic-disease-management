@@ -54,7 +54,7 @@ export default function DashboardPage() {
                 title={card.title}
                 value={(data as any)[card.key] ?? 0}
                 prefix={card.icon}
-                valueStyle={{ color: card.color }}
+                styles={{ content: { color: card.color } }}
               />
             </Card>
           </Col>
