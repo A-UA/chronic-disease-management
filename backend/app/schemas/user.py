@@ -9,12 +9,14 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
 
-class UserRead(UserBase):
+class UserRead(BaseModel):
     id: int
+    email: str
+    name: Optional[str] = None
     created_at: datetime
     org_id: Optional[int] = None
     permissions: List[str] = []
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 class Token(BaseModel):

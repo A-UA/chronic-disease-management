@@ -19,7 +19,7 @@ from app.db.models import (
 )
 from app.services.rbac import RBACService
 from app.schemas.user import UserCreate, Token, UserRead, UserUpdatePassword
-from app.schemas.menu import MenuRead as MenuTreeRead
+
 from app.db.models.menu import Menu
 from pydantic import BaseModel, EmailStr
 
@@ -178,11 +178,23 @@ async def get_menu_tree(
         if not menu.permission_code or menu.permission_code in user_permission_codes:
             visible_menus.append(menu)
 
-    # 4. 组装树形结构
-    menu_map = {
-        m.id: {**MenuTreeRead.model_validate(m).model_dump(), "children": []}
-        for m in visible_menus
-    }
+    # 4. 组装树形结构（手动构建 dict，避免 Pydantic 触发 children 惰性加载）
+    menu_map = {}
+    for m in visible_menus:
+        menu_map[m.id] = {
+            "id": m.id,
+            "name": m.name,
+            "code": m.code,
+            "menu_type": m.menu_type,
+            "path": m.path,
+            "icon": m.icon,
+            "permission_code": m.permission_code,
+            "sort": m.sort,
+            "is_visible": m.is_visible,
+            "is_enabled": m.is_enabled,
+            "meta": m.meta,
+            "children": [],
+        }
     roots = []
     visible_ids = {m.id for m in visible_menus}
 
