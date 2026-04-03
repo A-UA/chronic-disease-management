@@ -63,6 +63,28 @@ async def create_organization(
     await db.refresh(org)
     return org
 
+
+@router.put("/{org_id}", response_model=OrganizationReadAdmin)
+async def update_organization(
+    org_id: int,
+    org_in: OrganizationUpdate,
+    org_id_header: int = Depends(get_current_org),
+    _permission=Depends(check_permission("org:manage")),
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """[管理视图] 编辑机构信息"""
+    org = await db.get(Organization, org_id)
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    for field, value in org_in.model_dump(exclude_unset=True).items():
+        setattr(org, field, value)
+
+    await db.commit()
+    await db.refresh(org)
+    return org
+
+
 @router.get("/{org_id}/members", response_model=List[OrganizationMemberRead])
 async def get_organization_members(
     org_id: int,

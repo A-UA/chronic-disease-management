@@ -134,3 +134,26 @@ async def get_linked_patient_profile(
         "medical_history": patient.medical_history,
         "relationship_type": link.relationship_type
     }
+
+
+@router.delete("/links/{patient_id}")
+async def unlink_family(
+    patient_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """家属解除与患者的关联"""
+    stmt = select(PatientFamilyLink).where(
+        PatientFamilyLink.patient_id == patient_id,
+        PatientFamilyLink.family_user_id == current_user.id,
+    )
+    result = await db.execute(stmt)
+    link = result.scalar_one_or_none()
+
+    if not link:
+        raise HTTPException(status_code=404, detail="Family link not found")
+
+    await db.delete(link)
+    await db.commit()
+    return {"status": "ok"}
+

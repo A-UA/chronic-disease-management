@@ -166,3 +166,24 @@ async def get_patient_suggestions(
     )
     result = await db.execute(stmt)
     return result.scalars().all()
+
+
+@router.delete("/assignments/{patient_id}")
+async def unassign_patient(
+    patient_id: int,
+    org_id: int = Depends(get_current_org),
+    _ = Depends(check_permission("org_member:manage")),
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """取消管理师与患者的分配关系"""
+    from sqlalchemy import delete
+    stmt = delete(PatientManagerAssignment).where(
+        PatientManagerAssignment.patient_id == patient_id,
+        PatientManagerAssignment.org_id == org_id,
+    )
+    result = await db.execute(stmt)
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    await db.commit()
+    return {"status": "ok"}
+

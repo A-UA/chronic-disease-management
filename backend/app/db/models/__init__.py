@@ -1,5 +1,5 @@
 from .base import Base
-from .user import User
+from .user import User, PasswordResetToken
 from .organization import Organization, OrganizationUser, OrganizationInvitation, PatientFamilyLink, OrganizationUserRole
 from .rbac import Role, Permission, RolePermission, Resource, Action, RoleConstraint
 from .knowledge import KnowledgeBase, Document, Chunk
@@ -9,6 +9,7 @@ from .patient import PatientProfile
 from .manager import ManagerProfile, PatientManagerAssignment, ManagementSuggestion
 from .audit import AuditLog
 from .settings import SystemSetting
+from .health_metric import HealthMetric
 
 # Ensure all models are in metadata for migrations
 __all__ = [

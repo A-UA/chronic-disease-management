@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from typing import List
 
-from app.api.deps import get_db, get_platform_viewer
+from app.api.deps import get_db, get_platform_viewer, get_current_user, get_current_org
 from app.db.models import Organization, UsageLog
 from app.schemas.admin import UsageSummaryItem
 
@@ -67,3 +67,29 @@ async def get_org_usage_detail(
         }
         for r in result.all()
     ]
+
+
+@router.get("/my-org")
+async def get_my_org_usage(
+    current_user=Depends(get_current_user),
+    org_id: int = Depends(get_current_org),
+    db: AsyncSession = Depends(get_db),
+):
+    """[租户级] 查看当前组织的用量汇总"""
+    stmt = select(
+        func.coalesce(
+            func.sum(UsageLog.prompt_tokens + UsageLog.completion_tokens), 0
+        )
+    ).where(UsageLog.org_id == org_id)
+    result = await db.execute(stmt)
+    total_tokens = result.scalar() or 0
+
+    # 查询配额
+    org = await db.get(Organization, org_id)
+    return {
+        "org_id": org_id,
+        "total_tokens": total_tokens,
+        "quota_limit": org.quota_tokens_limit if org else 0,
+        "quota_used": org.quota_tokens_used if org else 0,
+    }
+

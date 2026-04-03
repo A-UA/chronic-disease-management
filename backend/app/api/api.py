@@ -16,7 +16,8 @@ from app.api.endpoints import (
     rbac,
     organizations,
     users,
-    api_keys
+    api_keys,
+    health_metrics
 )
 
 api_router = APIRouter()
@@ -31,6 +32,7 @@ api_router.include_router(dashboard.router, prefix="/dashboard", tags=["dashboar
 api_router.include_router(organizations.router, prefix="/organizations", tags=["organizations"])
 api_router.include_router(users.router, prefix="/users", tags=["users"])
 api_router.include_router(patients.router, prefix="/patients", tags=["patients"])
+api_router.include_router(health_metrics.router, prefix="/health-metrics", tags=["health-metrics"])
 api_router.include_router(family.router, prefix="/family", tags=["family"])
 api_router.include_router(managers.router, prefix="/managers", tags=["managers"])
 api_router.include_router(chat.router, prefix="/chat", tags=["chat"])

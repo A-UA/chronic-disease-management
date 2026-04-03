@@ -99,3 +99,28 @@ async def admin_update_patient(
     await db.commit()
     await db.refresh(patient)
     return patient
+
+
+@router.get("/me/suggestions")
+async def get_my_suggestions(
+    current_user: User = Depends(get_current_user),
+    org_id: int = Depends(get_current_org),
+    db: AsyncSession = Depends(get_db),
+):
+    """[患者视图] 查看管理师给自己的管理建议"""
+    from app.db.models import ManagementSuggestion
+
+    profile = await _load_patient_profile(db, current_user.id, org_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Patient profile not found")
+
+    stmt = (
+        select(ManagementSuggestion)
+        .where(
+            ManagementSuggestion.patient_id == profile.id,
+            ManagementSuggestion.org_id == org_id,
+        )
+        .order_by(ManagementSuggestion.created_at.desc())
+    )
+    result = await db.execute(stmt)
+    return result.scalars().all()

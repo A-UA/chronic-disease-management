@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, datetime, timezone
 from typing import Any, List
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -193,3 +193,91 @@ async def update_password(
     current_user.password_hash = security.get_password_hash(data.new_password)
     await db.commit()
     return {"message": "Password updated successfully"}
+
+
+# ── 密码重置 ──
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    code: str
+    new_password: str
+
+
+@router.post("/forgot-password")
+async def forgot_password(
+    data: ForgotPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """请求密码重置（无论邮箱是否存在都返回200，防信息泄露）"""
+    import secrets
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    stmt = select(User).where(User.email == data.email)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+
+    if user:
+        # 生成 6 位数字验证码
+        code = f"{secrets.randbelow(1000000):06d}"
+        expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
+
+        from app.db.models import PasswordResetToken
+        token = PasswordResetToken(
+            user_id=user.id,
+            token=code,
+            expires_at=expires_at,
+        )
+        db.add(token)
+        await db.commit()
+
+        # 实际发送邮件（当前以日志代替，后续接入 SMTP）
+        logger.info(f"[密码重置] 用户 {data.email} 的验证码: {code}（15分钟内有效）")
+
+    return {"message": "If the email exists, a reset code has been sent."}
+
+
+@router.post("/reset-password")
+async def reset_password(
+    data: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """使用验证码重置密码"""
+    from app.db.models import PasswordResetToken
+
+    stmt = (
+        select(PasswordResetToken)
+        .join(User, User.id == PasswordResetToken.user_id)
+        .where(
+            User.email == data.email,
+            PasswordResetToken.token == data.code,
+            PasswordResetToken.used == False,
+        )
+        .order_by(PasswordResetToken.created_at.desc())
+    )
+    result = await db.execute(stmt)
+    reset_token = result.scalar_one_or_none()
+
+    if not reset_token:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset code")
+
+    # 检查是否过期
+    now = datetime.now(timezone.utc)
+    if reset_token.expires_at.tzinfo is None:
+        expires = reset_token.expires_at.replace(tzinfo=timezone.utc)
+    else:
+        expires = reset_token.expires_at
+
+    if expires < now:
+        raise HTTPException(status_code=400, detail="Reset code has expired")
+
+    # 重置密码
+    user = await db.get(User, reset_token.user_id)
+    user.password_hash = security.get_password_hash(data.new_password)
+    reset_token.used = True
+    await db.commit()
+    return {"message": "Password has been reset successfully"}
