@@ -1,4 +1,5 @@
 import json
+import logging
 from fastapi import Depends, HTTPException, status, Header
 from fastapi.security import OAuth2PasswordBearer
 import jwt
@@ -15,6 +16,8 @@ from app.services.rbac import RBACService
 from app.services.quota import check_org_quota, check_api_key_rate_limit, get_redis_client
 import hashlib
 import hmac
+
+logger = logging.getLogger(__name__)
 
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/auth/login/access-token"

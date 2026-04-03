@@ -307,7 +307,11 @@ async def _load_cached_ranked_results(
 async def expand_query(
     query: str, history: list[dict[str, str]], llm_provider: LLMProvider
 ) -> list[str]:
-    """将原始查询扩展为多个不同维度的检索词"""
+    """将原始查询扩展为多个不同维度的检索词（仅对复杂查询执行）"""
+    # 简单查询跳过扩展：短查询或不含问号的陈述句
+    if len(query) < 15 or not any(c in query for c in '?？吗呢什么怎么如何为什么'):
+        return [query]
+
     history_str = (
         "\n".join([f"{m['role']}: {m['content']}" for m in history[-3:]])
         if history
@@ -344,15 +348,14 @@ async def retrieve_ranked_chunks(
     history: list[dict[str, str]] | None = None,
     llm_provider: LLMProvider | None = None,
 ) -> list[RetrievedChunk]:
-    # 1. 查询压缩与扩展
+    # 查询压缩（仅当有历史上下文时）
     search_query = query
     if history and llm_provider:
         search_query = await condense_query(query, history, llm_provider)
 
-    # 扩展查询 (Multi-Query)
+    # 查询复杂度判断：短查询或简单查询跳过 Multi-Query 扩展
     if llm_provider:
         all_queries = await expand_query(search_query, history or [], llm_provider)
-        # 确保包含当前主查询
         if search_query not in all_queries:
             all_queries.append(search_query)
     else:
@@ -476,7 +479,8 @@ async def retrieve_chunks(
 
 
 def build_rag_prompt(
-    query: str, chunks: list[Chunk], patient_name: str | None = None
+    query: str, chunks: list[Chunk], patient_name: str | None = None,
+    language: str = "zh",
 ) -> tuple[str, list[dict[str, Citation]]]:
     context_blocks = []
     citations = []
@@ -502,20 +506,39 @@ def build_rag_prompt(
     if patient_name:
         query = query.replace(patient_name, "[PATIENT]")
 
-    prompt = (
-        "You are a Clinical Reasoning Assistant. Your goal is to provide accurate answers based ONLY on the provided Context.\n\n"
-        "### INSTRUCTIONS:\n"
-        "1. Analyze the Context carefully to find evidence for the Question.\n"
-        "2. If the Context contains the answer, follow the Output Format below.\n"
-        "3. If the Context does NOT contain enough information, state that the information is missing and do not invent facts.\n"
-        "4. Always cite your sources using [Doc n] notation.\n\n"
-        "### OUTPUT FORMAT:\n"
-        "- Reasoning: (Briefly describe your thought process and how you mapped the context to the answer)\n"
-        "- Conclusion: (A direct, concise answer to the question)\n"
-        "- Evidence: (Detailed supporting facts from the context, citing [Doc n])\n"
-        "- Uncertainty: (Any gaps in the provided context or potential ambiguities)\n\n"
-        f"### CONTEXT:\n{context_str}\n\n"
-        f"### QUESTION: {query}\n\n"
-        "### RESPONSE:"
-    )
+    if language == "zh":
+        prompt = (
+            "你是一个临床推理助手。请严格基于以下「参考资料」回答问题，不得编造信息。\n\n"
+            "### 回答规则：\n"
+            "1. 仔细分析参考资料，寻找与问题相关的证据。\n"
+            "2. 如果参考资料包含答案，请按照以下格式输出。\n"
+            "3. 如果参考资料不足以回答，请明确说明信息缺失，不要臆测。\n"
+            "4. 始终使用 [Doc n] 标注引用来源。\n"
+            "5. 请使用中文回答。\n\n"
+            "### 输出格式：\n"
+            "- 推理过程：（简要描述你的分析思路）\n"
+            "- 结论：（直接、简洁的回答）\n"
+            "- 证据：（来自参考资料的详细支撑事实，引用 [Doc n]）\n"
+            "- 不确定性：（参考资料中的信息缺口或潜在歧义）\n\n"
+            f"### 参考资料：\n{context_str}\n\n"
+            f"### 问题：{query}\n\n"
+            "### 回答："
+        )
+    else:
+        prompt = (
+            "You are a Clinical Reasoning Assistant. Your goal is to provide accurate answers based ONLY on the provided Context.\n\n"
+            "### INSTRUCTIONS:\n"
+            "1. Analyze the Context carefully to find evidence for the Question.\n"
+            "2. If the Context contains the answer, follow the Output Format below.\n"
+            "3. If the Context does NOT contain enough information, state that the information is missing and do not invent facts.\n"
+            "4. Always cite your sources using [Doc n] notation.\n\n"
+            "### OUTPUT FORMAT:\n"
+            "- Reasoning: (Briefly describe your thought process and how you mapped the context to the answer)\n"
+            "- Conclusion: (A direct, concise answer to the question)\n"
+            "- Evidence: (Detailed supporting facts from the context, citing [Doc n])\n"
+            "- Uncertainty: (Any gaps in the provided context or potential ambiguities)\n\n"
+            f"### CONTEXT:\n{context_str}\n\n"
+            f"### QUESTION: {query}\n\n"
+            "### RESPONSE:"
+        )
     return prompt, citations

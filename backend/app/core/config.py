@@ -64,11 +64,9 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def validate_jwt_secret(self):
         if not self.JWT_SECRET:
-            print("FATAL: JWT_SECRET must be set. Exiting.", file=sys.stderr)
-            sys.exit(1)
+            raise ValueError("FATAL: JWT_SECRET 必须通过 .env 或环境变量显式设置")
         if not self.API_KEY_SALT:
-            print("FATAL: API_KEY_SALT must be set. Exiting.", file=sys.stderr)
-            sys.exit(1)
+            raise ValueError("FATAL: API_KEY_SALT 必须通过 .env 或环境变量显式设置")
         return self
 
 

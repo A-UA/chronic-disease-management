@@ -98,4 +98,28 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok"}
+    """增强版健康检查：检测 Redis、PostgreSQL 等核心依赖的可达性"""
+    from app.services.quota import get_redis_client
+    from app.db.session import AsyncSessionLocal
+    from sqlalchemy import text
+
+    checks = {"status": "ok", "redis": "ok", "database": "ok"}
+
+    # 检查 Redis
+    try:
+        redis = get_redis_client()
+        await redis.ping()
+    except Exception as e:
+        checks["redis"] = f"error: {type(e).__name__}"
+        checks["status"] = "degraded"
+
+    # 检查 PostgreSQL
+    try:
+        async with AsyncSessionLocal() as db:
+            await db.execute(text("SELECT 1"))
+    except Exception as e:
+        checks["database"] = f"error: {type(e).__name__}"
+        checks["status"] = "unhealthy"
+
+    status_code = 200 if checks["status"] == "ok" else 503
+    return SnowflakeJSONResponse(content=checks, status_code=status_code)

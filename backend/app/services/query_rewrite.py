@@ -92,10 +92,26 @@ def _expand_medical_terms(query: str) -> str:
 
 
 def rewrite_query(normalized_query: str) -> str:
-    """基于规则的查询改写 + 医疗术语扩展"""
+    """基于规则的查询改写 + 医疗术语扩展（支持模糊匹配）"""
     # 1. 精确匹配规则
-    rewritten = _REWRITE_RULES.get(normalized_query, normalized_query)
-    # 2. 医疗术语别名扩展
+    rewritten = _REWRITE_RULES.get(normalized_query)
+    if rewritten:
+        return _expand_medical_terms(rewritten)
+
+    # 2. 模糊匹配：检查查询是否包含规则表中的关键短语
+    best_match = None
+    best_match_len = 0
+    for pattern, replacement in _REWRITE_RULES.items():
+        if pattern in normalized_query and len(pattern) > best_match_len:
+            best_match = replacement
+            best_match_len = len(pattern)
+
+    if best_match:
+        rewritten = best_match
+    else:
+        rewritten = normalized_query
+
+    # 3. 医疗术语别名扩展
     rewritten = _expand_medical_terms(rewritten)
     return rewritten
 

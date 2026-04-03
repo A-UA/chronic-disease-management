@@ -2,6 +2,7 @@ import re
 import logging
 import tiktoken
 from dataclasses import dataclass
+from functools import lru_cache
 
 from sqlalchemy import func
 
@@ -31,21 +32,19 @@ MEDICAL_HEADING_RE = re.compile(
 _SENTENCE_BOUNDARY_RE = re.compile(r"(?<=[。！？；\n])\s*")
 
 
-def count_tokens(text: str, model_name: str = "gpt-4o") -> int:
-    """使用 tiktoken 精准计算 Token 数量"""
-    try:
-        encoding = tiktoken.encoding_for_model(model_name)
-    except KeyError:
-        encoding = tiktoken.get_encoding("cl100k_base")
-    return len(encoding.encode(text))
-
-
+@lru_cache(maxsize=16)
 def _get_encoding(model_name: str = "gpt-4o"):
-    """获取 tiktoken encoding 对象，用于复用"""
+    """获取 tiktoken encoding 对象，使用 lru_cache 缓存避免重复创建"""
     try:
         return tiktoken.encoding_for_model(model_name)
     except KeyError:
         return tiktoken.get_encoding("cl100k_base")
+
+
+def count_tokens(text: str, model_name: str = "gpt-4o") -> int:
+    """使用 tiktoken 精准计算 Token 数量（复用缓存的编码器）"""
+    encoding = _get_encoding(model_name)
+    return len(encoding.encode(text))
 
 
 @dataclass(slots=True)
@@ -339,8 +338,13 @@ async def process_document(
             else:
                 enhanced_contents = [cm.content for cm in chunk_metas]
 
-            # 向量化
-            embeddings = await embedding_provider.embed_documents(enhanced_contents)
+            # 向量化（分批处理，避免超出 API 限制）
+            EMBEDDING_BATCH_SIZE = 64
+            embeddings: list[list[float]] = []
+            for batch_start in range(0, len(enhanced_contents), EMBEDDING_BATCH_SIZE):
+                batch = enhanced_contents[batch_start:batch_start + EMBEDDING_BATCH_SIZE]
+                batch_embeddings = await embedding_provider.embed_documents(batch)
+                embeddings.extend(batch_embeddings)
 
             actual_dim = embedding_provider.get_dimension()
             if actual_dim:

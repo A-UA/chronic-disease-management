@@ -12,6 +12,7 @@ from app.api.deps import get_current_org, get_current_user, get_db, verify_quota
 from app.db.models import Conversation, KnowledgeBase, Message, UsageLog, User
 from app.schemas.admin import ConversationRead
 from app.services.chat import RetrievalFilters, build_rag_prompt, extract_statement_citations_structured, retrieve_chunks
+from app.services.conversation_context import build_retrieval_query_from_history
 from app.services.provider_registry import registry
 from app.services.quota import check_quota_during_stream, update_org_quota
 from app.services.rag_ingestion import count_tokens
@@ -28,6 +29,48 @@ class ChatRequest(BaseModel):
     document_ids: list[int] | None = None
     file_types: list[str] | None = None
     patient_id: int | None = None
+
+
+# --- 工具函数 ---
+
+def _generate_title(query: str, max_len: int = 50) -> str:
+    """生成对话标题：取第一个句号/问号截断，避免在词语中间断开"""
+    import re
+    # 先尝试按句子边界截取
+    match = re.search(r'[。？?!]', query)
+    if match and match.end() <= max_len:
+        return query[:match.end()]
+    # 如果查询本身就短，直接返回
+    if len(query) <= max_len:
+        return query
+    # 否则在最后一个空格或标点处截断
+    truncated = query[:max_len]
+    last_break = max(truncated.rfind(' '), truncated.rfind('。'), truncated.rfind('，'))
+    if last_break > max_len // 2:
+        return truncated[:last_break] + '...'
+    return truncated + '...'
+
+
+def _estimate_tokens_chinese(text: str) -> int:
+    """快速估算 Token 数（中文约 1.5 字/token），避免调用 tiktoken 的 CPU 开销"""
+    return max(1, int(len(text) / 1.5))
+
+
+def _load_history_by_token_budget(
+    messages: list[Message],
+    max_tokens: int = 2000,
+) -> list[dict[str, str]]:
+    """基于 Token 预算动态加载对话历史，而非固定条数截断"""
+    result = []
+    token_budget = 0
+    # messages 已按时间正序排列，从最近的往前取
+    for msg in reversed(messages):
+        msg_tokens = _estimate_tokens_chinese(msg.content)
+        if token_budget + msg_tokens > max_tokens:
+            break
+        result.append({"role": msg.role, "content": msg.content})
+        token_budget += msg_tokens
+    return list(reversed(result))
 
 
 @router.get("/conversations", response_model=list[ConversationRead])
@@ -85,25 +128,29 @@ async def chat_endpoint(
             kb_id=request.kb_id,
             org_id=org_id,
             user_id=current_user.id,
-            title=request.query[:50],
+            title=_generate_title(request.query),
         )
         db.add(conversation)
 
+    # 动态加载历史：基于 Token 预算而非固定条数
     history_stmt = (
         select(Message)
         .where(Message.conversation_id == request.conversation_id)
         .order_by(Message.created_at.desc())
-        .limit(10)
+        .limit(20)  # 取足够多的候选消息
     )
     history_res = await db.execute(history_stmt)
-    history_msgs = history_res.scalars().all()[::-1]
-    history_list = [{"role": m.role, "content": m.content} for m in history_msgs]
+    history_msgs = list(history_res.scalars().all())[::-1]
+    history_list = _load_history_by_token_budget(history_msgs, max_tokens=2000)
+
+    # 接入上下文增强服务：对追问型查询拼接历史上下文
+    enhanced_query = build_retrieval_query_from_history(request.query, history_list)
 
     llm_provider = registry.get_llm()
 
     chunks = await retrieve_chunks(
         db,
-        request.query,
+        enhanced_query,  # 使用上下文增强后的查询
         request.kb_id,
         org_id,
         user_id=current_user.id,
@@ -151,9 +198,8 @@ async def chat_endpoint(
                 async for chunk_text in llm_provider.stream_text(prompt):
                     full_response += chunk_text
                     
-                    # 优化：增量计算 token，避免 O(N^2)
-                    chunk_tokens = count_tokens(chunk_text, llm_provider.model_name)
-                    completion_tokens += chunk_tokens
+                    # 优化：使用字符数粗略估算而非每个 chunk 都调 tiktoken
+                    completion_tokens += _estimate_tokens_chinese(chunk_text)
                     
                     if not await check_quota_during_stream(org_id, prompt_tokens + completion_tokens, db=db_gen):
                         quota_exceeded = True
@@ -205,6 +251,9 @@ async def chat_endpoint(
                     },
                 )
                 db_gen.add(assistant_msg)
+
+                # 用精确的 tiktoken 重新计算最终 completion_tokens
+                completion_tokens = count_tokens(full_response, llm_provider.model_name) if full_response else 0
 
                 total_tokens = prompt_tokens + completion_tokens
                 usage = UsageLog(

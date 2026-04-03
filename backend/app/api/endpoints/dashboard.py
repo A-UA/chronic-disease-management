@@ -72,6 +72,16 @@ async def get_dashboard_stats(
     failed_docs = (await db.execute(failed_doc_stmt)).scalar() or 0
     tokens = (await db.execute(usage_stmt)).scalar() or 0
 
+    # 24 小时活跃用户（基于 UsageLog 去重统计）
+    since_24h = datetime.now(timezone.utc) - timedelta(hours=24)
+    active_stmt = select(func.count(func.distinct(UsageLog.user_id))).where(
+        UsageLog.created_at >= since_24h,
+        UsageLog.user_id.isnot(None),
+    )
+    if target_org_ids is not None:
+        active_stmt = active_stmt.where(UsageLog.org_id.in_(target_org_ids))
+    active_users = (await db.execute(active_stmt)).scalar() or 0
+
     # 2. Token 趋势统计
     since_7d = (datetime.now(timezone.utc) - timedelta(days=6)).date()
     trend_stmt = (
@@ -97,7 +107,7 @@ async def get_dashboard_stats(
     return DashboardStats(
         total_organizations=org_count,
         total_users=user_count,
-        active_users_24h=0, 
+        active_users_24h=active_users,
         total_patients=patient_count,
         total_conversations=conv_count,
         total_tokens_used=tokens,

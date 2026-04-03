@@ -7,6 +7,7 @@ from fastapi import (
     BackgroundTasks,
     Form,
 )
+import logging
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,6 +20,7 @@ from app.services.storage import get_storage_service
 from app.schemas.document import DocumentRead
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 MAX_UPLOAD_BYTES = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
 
@@ -48,13 +50,21 @@ async def upload_document(
             if patient_result.scalar_one_or_none() is None:
                 raise HTTPException(status_code=404, detail="Patient profile not found")
 
-        file_bytes = await file.read()
-
-        if len(file_bytes) > MAX_UPLOAD_BYTES:
-            raise HTTPException(
-                status_code=413,
-                detail=f"File size exceeds the maximum allowed size of {settings.MAX_UPLOAD_SIZE_MB}MB",
-            )
+        # 流式读取 + 分块校验大小，避免大文件导致 OOM
+        chunks = []
+        total_size = 0
+        while True:
+            chunk = await file.read(1024 * 1024)  # 每次读 1MB
+            if not chunk:
+                break
+            total_size += len(chunk)
+            if total_size > MAX_UPLOAD_BYTES:
+                raise HTTPException(
+                    status_code=413,
+                    detail=f"文件大小超过最大限制 {settings.MAX_UPLOAD_SIZE_MB}MB",
+                )
+            chunks.append(chunk)
+        file_bytes = b"".join(chunks)
 
         parsed = parse_document(file_bytes, file.filename, file.content_type)
 
@@ -93,7 +103,8 @@ async def upload_document(
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+        logger.exception("文档上传处理失败")
+        raise HTTPException(status_code=500, detail="文档上传处理失败，请稍后重试")
 
 @router.get("/kb/{kb_id}/documents", response_model=list[DocumentRead])
 async def list_documents(
@@ -136,17 +147,21 @@ async def get_document(
 @router.delete("/{document_id}", response_model=dict)
 async def delete_document(
     document_id: int,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     org_id: int = Depends(get_current_org),
     db: AsyncSession = Depends(get_db),
 ):
-    """删除文档（其包含的 Chunks 关联会自动清理）"""
+    """删除文档（其包含的 Chunks 关联会自动清理，MinIO 文件异步清理）"""
     doc = await db.get(Document, document_id)
     if doc is None or doc.org_id != org_id:
         raise HTTPException(status_code=404, detail="Document not found")
-        
-    # TODO: 异步清理 MinIO 中的文件 (doc.minio_url)
-    
+
+    # 异步清理 MinIO 中的文件
+    minio_url = doc.minio_url
+    if minio_url:
+        background_tasks.add_task(get_storage_service().delete_file, minio_url)
+
     stmt = delete(Document).where(Document.id == document_id)
     await db.execute(stmt)
     await db.commit()
