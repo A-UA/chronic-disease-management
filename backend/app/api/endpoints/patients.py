@@ -124,3 +124,70 @@ async def get_my_suggestions(
     )
     result = await db.execute(stmt)
     return result.scalars().all()
+
+
+# ── PatientProfile 管理员创建/删除 ──
+
+from pydantic import BaseModel as _BaseModel
+
+class PatientProfileAdminCreate(_BaseModel):
+    user_id: int
+    real_name: str
+    gender: str | None = None
+    birth_date: str | None = None
+    medical_history: dict | None = None
+
+
+@router.post("/create")
+async def admin_create_patient_profile(
+    data: PatientProfileAdminCreate,
+    org_id: int = Depends(get_current_org),
+    _permission=Depends(check_permission("patient:create")),
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """[管理视图] 为用户创建患者档案"""
+    from app.db.models import User as UserModel
+
+    # 校验用户存在
+    stmt = select(UserModel).where(UserModel.id == data.user_id)
+    result = await db.execute(stmt)
+    if not result.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # 校验不重复
+    existing = await _load_patient_profile(db, data.user_id, org_id)
+    if existing:
+        raise HTTPException(status_code=409, detail="Patient profile already exists")
+
+    profile = PatientProfile(
+        user_id=data.user_id,
+        org_id=org_id,
+        real_name=data.real_name,
+        gender=data.gender,
+        medical_history=data.medical_history,
+    )
+    db.add(profile)
+    await db.commit()
+    await db.refresh(profile)
+    return {
+        "id": profile.id, "user_id": profile.user_id, "org_id": profile.org_id,
+        "real_name": profile.real_name, "gender": profile.gender,
+    }
+
+
+@router.delete("/{patient_id}")
+async def delete_patient_profile(
+    patient_id: int,
+    org_id: int = Depends(get_current_org),
+    _permission=Depends(check_permission("patient:delete")),
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """[管理视图] 删除患者档案"""
+    patient = await db.get(PatientProfile, patient_id)
+    if not patient or patient.org_id != org_id:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    await db.delete(patient)
+    await db.commit()
+    return {"status": "ok"}
+

@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List, Optional
 from sqlalchemy.orm import selectinload
+from pydantic import BaseModel
 
 from app.api.deps import get_db, get_current_org, check_permission, check_org_admin
 from app.db.models import Role, Permission, Resource, Action, RoleConstraint, OrganizationUserRole, OrganizationUser
@@ -151,3 +152,73 @@ async def assign_user_roles(
     
     await db.commit()
     return {"status": "ok", "assigned_roles": [r.code for r in valid_roles]}
+
+
+# ── Role 更新/删除 ──
+
+class RoleUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    permission_ids: Optional[List[int]] = None
+
+
+@router.put("/roles/{role_id}")
+async def update_role(
+    role_id: int,
+    data: RoleUpdate,
+    org_id: int = Depends(get_current_org),
+    org_admin: OrganizationUser = Depends(check_org_admin()),
+    db: AsyncSession = Depends(get_db),
+):
+    """[管理员] 更新自定义角色"""
+    role = await db.get(Role, role_id)
+    if not role or role.org_id != org_id:
+        raise HTTPException(status_code=404, detail="Role not found")
+    if role.is_system:
+        raise HTTPException(status_code=403, detail="Cannot modify system roles")
+
+    if data.name is not None:
+        role.name = data.name
+    if data.description is not None:
+        role.description = data.description
+    if data.permission_ids is not None:
+        stmt = select(Permission).where(Permission.id.in_(data.permission_ids))
+        perms = (await db.execute(stmt)).scalars().all()
+        role.permissions = list(perms)
+
+    await db.commit()
+    await db.refresh(role, ["permissions"])
+    return {
+        "id": role.id, "name": role.name, "code": role.code,
+        "description": role.description, "is_system": role.is_system,
+    }
+
+
+@router.delete("/roles/{role_id}")
+async def delete_role(
+    role_id: int,
+    org_id: int = Depends(get_current_org),
+    org_admin: OrganizationUser = Depends(check_org_admin()),
+    db: AsyncSession = Depends(get_db),
+):
+    """[管理员] 删除自定义角色（检查绑定用户）"""
+    role = await db.get(Role, role_id)
+    if not role or role.org_id != org_id:
+        raise HTTPException(status_code=404, detail="Role not found")
+    if role.is_system:
+        raise HTTPException(status_code=403, detail="Cannot delete system roles")
+
+    # 检查是否有用户绑定该角色
+    bound_stmt = select(OrganizationUserRole).where(
+        OrganizationUserRole.role_id == role_id
+    )
+    bound = (await db.execute(bound_stmt)).scalars().first()
+    if bound:
+        raise HTTPException(
+            status_code=409,
+            detail="Role is still assigned to users. Unassign first."
+        )
+
+    await db.delete(role)
+    await db.commit()
+    return {"status": "ok"}

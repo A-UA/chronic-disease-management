@@ -187,3 +187,149 @@ async def unassign_patient(
     await db.commit()
     return {"status": "ok"}
 
+
+# ── ManagerProfile CRUD ──
+
+class ManagerProfileCreate(BaseModel):
+    user_id: int
+    title: str | None = None
+    bio: str | None = None
+
+
+class ManagerProfileUpdate(BaseModel):
+    title: str | None = None
+    bio: str | None = None
+    is_active: bool | None = None
+
+
+@router.post("/profiles")
+async def create_manager_profile(
+    data: ManagerProfileCreate,
+    org_id: int = Depends(get_current_org),
+    _permission=Depends(check_permission("org_member:manage")),
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """[管理视图] 创建管理师档案"""
+    # 校验用户存在
+    stmt = select(User).where(User.id == data.user_id)
+    result = await db.execute(stmt)
+    if not result.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # 校验不重复
+    stmt2 = select(ManagerProfile).where(
+        ManagerProfile.user_id == data.user_id,
+        ManagerProfile.org_id == org_id,
+    )
+    result2 = await db.execute(stmt2)
+    if result2.scalar_one_or_none():
+        raise HTTPException(status_code=409, detail="Manager profile already exists")
+
+    profile = ManagerProfile(
+        user_id=data.user_id,
+        org_id=org_id,
+        title=data.title,
+        bio=data.bio,
+    )
+    db.add(profile)
+    await db.commit()
+    await db.refresh(profile)
+    return {
+        "id": profile.id, "user_id": profile.user_id, "org_id": profile.org_id,
+        "title": profile.title, "bio": profile.bio, "is_active": profile.is_active,
+    }
+
+
+@router.put("/profiles/{profile_id}")
+async def update_manager_profile(
+    profile_id: int,
+    data: ManagerProfileUpdate,
+    org_id: int = Depends(get_current_org),
+    _permission=Depends(check_permission("org_member:manage")),
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """[管理视图] 更新管理师档案"""
+    profile = await db.get(ManagerProfile, profile_id)
+    if not profile or profile.org_id != org_id:
+        raise HTTPException(status_code=404, detail="Manager profile not found")
+
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(profile, field, value)
+    await db.commit()
+    await db.refresh(profile)
+    return {
+        "id": profile.id, "user_id": profile.user_id, "org_id": profile.org_id,
+        "title": profile.title, "bio": profile.bio, "is_active": profile.is_active,
+    }
+
+
+@router.delete("/profiles/{profile_id}")
+async def deactivate_manager_profile(
+    profile_id: int,
+    org_id: int = Depends(get_current_org),
+    _permission=Depends(check_permission("org_member:manage")),
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """[管理视图] 停用管理师档案（软删除）"""
+    profile = await db.get(ManagerProfile, profile_id)
+    if not profile or profile.org_id != org_id:
+        raise HTTPException(status_code=404, detail="Manager profile not found")
+
+    profile.is_active = False
+    await db.commit()
+    return {"status": "ok"}
+
+
+# ── ManagementSuggestion 更新/删除 ──
+
+class SuggestionUpdate(BaseModel):
+    content: str | None = None
+    suggestion_type: str | None = None
+
+
+@router.put("/suggestions/{suggestion_id}")
+async def update_suggestion(
+    suggestion_id: int,
+    data: SuggestionUpdate,
+    current_user: User = Depends(get_current_user),
+    org_id: int = Depends(get_current_org),
+    _ = Depends(check_permission("suggestion:create")),
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """[管理师视图] 修改自己发出的管理建议"""
+    suggestion = await db.get(ManagementSuggestion, suggestion_id)
+    if not suggestion or suggestion.org_id != org_id:
+        raise HTTPException(status_code=404, detail="Suggestion not found")
+    if suggestion.manager_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Can only edit your own suggestions")
+
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(suggestion, field, value)
+    await db.commit()
+    await db.refresh(suggestion)
+    return {
+        "id": suggestion.id, "manager_id": suggestion.manager_id,
+        "patient_id": suggestion.patient_id, "content": suggestion.content,
+        "suggestion_type": suggestion.suggestion_type,
+    }
+
+
+@router.delete("/suggestions/{suggestion_id}")
+async def delete_suggestion(
+    suggestion_id: int,
+    current_user: User = Depends(get_current_user),
+    org_id: int = Depends(get_current_org),
+    _ = Depends(check_permission("suggestion:create")),
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """[管理师视图] 撤回自己的管理建议"""
+    suggestion = await db.get(ManagementSuggestion, suggestion_id)
+    if not suggestion or suggestion.org_id != org_id:
+        raise HTTPException(status_code=404, detail="Suggestion not found")
+    if suggestion.manager_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Can only delete your own suggestions")
+
+    await db.delete(suggestion)
+    await db.commit()
+    return {"status": "ok"}
+

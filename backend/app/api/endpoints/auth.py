@@ -195,6 +195,26 @@ async def update_password(
     return {"message": "Password updated successfully"}
 
 
+# ── 用户信息编辑 ──
+
+class UserProfileUpdate(BaseModel):
+    name: str | None = None
+
+
+@router.put("/me/profile")
+async def update_my_profile(
+    data: UserProfileUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """修改当前用户基本信息（姓名等）"""
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(current_user, field, value)
+    await db.commit()
+    return {"status": "ok", "name": current_user.name}
+
+
+
 # ── 密码重置 ──
 
 class ForgotPasswordRequest(BaseModel):

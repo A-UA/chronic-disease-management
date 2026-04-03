@@ -80,6 +80,30 @@ async def delete_knowledge_base(
     return {"status": "ok"}
 
 
+class KBUpdate(BaseModel):
+    name: str | None = None
+    description: str | None = None
+
+
+@router.put("/{kb_id}")
+async def update_knowledge_base(
+    kb_id: int,
+    data: KBUpdate,
+    org_id: int = Depends(get_current_org),
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """更新知识库名称和描述"""
+    kb = await db.get(KnowledgeBase, kb_id)
+    if not kb or kb.org_id != org_id:
+        raise HTTPException(status_code=404, detail="Knowledge base not found")
+
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(kb, field, value)
+    await db.commit()
+    await db.refresh(kb)
+    return kb
+
+
 @router.get("/{kb_id}/stats")
 async def get_knowledge_base_stats(
     kb_id: int,

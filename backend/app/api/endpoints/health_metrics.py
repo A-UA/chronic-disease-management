@@ -163,3 +163,34 @@ async def delete_health_metric(
     await db.delete(metric)
     await db.commit()
     return {"status": "ok"}
+
+
+# ── 更新健康指标 ──
+
+class HealthMetricUpdate(BaseModel):
+    value: float | None = None
+    value_secondary: float | None = None
+    unit: str | None = None
+    note: str | None = None
+
+
+@router.put("/{metric_id}")
+async def update_health_metric(
+    metric_id: int,
+    data: HealthMetricUpdate,
+    current_user: User = Depends(get_current_user),
+    org_id: int = Depends(get_current_org),
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """修正健康指标记录（仅限本人录入）"""
+    metric = await db.get(HealthMetric, metric_id)
+    if not metric or metric.org_id != org_id:
+        raise HTTPException(status_code=404, detail="Metric not found")
+    if metric.recorded_by != current_user.id:
+        raise HTTPException(status_code=403, detail="Can only edit your own records")
+
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(metric, field, value)
+    await db.commit()
+    return {"status": "ok", "id": metric.id}
+
