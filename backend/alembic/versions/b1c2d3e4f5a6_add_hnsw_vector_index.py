@@ -29,7 +29,7 @@ def upgrade() -> None:
     - vector_cosine_ops: 使用余弦距离（与检索代码中 cosine_distance 一致）
     """
     op.execute("""
-        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_chunks_embedding_hnsw
+        CREATE INDEX IF NOT EXISTS idx_chunks_embedding_hnsw
         ON chunks
         USING hnsw (embedding vector_cosine_ops)
         WITH (m = 16, ef_construction = 64);
