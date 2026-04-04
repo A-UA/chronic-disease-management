@@ -10,14 +10,17 @@ from .base import Base, IDMixin, TimestampMixin
 class HealthMetric(Base, IDMixin, TimestampMixin):
     __tablename__ = "health_metrics"
 
+    tenant_id: Mapped[int] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE"), index=True,
+    )
     patient_id: Mapped[int] = mapped_column(
-        ForeignKey("patient_profiles.id", ondelete="CASCADE"), index=True
+        ForeignKey("patient_profiles.id", ondelete="CASCADE"), index=True,
     )
     org_id: Mapped[int] = mapped_column(
-        ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True,
     )
     recorded_by: Mapped[int] = mapped_column(
-        ForeignKey("users.id"), index=True
+        ForeignKey("users.id"), index=True,
     )
 
     # 指标类型：blood_pressure, blood_sugar, weight, heart_rate, bmi, spo2
@@ -35,4 +38,5 @@ class HealthMetric(Base, IDMixin, TimestampMixin):
 
     __table_args__ = (
         Index("idx_patient_metric_time", "patient_id", "metric_type", "measured_at"),
+        Index("idx_health_metrics_tenant_org", "tenant_id", "org_id", "patient_id"),
     )

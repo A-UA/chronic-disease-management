@@ -5,7 +5,7 @@ from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 from pydantic import BaseModel, ConfigDict
 
-from app.api.deps import get_db, get_current_user, get_current_org, check_permission
+from app.api.deps import get_db, get_current_user, get_current_org, get_current_tenant_id, check_permission
 from app.db.models import (
     User, 
     PatientProfile, 
@@ -102,6 +102,7 @@ async def get_my_assigned_patients(
 @router.post("/assignments")
 async def create_assignment(
     data: AssignmentCreate,
+    tenant_id: int = Depends(get_current_tenant_id),
     org_id: int = Depends(get_current_org),
     _permission=Depends(check_permission("org_member:manage")),
     db: AsyncSession = Depends(get_db),
@@ -111,7 +112,7 @@ async def create_assignment(
     stmt = (
         insert(PatientManagerAssignment)
         .values(
-            org_id=org_id, manager_id=data.manager_id, 
+            tenant_id=tenant_id, org_id=org_id, manager_id=data.manager_id, 
             patient_id=data.patient_id, assignment_role=data.assignment_role
         )
         .on_conflict_do_update(
@@ -128,6 +129,7 @@ async def create_patient_suggestion(
     patient_id: int,
     suggest_in: SuggestionCreate,
     current_user: User = Depends(get_current_user),
+    tenant_id: int = Depends(get_current_tenant_id),
     org_id: int = Depends(get_current_org),
     _ = Depends(check_permission("suggestion:create")),
     db: AsyncSession = Depends(get_db)
@@ -143,7 +145,7 @@ async def create_patient_suggestion(
         raise HTTPException(status_code=403, detail="Not assigned to this patient")
 
     suggestion = ManagementSuggestion(
-        org_id=org_id, manager_id=current_user.id,
+        tenant_id=tenant_id, org_id=org_id, manager_id=current_user.id,
         patient_id=patient_id, content=suggest_in.content,
         suggestion_type=suggest_in.suggestion_type
     )
@@ -205,6 +207,7 @@ class ManagerProfileUpdate(BaseModel):
 @router.post("/profiles")
 async def create_manager_profile(
     data: ManagerProfileCreate,
+    tenant_id: int = Depends(get_current_tenant_id),
     org_id: int = Depends(get_current_org),
     _permission=Depends(check_permission("org_member:manage")),
     db: AsyncSession = Depends(get_db),
@@ -227,6 +230,7 @@ async def create_manager_profile(
 
     profile = ManagerProfile(
         user_id=data.user_id,
+        tenant_id=tenant_id,
         org_id=org_id,
         title=data.title,
         bio=data.bio,

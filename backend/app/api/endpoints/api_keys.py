@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_org, get_current_active_user, get_db, check_permission
+from app.api.deps import get_current_org, get_current_active_user, get_current_tenant_id, get_db, check_permission
 from app.core.config import settings
 from app.db.models import ApiKey, User
 from app.schemas.api_key import ApiKeyCreate, ApiKeyUpdate, ApiKeyRead, ApiKeyCreateResponse
@@ -17,6 +17,7 @@ router = APIRouter()
 @router.post("", response_model=ApiKeyCreateResponse)
 async def create_api_key(
     data: ApiKeyCreate,
+    tenant_id: int = Depends(get_current_tenant_id),
     org_id: int = Depends(get_current_org),
     current_user: User = Depends(get_current_active_user),
     _org_member=Depends(check_permission("org:manage")),
@@ -32,6 +33,7 @@ async def create_api_key(
     qps_limit = data.qps_limit if data.qps_limit is not None else 10
 
     api_key = ApiKey(
+        tenant_id=tenant_id,
         org_id=org_id,
         created_by=current_user.id,
         name=data.name,

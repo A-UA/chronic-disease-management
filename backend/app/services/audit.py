@@ -10,7 +10,8 @@ async def audit_action(
     resource_type: str,
     resource_id: int | None = None,
     details: str | None = None,
-    ip_address: str | None = None
+    ip_address: str | None = None,
+    tenant_id: int | None = None,
 ) -> None:
     """
     Log an action for auditing and compliance.
@@ -18,6 +19,7 @@ async def audit_action(
     to avoid blocking the main request.
     """
     log = AuditLog(
+        tenant_id=tenant_id,
         user_id=user_id,
         org_id=org_id,
         action=action,

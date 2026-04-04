@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.api.deps import get_current_org, get_current_user, get_db, check_permission
+from app.api.deps import get_current_org, get_current_user, get_current_tenant_id, get_db, check_permission
 from app.db.models import User, PatientProfile
 from app.schemas.patient import PatientProfileRead, PatientProfileUpdate
 
@@ -25,6 +25,7 @@ async def list_patients(
     skip: int = 0,
     limit: int = 50,
     search: Optional[str] = None,
+    tenant_id: int = Depends(get_current_tenant_id),
     org_id: int = Depends(get_current_org),
     _permission=Depends(check_permission("patient:read")),
     db: AsyncSession = Depends(get_db),
@@ -40,6 +41,7 @@ async def list_patients(
 @router.get("/me", response_model=PatientProfileRead)
 async def get_my_patient_profile(
     current_user: User = Depends(get_current_user),
+    tenant_id: int = Depends(get_current_tenant_id),
     org_id: int = Depends(get_current_org),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
@@ -66,13 +68,14 @@ async def get_patient_detail(
 async def update_my_patient_profile(
     profile_in: PatientProfileUpdate,
     current_user: User = Depends(get_current_user),
+    tenant_id: int = Depends(get_current_tenant_id),
     org_id: int = Depends(get_current_org),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     """[个人视图] 更新当前用户自己的患者档案"""
     profile = await _load_patient_profile(db, current_user.id, org_id)
     if not profile:
-        profile = PatientProfile(user_id=current_user.id, org_id=org_id, real_name="Unnamed")
+        profile = PatientProfile(user_id=current_user.id, tenant_id=tenant_id, org_id=org_id, real_name="Unnamed")
         db.add(profile)
     
     for field, value in profile_in.model_dump(exclude_unset=True).items():
@@ -141,6 +144,7 @@ class PatientProfileAdminCreate(_BaseModel):
 @router.post("/create")
 async def admin_create_patient_profile(
     data: PatientProfileAdminCreate,
+    tenant_id: int = Depends(get_current_tenant_id),
     org_id: int = Depends(get_current_org),
     _permission=Depends(check_permission("patient:create")),
     db: AsyncSession = Depends(get_db),
@@ -161,6 +165,7 @@ async def admin_create_patient_profile(
 
     profile = PatientProfile(
         user_id=data.user_id,
+        tenant_id=tenant_id,
         org_id=org_id,
         real_name=data.real_name,
         gender=data.gender,

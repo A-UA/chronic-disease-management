@@ -51,14 +51,14 @@ class RBACService:
         return {row[0] for row in result.fetchall()}
 
     @staticmethod
-    async def check_ssd_violation(db: AsyncSession, org_id: Optional[int], role_ids: List[int]) -> Optional[str]:
+    async def check_ssd_violation(db: AsyncSession, tenant_id: Optional[int], role_ids: List[int]) -> Optional[str]:
         """
         检查静态责任分离 (SSD) 冲突
         如果存在冲突，返回冲突描述字符串，否则返回 None
         """
         stmt = select(RoleConstraint).where(
             RoleConstraint.constraint_type == "SSD",
-            (RoleConstraint.org_id == org_id) | (RoleConstraint.org_id.is_(None))
+            (RoleConstraint.tenant_id == tenant_id) | (RoleConstraint.tenant_id.is_(None))
         )
         result = await db.execute(stmt)
         constraints = result.scalars().all()

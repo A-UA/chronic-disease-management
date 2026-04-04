@@ -130,9 +130,19 @@ SUPER_ADMIN = {
     "name": "系统超管",
 }
 
-DEFAULT_ORG = {
-    "name": "默认组织",
+DEFAULT_TENANT = {
+    "name": "默认租户",
+    "slug": "default",
     "plan_type": "enterprise",
+    "status": "active",
+    "quota_tokens_limit": 1000000,
+}
+
+DEFAULT_ORG = {
+    "name": "默认部门",
+    "code": "DEFAULT",
+    "status": "active",
+    "sort": 0,
 }
 
 
@@ -194,7 +204,7 @@ async def seed_rbac(db):
     role_objs = {}
     for r_code, r_name, r_desc, p_codes, _ in ROLES:
         stmt = (select(Role)
-                .where(Role.code == r_code, Role.org_id == None)
+                .where(Role.code == r_code, Role.tenant_id == None)
                 .options(selectinload(Role.permissions)))
         role = (await db.execute(stmt)).scalar_one_or_none()
         perms = [permission_objs[c] for c in p_codes]
@@ -251,9 +261,10 @@ async def seed_menus(db):
 
 
 async def seed_super_admin(db, role_objs: dict):
-    """预制超管账号：默认组织 + 超管用户 + owner 角色"""
+    """预制超管账号：默认租户 → 默认部门 → 超管用户 → owner 角色"""
     from app.core.security import get_password_hash
     from app.db.models.user import User
+    from app.db.models.tenant import Tenant
     from app.db.models.organization import (
         Organization, OrganizationUser, OrganizationUserRole,
     )
@@ -266,13 +277,19 @@ async def seed_super_admin(db, role_objs: dict):
         print(f"  [SKIP] {SUPER_ADMIN['email']} already exists")
         return
 
-    # 创建默认组织
-    org = Organization(**DEFAULT_ORG)
+    # 1. 创建默认租户
+    tenant = Tenant(**DEFAULT_TENANT)
+    db.add(tenant)
+    await db.flush()
+    print(f"  + Tenant: {tenant.name} (id={tenant.id})")
+
+    # 2. 创建默认部门
+    org = Organization(tenant_id=tenant.id, **DEFAULT_ORG)
     db.add(org)
     await db.flush()
     print(f"  + Org: {org.name} (id={org.id})")
 
-    # 创建超管用户
+    # 3. 创建超管用户
     user = User(
         email=SUPER_ADMIN["email"],
         password_hash=get_password_hash(SUPER_ADMIN["password"]),
@@ -282,15 +299,20 @@ async def seed_super_admin(db, role_objs: dict):
     await db.flush()
     print(f"  + User: {user.email} (id={user.id})")
 
-    # 关联到组织
-    org_user = OrganizationUser(org_id=org.id, user_id=user.id, user_type="staff")
+    # 4. 关联到部门
+    org_user = OrganizationUser(
+        tenant_id=tenant.id, org_id=org.id, user_id=user.id, user_type="staff",
+    )
     db.add(org_user)
     await db.flush()
 
-    # 分配 owner 角色
+    # 5. 分配 owner 角色
     owner_role = role_objs.get("owner")
     if owner_role:
-        db.add(OrganizationUserRole(org_id=org.id, user_id=user.id, role_id=owner_role.id))
+        db.add(OrganizationUserRole(
+            tenant_id=tenant.id, org_id=org.id,
+            user_id=user.id, role_id=owner_role.id,
+        ))
         print(f"  + Role: owner → {user.email}")
     else:
         print("  [WARN] owner role not found")

@@ -9,7 +9,7 @@ from app.db.models import ApiKey, UsageLog
 from app.services.provider_registry import registry
 from app.services.chat import retrieve_chunks, build_rag_prompt
 from app.services.rag_ingestion import count_tokens
-from app.services.quota import update_org_quota
+from app.services.quota import update_tenant_quota
 
 router = APIRouter()
 
@@ -45,6 +45,7 @@ async def external_chat_completions(
 
     # 记录用量日志
     usage = UsageLog(
+        tenant_id=api_key.tenant_id,
         org_id=api_key.org_id,
         api_key_id=api_key.id,
         model=llm_provider.model_name,
@@ -55,7 +56,7 @@ async def external_chat_completions(
     db.add(usage)
 
     # 扣减组织配额
-    await update_org_quota(db, api_key.org_id, total_tokens)
+    await update_tenant_quota(db, api_key.tenant_id, total_tokens)
 
     # 更新 API Key 自身的 token 消耗累计
     stmt = (

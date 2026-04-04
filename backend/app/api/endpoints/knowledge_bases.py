@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.api.deps import get_db, get_current_user, get_current_org
+from app.api.deps import get_db, get_current_user, get_current_org, get_current_tenant_id
 from app.db.models import User, KnowledgeBase
 from pydantic import BaseModel, ConfigDict
 
@@ -30,11 +30,13 @@ class KBRead(BaseModel):
 async def create_knowledge_base(
     kb_in: KBCreate,
     current_user: User = Depends(get_current_user),
+    tenant_id: int = Depends(get_current_tenant_id),
     org_id: int = Depends(get_current_org),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     # 逻辑已经在 get_current_org 中校验了权限和 RLS
     kb = KnowledgeBase(
+        tenant_id=tenant_id,
         org_id=org_id,
         created_by=current_user.id,
         name=kb_in.name,

@@ -1,21 +1,25 @@
+"""依赖注入：认证 → 租户上下文 → 部门上下文 → 权限校验"""
+
 import json
 import logging
-from fastapi import Depends, HTTPException, status, Header
+from datetime import datetime, timezone
+
+from fastapi import Depends, HTTPException, Header, Request, status
 from fastapi.security import OAuth2PasswordBearer
-import jwt
-from pydantic import ValidationError
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, text
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+import jwt
+import hashlib
+import hmac
 
 from app.core.config import settings
 from app.core.security import ALGORITHM
 from app.db.session import get_db
-from sqlalchemy.orm import selectinload
-from app.db.models import User, OrganizationUser, Organization, ApiKey, Role, Permission
+from app.db.models import (
+    User, Organization, OrganizationUser, ApiKey, Role, Permission, Tenant,
+)
 from app.services.rbac import RBACService
-from app.services.quota import check_org_quota, check_api_key_rate_limit, get_redis_client
-import hashlib
-import hmac
 
 logger = logging.getLogger(__name__)
 
@@ -24,27 +28,35 @@ oauth2_scheme = OAuth2PasswordBearer(
 )
 
 
+# ── 第 1 层：用户认证 ──
+
 async def get_current_user(
-    db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme)
+    db: AsyncSession = Depends(get_db),
+    token: str = Depends(oauth2_scheme),
 ) -> User:
+    """从 JWT 解析用户身份"""
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
     try:
         payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[ALGORITHM])
-        user_id = payload.get("sub")
+        user_id: str = payload.get("sub")
         if user_id is None:
-            raise HTTPException(status_code=401, detail="Invalid token")
-    except (jwt.PyJWTError, ValidationError):
-        raise HTTPException(status_code=401, detail="Could not validate credentials")
+            raise credentials_exception
+    except jwt.PyJWTError:
+        raise credentials_exception
 
     user = await db.get(User, int(user_id))
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+    if user is None:
+        raise credentials_exception
 
-    # Inject User ID for RLS (e.g. for cross-org family access)
+    # 注入 user_id 供 RLS 家属穿透使用
     await db.execute(
-        text("SELECT set_config('app.current_user_id', :user_id, true)"),
-        {"user_id": str(user.id)},
+        text("SELECT set_config('app.current_user_id', :uid, true)"),
+        {"uid": str(user.id)},
     )
-
     return user
 
 
@@ -56,128 +68,137 @@ async def get_current_active_user(
     return current_user
 
 
+# ── 第 2 层：租户上下文（从 JWT 读取，零查询） ──
+
+async def get_current_tenant_id(
+    token: str = Depends(oauth2_scheme),
+) -> int:
+    """从 JWT payload 直接读取 tenant_id"""
+    try:
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[ALGORITHM])
+        tenant_id = payload.get("tenant_id")
+        if tenant_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Token does not contain tenant context. Please select a tenant.",
+            )
+        return int(tenant_id)
+    except jwt.PyJWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+        )
+
+
+# ── 第 3 层：RLS 上下文注入 ──
+
+async def inject_rls_context(
+    tenant_id: int = Depends(get_current_tenant_id),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> int:
+    """将 tenant_id 和 user_id 注入 PostgreSQL 会话变量，用于 RLS"""
+    await db.execute(
+        text("SELECT set_config('app.current_tenant_id', :tid, true)"),
+        {"tid": str(tenant_id)},
+    )
+    # user_id 已在 get_current_user 中注入
+    return tenant_id
+
+
+# ── 第 4 层：部门上下文（从 Header 读取，可选） ──
+
 async def get_current_org_user(
-    x_organization_id: str | None = Header(None),
+    request: Request,
+    tenant_id: int = Depends(inject_rls_context),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> OrganizationUser:
-    """
-    获取当前用户在当前组织上下文中的身份。
-    支持租户超管穿透：如果用户是根组织的管理员，可以访问其所有子组织。
-    """
+    """从 X-Organization-ID 请求头获取部门上下文，支持管理员穿透"""
+    org_id_header = request.headers.get("X-Organization-ID")
     requested_org_id: int | None = None
-    if x_organization_id:
+
+    if org_id_header:
         try:
-            requested_org_id = int(x_organization_id)
+            requested_org_id = int(org_id_header)
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid Organization ID")
 
-    # 1. 尝试直接获取该用户在该组织的显式身份
+    if requested_org_id is None:
+        # 未指定部门 → 取用户在该租户下的第一个部门
+        stmt = (
+            select(OrganizationUser)
+            .where(
+                OrganizationUser.tenant_id == tenant_id,
+                OrganizationUser.user_id == current_user.id,
+            )
+            .options(
+                selectinload(OrganizationUser.rbac_roles).selectinload(Role.permissions)
+            )
+            .limit(1)
+        )
+        result = await db.execute(stmt)
+        org_user = result.scalar_one_or_none()
+        if not org_user:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User is not a member of any organization in this tenant",
+            )
+        return org_user
+
+    # 有指定部门 → 校验归属
+    org = await db.get(Organization, requested_org_id)
+    if not org or org.tenant_id != tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Organization does not belong to current tenant",
+        )
+
+    # 尝试直接获取用户在该部门的身份
     stmt = (
         select(OrganizationUser)
+        .where(
+            OrganizationUser.org_id == requested_org_id,
+            OrganizationUser.user_id == current_user.id,
+        )
         .options(
             selectinload(OrganizationUser.rbac_roles).selectinload(Role.permissions)
         )
-        .where(
-            OrganizationUser.user_id == current_user.id,
-        )
     )
-    if requested_org_id:
-        stmt = stmt.where(OrganizationUser.org_id == requested_org_id)
-    else:
-        # 如果没传，默认取第一个组织
-        stmt = stmt.limit(1)
-    
     result = await db.execute(stmt)
     org_user = result.scalar_one_or_none()
 
-    # 2. 如果没有显式身份，且传了 org_id，检查是否是租户超管穿透
-    if not org_user and requested_org_id:
-        # 查找用户所属的所有根组织且拥有 admin/owner 权限
-        all_stmt = select(OrganizationUser).options(
-            selectinload(OrganizationUser.rbac_roles)
-        ).where(OrganizationUser.user_id == current_user.id)
-        all_result = await db.execute(all_stmt)
-        user_orgs = all_result.scalars().all()
+    if org_user:
+        return org_user
 
-        root_org_admin_ids = []
-        for ou in user_orgs:
-            if any(r.code in ["owner", "admin"] for r in ou.rbac_roles):
-                root_org_admin_ids.append(ou.org_id)
-        
-        if root_org_admin_ids:
-            # 检查请求的 org_id 是否在这些管理组织的子树中
-            # 引入 Redis 缓存以提高性能
-            redis = get_redis_client()
-            is_valid_child = False
-            root_id_of_access = None
-
-            for root_id in root_org_admin_ids:
-                cache_key = f"org:tree:{root_id}"
-                try:
-                    cached_data = await redis.get(cache_key)
-                    if cached_data:
-                        tree_ids = set(json.loads(cached_data))
-                    else:
-                        # 缓存缺失，执行递归查询并填充
-                        tree_stmt = text("""
-                            WITH RECURSIVE org_tree AS (
-                                SELECT id FROM organizations WHERE id = :root_id
-                                UNION ALL
-                                SELECT o.id FROM organizations o INNER JOIN org_tree ot ON o.parent_id = ot.id
-                            )
-                            SELECT id FROM org_tree
-                        """)
-                        tree_res = await db.execute(tree_stmt, {"root_id": root_id})
-                        tree_ids = {row[0] for row in tree_res.fetchall()}
-                        await redis.set(cache_key, json.dumps(list(tree_ids)), ex=3600)
-                    
-                    if requested_org_id in tree_ids:
-                        is_valid_child = True
-                        root_id_of_access = root_id
-                        break
-                except Exception as e:
-                    logger.warning(f"Redis cache access failed in get_current_org_user: {e}")
-                    # 回退到直接数据库检查
-                    check_stmt = text("""
-                        WITH RECURSIVE org_tree AS (
-                            SELECT id FROM organizations WHERE id = :root_id
-                            UNION ALL
-                            SELECT o.id FROM organizations o INNER JOIN org_tree ot ON o.parent_id = ot.id
-                        )
-                        SELECT 1 FROM org_tree WHERE id = :target_id LIMIT 1
-                    """)
-                    if (await db.execute(check_stmt, {"root_id": root_id, "target_id": requested_org_id})).scalar():
-                        is_valid_child = True
-                        root_id_of_access = root_id
-                        break
-            
-            if is_valid_child:
-                # 是子组织！找到用户在哪个根组织下拥有的权限
-                root_ou = next(ou for ou in user_orgs if ou.org_id == root_id_of_access)
-                
-                # 构造一个临时的 OrganizationUser 对象
-                roles_copy = [role for role in root_ou.rbac_roles]
-                
-                org_user = OrganizationUser(
-                    org_id=requested_org_id,
-                    user_id=current_user.id,
-                    user_type=root_ou.user_type,
-                    rbac_roles=roles_copy
-                )
-
-    if not org_user:
-        raise HTTPException(
-            status_code=403, detail="Not enough permissions or no organization context"
+    # 不是直接成员 → 检查是否是租户管理员（穿透访问）
+    stmt_admin = (
+        select(OrganizationUser)
+        .where(
+            OrganizationUser.tenant_id == tenant_id,
+            OrganizationUser.user_id == current_user.id,
         )
-
-    # 3. 注入 RLS 上下文
-    await db.execute(
-        text("SELECT set_config('app.current_org_id', :org_id, true)"),
-        {"org_id": str(org_user.org_id)},
+        .options(selectinload(OrganizationUser.rbac_roles))
     )
+    result_admin = await db.execute(stmt_admin)
+    admin_org_users = result_admin.scalars().all()
 
-    return org_user
+    for ou in admin_org_users:
+        role_codes = {r.code for r in ou.rbac_roles}
+        if role_codes & {"admin", "owner"}:
+            # 构造临时 OrganizationUser 实现穿透
+            return OrganizationUser(
+                tenant_id=tenant_id,
+                org_id=requested_org_id,
+                user_id=current_user.id,
+                user_type=ou.user_type,
+                rbac_roles=list(ou.rbac_roles),
+            )
+
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Not a member of this organization",
+    )
 
 
 async def get_current_org(
@@ -186,21 +207,25 @@ async def get_current_org(
     return org_user.org_id
 
 
+# ── 权限校验 ──
+
 def check_permission(perm_code: str):
+    """RBAC 权限校验依赖"""
+
     async def permission_dependency(
         db: AsyncSession = Depends(get_db),
         org_user: OrganizationUser = Depends(get_current_org_user),
     ) -> OrganizationUser:
-        # 1. Functional RBAC is only for staff
         if org_user.user_type != "staff":
             raise HTTPException(status_code=403, detail="Access denied. Staff only.")
 
-        # 2. Advanced RBAC check (Hierarchical)
         if not org_user.rbac_roles:
             raise HTTPException(status_code=403, detail="No roles assigned to user")
 
         role_ids = [r.id for r in org_user.rbac_roles]
-        effective_permissions = await RBACService.get_effective_permissions(db, role_ids)
+        effective_permissions = await RBACService.get_effective_permissions(
+            db, role_ids
+        )
 
         if perm_code not in effective_permissions:
             raise HTTPException(
@@ -212,14 +237,22 @@ def check_permission(perm_code: str):
     return permission_dependency
 
 
-async def verify_quota(
-    org_id: int = Depends(get_current_org), db: AsyncSession = Depends(get_db)
-) -> Organization:
-    return await check_org_quota(db, org_id)
+# ── 配额校验 ──
 
+async def verify_quota(
+    tenant_id: int = Depends(get_current_tenant_id),
+    db: AsyncSession = Depends(get_db),
+) -> Tenant:
+    """校验租户级配额"""
+    from app.services.quota import check_tenant_quota
+    return await check_tenant_quota(db, tenant_id)
+
+
+# ── API Key 认证 ──
 
 async def get_api_key_context(
-    authorization: str = Header(...), db: AsyncSession = Depends(get_db)
+    authorization: str = Header(...),
+    db: AsyncSession = Depends(get_db),
 ) -> ApiKey:
     if not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Invalid Authorization header")
@@ -238,30 +271,32 @@ async def get_api_key_context(
     if not api_key:
         raise HTTPException(status_code=401, detail="Invalid API Key")
 
-    # 过期校验
     if api_key.expires_at is not None:
-        from datetime import datetime, timezone
         if api_key.expires_at < datetime.now(timezone.utc):
             raise HTTPException(status_code=401, detail="API Key has expired")
 
     # Rate Limiting
+    from app.services.quota import check_api_key_rate_limit
     await check_api_key_rate_limit(api_key.id, api_key.qps_limit)
 
-    # Verify Quota (org level)
-    await check_org_quota(db, api_key.org_id)
+    # Tenant quota
+    from app.services.quota import check_tenant_quota
+    await check_tenant_quota(db, api_key.tenant_id)
 
-    # Key level quota if exists
+    # Key level quota
     if api_key.token_quota is not None and api_key.token_used >= api_key.token_quota:
         raise HTTPException(status_code=402, detail="API Key token quota exceeded")
 
     # RLS
     await db.execute(
-        text("SELECT set_config('app.current_org_id', :org_id, true)"),
-        {"org_id": str(api_key.org_id)},
+        text("SELECT set_config('app.current_tenant_id', :tid, true)"),
+        {"tid": str(api_key.tenant_id)},
     )
 
     return api_key
 
+
+# ── 平台管理员 ──
 
 async def get_platform_admin(
     current_user: User = Depends(get_current_user),
@@ -276,7 +311,7 @@ async def get_platform_admin(
         .where(
             OrganizationUserRole.user_id == current_user.id,
             Role.code == "platform_admin",
-            Role.org_id.is_(None),
+            Role.tenant_id.is_(None),
         )
     )
     result = await db.execute(stmt)
@@ -298,7 +333,7 @@ async def get_platform_viewer(
         .where(
             OrganizationUserRole.user_id == current_user.id,
             Role.code.in_(["platform_admin", "platform_viewer"]),
-            Role.org_id.is_(None),
+            Role.tenant_id.is_(None),
         )
     )
     result = await db.execute(stmt)
@@ -319,11 +354,9 @@ def check_org_admin():
         if not org_user.rbac_roles:
             raise HTTPException(status_code=403, detail="No roles assigned to user")
 
-        # Resolve all inherited roles
         role_ids = [r.id for r in org_user.rbac_roles]
         all_role_ids = await RBACService.get_all_role_ids(db, role_ids)
 
-        # Get all role codes (direct + inherited)
         stmt = select(Role.code).where(Role.id.in_(list(all_role_ids)))
         result = await db.execute(stmt)
         all_role_codes = {row[0] for row in result.fetchall()}

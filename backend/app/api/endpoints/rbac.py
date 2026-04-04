@@ -5,7 +5,7 @@ from typing import List, Optional
 from sqlalchemy.orm import selectinload
 from pydantic import BaseModel
 
-from app.api.deps import get_db, get_current_org, check_permission, check_org_admin
+from app.api.deps import get_db, get_current_org, get_current_tenant_id, check_permission, check_org_admin
 from app.db.models import Role, Permission, Resource, Action, RoleConstraint, OrganizationUserRole, OrganizationUser
 from app.schemas.rbac import RoleRead, PermissionRead, RoleCreate
 from app.services.rbac import RBACService
@@ -35,6 +35,7 @@ async def list_actions(
 
 @router.get("/roles", response_model=List[RoleRead])
 async def list_roles(
+    tenant_id: int = Depends(get_current_tenant_id),
     org_id: int = Depends(get_current_org),
     _org_admin=Depends(check_org_admin()),
     db: AsyncSession = Depends(get_db),
@@ -43,7 +44,7 @@ async def list_roles(
     stmt = (
         select(Role)
         .options(selectinload(Role.permissions))
-        .where((Role.org_id == org_id) | (Role.org_id.is_(None)))
+        .where((Role.tenant_id == tenant_id) | (Role.tenant_id.is_(None)))
     )
     result = await db.execute(stmt)
     return result.scalars().all()
@@ -51,25 +52,26 @@ async def list_roles(
 @router.post("/roles", response_model=RoleRead)
 async def create_custom_role(
     role_in: RoleCreate,
+    tenant_id: int = Depends(get_current_tenant_id),
     org_id: int = Depends(get_current_org),
     org_admin: OrganizationUser = Depends(check_org_admin()),
     db: AsyncSession = Depends(get_db),
 ):
     """[管理员] 创建组织自定义角色 (支持继承)"""
     # 1. Check if code exists in org
-    stmt = select(Role).where(Role.org_id == org_id, Role.code == role_in.code)
+    stmt = select(Role).where(Role.tenant_id == tenant_id, Role.code == role_in.code)
     if (await db.execute(stmt)).scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Role code already exists in this organization")
 
     # 2. Verify parent role visibility
     if role_in.parent_role_id:
         parent = await db.get(Role, role_in.parent_role_id)
-        if not parent or (parent.org_id is not None and parent.org_id != org_id):
+        if not parent or (parent.tenant_id is not None and parent.tenant_id != tenant_id):
             raise HTTPException(status_code=400, detail="Invalid parent role")
 
     # 3. Create Role
     role = Role(
-        org_id=org_id,
+        tenant_id=tenant_id,
         name=role_in.name,
         code=role_in.code,
         description=role_in.description,
@@ -105,6 +107,7 @@ async def create_custom_role(
 async def assign_user_roles(
     user_id: int,
     role_ids: List[int],
+    tenant_id: int = Depends(get_current_tenant_id),
     org_id: int = Depends(get_current_org),
     org_admin: OrganizationUser = Depends(check_org_admin()),
     db: AsyncSession = Depends(get_db),
@@ -113,14 +116,14 @@ async def assign_user_roles(
     # 1. Verify roles belong to org/system
     stmt_v = select(Role).where(
         Role.id.in_(role_ids),
-        (Role.org_id == org_id) | (Role.org_id.is_(None))
+        (Role.tenant_id == tenant_id) | (Role.tenant_id.is_(None))
     )
     valid_roles = (await db.execute(stmt_v)).scalars().all()
     if len(valid_roles) != len(role_ids):
         raise HTTPException(status_code=400, detail="One or more roles are invalid for this organization")
 
     # 2. SSD Constraint Check (Static Separation of Duties)
-    conflict_msg = await RBACService.check_ssd_violation(db, org_id, role_ids)
+    conflict_msg = await RBACService.check_ssd_violation(db, tenant_id, role_ids)
     if conflict_msg:
         raise HTTPException(status_code=400, detail=conflict_msg)
 
@@ -137,7 +140,7 @@ async def assign_user_roles(
     
     # Add new ones
     for rid in role_ids:
-        db.add(OrganizationUserRole(org_id=org_id, user_id=user_id, role_id=rid))
+        db.add(OrganizationUserRole(tenant_id=tenant_id, org_id=org_id, user_id=user_id, role_id=rid))
     
     # Audit log
     await audit_action(
@@ -166,13 +169,14 @@ class RoleUpdate(BaseModel):
 async def update_role(
     role_id: int,
     data: RoleUpdate,
+    tenant_id: int = Depends(get_current_tenant_id),
     org_id: int = Depends(get_current_org),
     org_admin: OrganizationUser = Depends(check_org_admin()),
     db: AsyncSession = Depends(get_db),
 ):
     """[管理员] 更新自定义角色"""
     role = await db.get(Role, role_id)
-    if not role or role.org_id != org_id:
+    if not role or role.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Role not found")
     if role.is_system:
         raise HTTPException(status_code=403, detail="Cannot modify system roles")
@@ -197,13 +201,14 @@ async def update_role(
 @router.delete("/roles/{role_id}")
 async def delete_role(
     role_id: int,
+    tenant_id: int = Depends(get_current_tenant_id),
     org_id: int = Depends(get_current_org),
     org_admin: OrganizationUser = Depends(check_org_admin()),
     db: AsyncSession = Depends(get_db),
 ):
     """[管理员] 删除自定义角色（检查绑定用户）"""
     role = await db.get(Role, role_id)
-    if not role or role.org_id != org_id:
+    if not role or role.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Role not found")
     if role.is_system:
         raise HTTPException(status_code=403, detail="Cannot delete system roles")

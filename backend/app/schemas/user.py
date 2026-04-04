@@ -14,6 +14,7 @@ class UserRead(BaseModel):
     email: str
     name: Optional[str] = None
     created_at: datetime
+    tenant_id: Optional[int] = None
     org_id: Optional[int] = None
     permissions: List[str] = []
 

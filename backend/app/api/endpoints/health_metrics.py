@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, get_current_org, get_db
+from app.api.deps import get_current_user, get_current_org, get_current_tenant_id, get_db
 from app.db.models import User, PatientProfile, HealthMetric
 
 router = APIRouter()
@@ -61,6 +61,7 @@ async def _get_my_patient(db: AsyncSession, user_id: int, org_id: int) -> Patien
 async def create_health_metric(
     data: HealthMetricCreate,
     current_user: User = Depends(get_current_user),
+    tenant_id: int = Depends(get_current_tenant_id),
     org_id: int = Depends(get_current_org),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
@@ -69,6 +70,7 @@ async def create_health_metric(
 
     metric = HealthMetric(
         patient_id=patient.id,
+        tenant_id=tenant_id,
         org_id=org_id,
         recorded_by=current_user.id,
         metric_type=data.metric_type,

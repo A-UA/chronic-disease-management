@@ -1,4 +1,5 @@
 from .base import Base
+from .tenant import Tenant
 from .user import User, PasswordResetToken
 from .organization import Organization, OrganizationUser, OrganizationInvitation, PatientFamilyLink, OrganizationUserRole
 from .rbac import Role, Permission, RolePermission, Resource, Action, RoleConstraint
@@ -14,6 +15,7 @@ from .menu import Menu
 
 # Ensure all models are in metadata for migrations
 __all__ = [
+    "Tenant",
     "User",
     "Organization",
     "OrganizationUser",

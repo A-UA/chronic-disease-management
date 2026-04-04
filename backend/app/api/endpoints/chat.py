@@ -8,13 +8,13 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_org, get_current_user, get_db, verify_quota
+from app.api.deps import get_current_org, get_current_user, get_current_tenant_id, get_db, verify_quota
 from app.db.models import Conversation, KnowledgeBase, Message, UsageLog, User
 from app.schemas.admin import ConversationRead
 from app.services.chat import RetrievalFilters, build_rag_prompt, extract_statement_citations_structured, retrieve_chunks
 from app.services.conversation_context import build_retrieval_query_from_history
 from app.services.provider_registry import registry
-from app.services.quota import check_quota_during_stream, update_org_quota
+from app.services.quota import check_quota_during_stream, update_tenant_quota
 from app.services.rag_ingestion import count_tokens
 
 logger = logging.getLogger(__name__)
@@ -96,6 +96,7 @@ async def list_conversations(
 async def chat_endpoint(
     request: ChatRequest,
     current_user: User = Depends(get_current_user),
+    tenant_id: int = Depends(get_current_tenant_id),
     org_id: int = Depends(get_current_org),
     _=Depends(verify_quota),
     db: AsyncSession = Depends(get_db),
@@ -126,6 +127,7 @@ async def chat_endpoint(
         conversation = Conversation(
             id=request.conversation_id,
             kb_id=request.kb_id,
+            tenant_id=tenant_id,
             org_id=org_id,
             user_id=current_user.id,
             title=_generate_title(request.query),
@@ -163,6 +165,7 @@ async def chat_endpoint(
 
     user_msg = Message(
         conversation_id=conversation.id,
+        tenant_id=tenant_id,
         org_id=org_id,
         role="user",
         content=request.query,
@@ -182,8 +185,8 @@ async def chat_endpoint(
         from sqlalchemy import text
         async with AsyncSessionLocal() as db_gen:
             await db_gen.execute(
-                text("SELECT set_config('app.current_org_id', :org_id, true)"),
-                {"org_id": str(org_id)},
+                text("SELECT set_config('app.current_tenant_id', :tid, true)"),
+                {"tid": str(tenant_id)},
             )
             await db_gen.execute(
                 text("SELECT set_config('app.current_user_id', :user_id, true)"),
@@ -201,7 +204,7 @@ async def chat_endpoint(
                     # 优化：使用字符数粗略估算而非每个 chunk 都调 tiktoken
                     completion_tokens += _estimate_tokens_chinese(chunk_text)
                     
-                    if not await check_quota_during_stream(org_id, prompt_tokens + completion_tokens, db=db_gen):
+                    if not await check_quota_during_stream(tenant_id, prompt_tokens + completion_tokens, db=db_gen):
                         quota_exceeded = True
                         yield f"event: error\ndata: {json.dumps({'detail': 'Quota exceeded. Response cut short.'})}\n\n"
                         break
@@ -232,7 +235,8 @@ async def chat_endpoint(
 
                 assistant_msg = Message(
                     conversation_id=conversation.id,
-                    org_id=org_id, # 补上 org_id
+                    tenant_id=tenant_id,
+                    org_id=org_id,
                     role="assistant",
                     content=full_response or "[回答生成中断]",
                     metadata_={
@@ -257,6 +261,7 @@ async def chat_endpoint(
 
                 total_tokens = prompt_tokens + completion_tokens
                 usage = UsageLog(
+                    tenant_id=tenant_id,
                     org_id=org_id,
                     user_id=current_user.id,
                     model=llm_provider.model_name,
@@ -266,7 +271,7 @@ async def chat_endpoint(
                     resource_id=conversation.id,
                 )
                 db_gen.add(usage)
-                await update_org_quota(db_gen, org_id, total_tokens)
+                await update_tenant_quota(db_gen, tenant_id, total_tokens)
                 await db_gen.commit()
 
                 yield f"event: done\ndata: {json.dumps({'tokens': total_tokens, 'statement_citations': done_statement_citations})}\n\n"

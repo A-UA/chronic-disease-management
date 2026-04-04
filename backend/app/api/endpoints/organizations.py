@@ -8,7 +8,7 @@ from sqlalchemy import delete
 import secrets
 from datetime import datetime, timedelta, timezone
 
-from app.api.deps import get_db, get_current_user, check_permission, get_current_org
+from app.api.deps import get_db, get_current_user, check_permission, get_current_org, get_current_tenant_id
 from app.db.models import Organization, OrganizationUser, OrganizationUserRole, User, Role, OrganizationInvitation
 from app.schemas.organization import (
     OrganizationReadAdmin, 
@@ -107,7 +107,7 @@ async def get_organization_members(
             .where(
                 OrganizationUserRole.user_id == current_user.id,
                 Role.code.in_(["platform_admin", "platform_viewer"]),
-                Role.org_id.is_(None),
+                Role.tenant_id.is_(None),
             )
         )
         if not (await db.execute(stmt_platform)).scalar_one_or_none():
@@ -171,6 +171,7 @@ async def create_invitation(
     org_id: int,
     invitation_in: OrganizationInvitationCreate,
     current_user: User = Depends(get_current_user),
+    tenant_id: int = Depends(get_current_tenant_id),
     _org_member=Depends(check_permission("org:manage")),
     db: AsyncSession = Depends(get_db)
 ):
@@ -191,6 +192,7 @@ async def create_invitation(
     expires_at = datetime.now(timezone.utc) + timedelta(days=7)
     
     invitation = OrganizationInvitation(
+        tenant_id=tenant_id,
         org_id=org_id,
         inviter_id=current_user.id,
         email=invitation_in.email,
@@ -234,8 +236,13 @@ async def accept_invitation(
     if current_user.email != invitation.email:
         raise HTTPException(status_code=403, detail="Invitation is for another email address")
 
+    # 查找邀请对应的组织以获取 tenant_id
+    org = await db.get(Organization, invitation.org_id)
+    t_id = org.tenant_id if org else None
+
     # 创建组织成员关联
     org_user = OrganizationUser(
+        tenant_id=t_id,
         org_id=invitation.org_id,
         user_id=current_user.id,
         user_type="staff"
@@ -245,7 +252,7 @@ async def accept_invitation(
     # 查找邀请指定的角色
     role_stmt = select(Role).where(
         Role.code == invitation.role,
-        Role.org_id == invitation.org_id
+        Role.tenant_id == t_id
     )
     role = (await db.execute(role_stmt)).scalar_one_or_none()
     
@@ -253,12 +260,13 @@ async def accept_invitation(
     if not role:
         sys_role_stmt = select(Role).where(
             Role.code == invitation.role,
-            Role.org_id.is_(None)
+            Role.tenant_id.is_(None)
         )
         role = (await db.execute(sys_role_stmt)).scalar_one_or_none()
 
     if role:
         user_role = OrganizationUserRole(
+            tenant_id=t_id,
             org_id=invitation.org_id,
             user_id=current_user.id,
             role_id=role.id

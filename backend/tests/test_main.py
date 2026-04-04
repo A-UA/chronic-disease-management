@@ -33,7 +33,7 @@ async def test_health_check_ok_when_deps_available():
 def test_kb_routes_registered():
     """知识库路由应正确注册"""
     paths = {route.path for route in app.routes if hasattr(route, "path")}
-    assert "/api/v1/kb/" in paths
+    assert "/api/v1/kb" in paths or "/api/v1/kb/" in paths
 
 
 def test_chat_routes_registered():
@@ -43,22 +43,22 @@ def test_chat_routes_registered():
 
 
 def test_patient_profile_unique_per_org():
-    """PatientProfile 的唯一约束应为 (org_id, user_id)"""
+    """PatientProfile 的唯一约束应为 (tenant_id, org_id, user_id)"""
     unique_constraints = {
         tuple(column.name for column in constraint.columns)
         for constraint in PatientProfile.__table__.constraints
         if constraint.__class__.__name__ == "UniqueConstraint"
     }
-    assert ("org_id", "user_id") in unique_constraints
+    assert ("tenant_id", "org_id", "user_id") in unique_constraints
     assert ("user_id",) not in unique_constraints
 
 
 def test_manager_profile_unique_per_org():
-    """ManagerProfile 的唯一约束应为 (org_id, user_id)"""
+    """ManagerProfile 的唯一约束应为 (tenant_id, org_id, user_id)"""
     unique_constraints = {
         tuple(column.name for column in constraint.columns)
         for constraint in ManagerProfile.__table__.constraints
         if constraint.__class__.__name__ == "UniqueConstraint"
     }
-    assert ("org_id", "user_id") in unique_constraints
+    assert ("tenant_id", "org_id", "user_id") in unique_constraints
     assert ("user_id",) not in unique_constraints

@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 
-from app.api.deps import get_db, get_current_user, get_current_org
+from app.api.deps import get_db, get_current_user, get_current_org, get_current_tenant_id
 from app.db.models import User, PatientFamilyLink, PatientProfile, ManagementSuggestion
 from app.services.audit import audit_action
 from pydantic import BaseModel, ConfigDict
@@ -40,6 +40,7 @@ class PatientProfileFamilyRead(BaseModel):
 async def create_family_link(
     link_in: FamilyLinkCreate,
     current_user: User = Depends(get_current_user),
+    tenant_id: int = Depends(get_current_tenant_id),
     org_id: int = Depends(get_current_org),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
@@ -64,6 +65,7 @@ async def create_family_link(
         
     # 3. Create link
     link = PatientFamilyLink(
+        tenant_id=tenant_id,
         patient_id=link_in.patient_id,
         family_user_id=family_user.id,
         relationship_type=link_in.relationship_type,
