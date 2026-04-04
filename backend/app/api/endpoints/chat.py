@@ -8,7 +8,10 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_org, get_current_user, get_current_tenant_id, get_db, verify_quota
+from app.api.deps import (
+    get_current_org_id, get_effective_org_id, get_current_user,
+    get_current_tenant_id, inject_rls_context, get_db, verify_quota,
+)
 from app.db.models import Conversation, KnowledgeBase, Message, UsageLog, User
 from app.schemas.admin import ConversationRead
 from app.services.chat import RetrievalFilters, build_rag_prompt, extract_statement_citations_structured, retrieve_chunks
@@ -77,17 +80,18 @@ def _load_history_by_token_budget(
 async def list_conversations(
     skip: int = 0,
     limit: int = 50,
-    org_id: int = Depends(get_current_org),
+    tenant_id: int = Depends(inject_rls_context),
+    effective_org_id: int | None = Depends(get_effective_org_id),
     db: AsyncSession = Depends(get_db),
 ):
-    """获取当前组织的对话列表"""
+    """获取对话列表（admin 看全租户，普通用户看本部门）"""
     stmt = (
         select(Conversation)
-        .where(Conversation.org_id == org_id)
-        .offset(skip)
-        .limit(limit)
-        .order_by(Conversation.created_at.desc())
+        .where(Conversation.tenant_id == tenant_id)
     )
+    if effective_org_id is not None:
+        stmt = stmt.where(Conversation.org_id == effective_org_id)
+    stmt = stmt.offset(skip).limit(limit).order_by(Conversation.created_at.desc())
     result = await db.execute(stmt)
     return result.scalars().all()
 
@@ -97,7 +101,7 @@ async def chat_endpoint(
     request: ChatRequest,
     current_user: User = Depends(get_current_user),
     tenant_id: int = Depends(get_current_tenant_id),
-    org_id: int = Depends(get_current_org),
+    org_id: int = Depends(get_current_org_id),
     _=Depends(verify_quota),
     db: AsyncSession = Depends(get_db),
 ):
@@ -113,13 +117,13 @@ async def chat_endpoint(
     kb = await db.get(KnowledgeBase, request.kb_id)
     if kb is None:
         raise HTTPException(status_code=404, detail="Knowledge base not found")
-    if kb.org_id != org_id:
+    if kb.tenant_id != tenant_id:
         raise HTTPException(status_code=403, detail="Not enough permissions")
 
     # 2. 获取对话历史用于 Condense Query
     conversation = await db.get(Conversation, request.conversation_id)
     if conversation:
-        if conversation.org_id != org_id or conversation.user_id != current_user.id:
+        if conversation.tenant_id != tenant_id or conversation.user_id != current_user.id:
             raise HTTPException(status_code=403, detail="Conversation does not belong to current user")
         if conversation.kb_id != request.kb_id:
             raise HTTPException(status_code=400, detail="Conversation knowledge base mismatch")

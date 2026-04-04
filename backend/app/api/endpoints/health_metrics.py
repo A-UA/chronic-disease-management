@@ -7,7 +7,10 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, get_current_org, get_current_tenant_id, get_db
+from app.api.deps import (
+    get_current_user, get_current_org_id, get_effective_org_id,
+    get_current_tenant_id, inject_rls_context, get_db, check_permission,
+)
 from app.db.models import User, PatientProfile, HealthMetric
 
 router = APIRouter()
@@ -55,14 +58,14 @@ async def _get_my_patient(db: AsyncSession, user_id: int, org_id: int) -> Patien
     return patient
 
 
-# ── Endpoints ──
+# ── 个人端点（使用 get_current_org_id） ──
 
 @router.post("")
 async def create_health_metric(
     data: HealthMetricCreate,
     current_user: User = Depends(get_current_user),
     tenant_id: int = Depends(get_current_tenant_id),
-    org_id: int = Depends(get_current_org),
+    org_id: int = Depends(get_current_org_id),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     """录入健康指标"""
@@ -101,7 +104,7 @@ async def list_my_metrics(
     skip: int = 0,
     limit: int = 50,
     current_user: User = Depends(get_current_user),
-    org_id: int = Depends(get_current_org),
+    org_id: int = Depends(get_current_org_id),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     """查看自己的健康指标列表"""
@@ -126,7 +129,7 @@ async def get_my_trend(
     metric_type: str,
     days: int = 30,
     current_user: User = Depends(get_current_user),
-    org_id: int = Depends(get_current_org),
+    org_id: int = Depends(get_current_org_id),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     """按类型获取健康指标趋势（时间序列）"""
@@ -152,12 +155,12 @@ async def get_my_trend(
 async def delete_health_metric(
     metric_id: int,
     current_user: User = Depends(get_current_user),
-    org_id: int = Depends(get_current_org),
+    tenant_id: int = Depends(inject_rls_context),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     """删除健康指标记录（仅限本人录入的记录）"""
     metric = await db.get(HealthMetric, metric_id)
-    if not metric or metric.org_id != org_id:
+    if not metric or metric.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Metric not found")
     if metric.recorded_by != current_user.id:
         raise HTTPException(status_code=403, detail="Can only delete your own records")
@@ -181,12 +184,12 @@ async def update_health_metric(
     metric_id: int,
     data: HealthMetricUpdate,
     current_user: User = Depends(get_current_user),
-    org_id: int = Depends(get_current_org),
+    tenant_id: int = Depends(inject_rls_context),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     """修正健康指标记录（仅限本人录入）"""
     metric = await db.get(HealthMetric, metric_id)
-    if not metric or metric.org_id != org_id:
+    if not metric or metric.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Metric not found")
     if metric.recorded_by != current_user.id:
         raise HTTPException(status_code=403, detail="Can only edit your own records")
@@ -199,16 +202,14 @@ async def update_health_metric(
 
 # ── 管理端接口 ──
 
-from app.api.deps import check_permission
-
-
 @router.get("/patients/{patient_id}/trend")
 async def get_patient_trend(
     patient_id: int,
     metric_type: str,
     days: int = 30,
     _perm=Depends(check_permission("patient:read")),
-    org_id: int = Depends(get_current_org),
+    tenant_id: int = Depends(inject_rls_context),
+    effective_org_id: int | None = Depends(get_effective_org_id),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     """[管理端] 查看指定患者的健康指标趋势"""
@@ -218,7 +219,9 @@ async def get_patient_trend(
         raise HTTPException(status_code=400, detail=f"Invalid metric_type: {metric_type}")
 
     patient = await db.get(PatientProfile, patient_id)
-    if not patient or patient.org_id != org_id:
+    if not patient or patient.tenant_id != tenant_id:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    if effective_org_id is not None and patient.org_id != effective_org_id:
         raise HTTPException(status_code=404, detail="Patient not found")
 
     since = datetime.now(timezone.utc) - timedelta(days=days)

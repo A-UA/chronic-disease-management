@@ -11,7 +11,10 @@ import logging
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, get_current_org, get_current_tenant_id, get_db
+from app.api.deps import (
+    get_current_user, get_current_org_id, get_effective_org_id,
+    get_current_tenant_id, inject_rls_context, get_db,
+)
 from app.core.config import settings
 from app.db.models import User, Document, KnowledgeBase, PatientProfile
 from app.services.document_parser import DocumentParseError, parse_document
@@ -33,19 +36,19 @@ async def upload_document(
     patient_id: int | None = Form(None),
     current_user: User = Depends(get_current_user),
     tenant_id: int = Depends(get_current_tenant_id),
-    org_id: int = Depends(get_current_org),
+    org_id: int = Depends(get_current_org_id),
     db: AsyncSession = Depends(get_db),
 ):
     try:
         kb = await db.get(KnowledgeBase, kb_id)
         if kb is None:
             raise HTTPException(status_code=404, detail="Knowledge base not found")
-        if kb.org_id != org_id:
+        if kb.tenant_id != tenant_id:
             raise HTTPException(status_code=403, detail="Not enough permissions")
 
         if patient_id is not None:
             patient_stmt = select(PatientProfile.id).where(
-                PatientProfile.id == patient_id, PatientProfile.org_id == org_id
+                PatientProfile.id == patient_id, PatientProfile.tenant_id == tenant_id
             )
             patient_result = await db.execute(patient_stmt)
             if patient_result.scalar_one_or_none() is None:
@@ -115,15 +118,18 @@ async def list_documents(
     limit: int = 50,
     patient_id: int | None = None,
     current_user: User = Depends(get_current_user),
-    org_id: int = Depends(get_current_org),
+    tenant_id: int = Depends(inject_rls_context),
+    effective_org_id: int | None = Depends(get_effective_org_id),
     db: AsyncSession = Depends(get_db),
 ):
     """查询知识库下的文档列表"""
     kb = await db.get(KnowledgeBase, kb_id)
-    if kb is None or kb.org_id != org_id:
+    if kb is None or kb.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Knowledge base not found")
 
-    stmt = select(Document).where(Document.kb_id == kb_id, Document.org_id == org_id)
+    stmt = select(Document).where(Document.kb_id == kb_id, Document.tenant_id == tenant_id)
+    if effective_org_id is not None:
+        stmt = stmt.where(Document.org_id == effective_org_id)
     if patient_id is not None:
         stmt = stmt.where(Document.patient_id == patient_id)
         
@@ -136,12 +142,12 @@ async def list_documents(
 async def get_document(
     document_id: int,
     current_user: User = Depends(get_current_user),
-    org_id: int = Depends(get_current_org),
+    tenant_id: int = Depends(inject_rls_context),
     db: AsyncSession = Depends(get_db),
 ):
     """获取指定文档详情"""
     doc = await db.get(Document, document_id)
-    if doc is None or doc.org_id != org_id:
+    if doc is None or doc.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Document not found")
     return doc
 
@@ -151,12 +157,12 @@ async def delete_document(
     document_id: int,
     background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
-    org_id: int = Depends(get_current_org),
+    tenant_id: int = Depends(inject_rls_context),
     db: AsyncSession = Depends(get_db),
 ):
-    """删除文档（其包含的 Chunks 关联会自动清理，MinIO 文件异步清理）"""
+    """删除文档"""
     doc = await db.get(Document, document_id)
-    if doc is None or doc.org_id != org_id:
+    if doc is None or doc.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Document not found")
 
     # 异步清理 MinIO 中的文件
@@ -174,12 +180,12 @@ async def delete_document(
 async def get_document_status(
     document_id: int,
     current_user: User = Depends(get_current_user),
-    org_id: int = Depends(get_current_org),
+    tenant_id: int = Depends(inject_rls_context),
     db: AsyncSession = Depends(get_db),
 ):
-    """查询文档处理状态（轮询端点）"""
+    """查询文档处理状态"""
     doc = await db.get(Document, document_id)
-    if doc is None or doc.org_id != org_id:
+    if doc is None or doc.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Document not found")
 
     return {

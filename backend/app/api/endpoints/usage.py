@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from typing import List
 
-from app.api.deps import get_db, get_platform_viewer, get_current_user, get_current_org, get_current_tenant_id
+from app.api.deps import get_db, get_platform_viewer, get_current_user, get_current_tenant_id
 from app.db.models import Organization, UsageLog, Tenant
 from app.schemas.admin import UsageSummaryItem
 
@@ -73,7 +73,6 @@ async def get_org_usage_detail(
 async def get_my_org_usage(
     current_user=Depends(get_current_user),
     tenant_id: int = Depends(get_current_tenant_id),
-    org_id: int = Depends(get_current_org),
     db: AsyncSession = Depends(get_db),
 ):
     """[租户级] 查看当前租户的用量汇总"""
@@ -89,7 +88,6 @@ async def get_my_org_usage(
     tenant = await db.get(Tenant, tenant_id)
     return {
         "tenant_id": tenant_id,
-        "org_id": org_id,
         "total_tokens": total_tokens,
         "quota_limit": tenant.quota_tokens_limit if tenant else 0,
         "quota_used": tenant.quota_tokens_used if tenant else 0,

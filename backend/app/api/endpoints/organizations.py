@@ -8,7 +8,7 @@ from sqlalchemy import delete
 import secrets
 from datetime import datetime, timedelta, timezone
 
-from app.api.deps import get_db, get_current_user, check_permission, get_current_org, get_current_tenant_id
+from app.api.deps import get_db, get_current_user, check_permission, get_current_org_id, get_current_tenant_id
 from app.db.models import Organization, OrganizationUser, OrganizationUserRole, User, Role, OrganizationInvitation
 from app.schemas.organization import (
     OrganizationReadAdmin, 
@@ -68,7 +68,7 @@ async def create_organization(
 async def update_organization(
     org_id: int,
     org_in: OrganizationUpdate,
-    org_id_header: int = Depends(get_current_org),
+    org_id_header: int = Depends(get_current_org_id),
     _permission=Depends(check_permission("org:manage")),
     db: AsyncSession = Depends(get_db),
 ) -> Any:

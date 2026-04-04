@@ -3,7 +3,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List
 
-from app.api.deps import get_db, get_current_org, check_permission, get_platform_viewer
+from app.api.deps import (
+    get_db, inject_rls_context, get_effective_org_id,
+    check_permission, get_platform_viewer,
+)
 from app.db.models import AuditLog
 from app.schemas.admin import AuditLogRead
 
@@ -16,11 +19,14 @@ async def list_audit_logs(
     limit: int = 50,
     action: str | None = None,
     resource_type: str | None = None,
-    org_id: int = Depends(get_current_org),
-    _org_user=Depends(check_permission("org:view_usage")),
+    tenant_id: int = Depends(inject_rls_context),
+    effective_org_id: int | None = Depends(get_effective_org_id),
+    _org_user=Depends(check_permission("audit_log:read")),
     db: AsyncSession = Depends(get_db),
 ):
-    stmt = select(AuditLog).where(AuditLog.org_id == org_id)
+    stmt = select(AuditLog).where(AuditLog.tenant_id == tenant_id)
+    if effective_org_id is not None:
+        stmt = stmt.where(AuditLog.org_id == effective_org_id)
     if action:
         stmt = stmt.where(AuditLog.action == action)
     if resource_type:

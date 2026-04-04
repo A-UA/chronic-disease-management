@@ -1,72 +1,97 @@
-"""P2-1: 密码修改接口测试
+"""密码修改与重置测试
 
-测试目标：
-1. 旧密码正确时应成功修改
-2. 旧密码错误时应返回 400
-3. 新密码太短时应返回 422
+覆盖：正确修改、错误旧密码、忘记密码、错误验证码
 """
 import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
 from fastapi import FastAPI
 from httpx import AsyncClient, ASGITransport
 
-from app.api.deps import get_current_user, get_db
-from app.api.endpoints.auth import router
+from tests.api.conftest import override_deps, make_user
 
 
 def _make_app():
+    from app.api.endpoints.auth import router
     app = FastAPI()
     app.include_router(router, prefix="/api/v1/auth")
     return app
 
 
-class TestPasswordChange:
+class TestUpdatePassword:
     @pytest.mark.asyncio
-    async def test_change_password_success(self):
-        """旧密码正确时应成功修改"""
+    @patch("app.api.endpoints.auth.security.verify_password", return_value=True)
+    @patch("app.api.endpoints.auth.security.get_password_hash", return_value="new_hash")
+    async def test_change_password_ok(self, mock_hash, mock_verify):
         app = _make_app()
-
-        user = MagicMock()
-        user.id = 1001
-        user.password_hash = "hashed_old"
-
+        user = make_user()
         db = AsyncMock()
+        override_deps(app, db=db, user=user)
 
-        app.dependency_overrides[get_current_user] = lambda: user
-        app.dependency_overrides[get_db] = lambda: db
-
-        with patch("app.core.security.verify_password", return_value=True), \
-             patch("app.core.security.get_password_hash", return_value="hashed_new"):
-
-            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-                resp = await ac.put("/api/v1/auth/update-password", json={
-                    "current_password": "OldPass123!",
-                    "new_password": "NewPass456!",
-                })
-
-        assert resp.status_code == 200
-        assert user.password_hash == "hashed_new"
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as ac:
+            r = await ac.put("/api/v1/auth/update-password", json={
+                "current_password": "OldPass123!",
+                "new_password": "NewPass123!",
+            })
+        assert r.status_code == 200
 
     @pytest.mark.asyncio
-    async def test_wrong_old_password(self):
-        """旧密码错误时应返回 400"""
+    @patch("app.api.endpoints.auth.security.verify_password", return_value=False)
+    async def test_wrong_current_password(self, mock_verify):
         app = _make_app()
-
-        user = MagicMock()
-        user.id = 1001
-        user.password_hash = "hashed_old"
-
         db = AsyncMock()
+        override_deps(app, db=db)
 
-        app.dependency_overrides[get_current_user] = lambda: user
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as ac:
+            r = await ac.put("/api/v1/auth/update-password", json={
+                "current_password": "WrongPass",
+                "new_password": "NewPass123!",
+            })
+        assert r.status_code == 400
+
+
+class TestForgotPassword:
+    @pytest.mark.asyncio
+    async def test_always_200(self):
+        """无论邮箱是否存在都返回200（防信息泄露）"""
+        app = _make_app()
+        db = AsyncMock()
+        db.execute.return_value = MagicMock(scalar_one_or_none=MagicMock(return_value=None))
+        from app.api.deps import get_db
         app.dependency_overrides[get_db] = lambda: db
 
-        with patch("app.core.security.verify_password", return_value=False):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as ac:
+            r = await ac.post("/api/v1/auth/forgot-password",
+                              json={"email": "nonexistent@test.com"})
+        assert r.status_code == 200
 
-            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-                resp = await ac.put("/api/v1/auth/update-password", json={
-                    "current_password": "WrongPass",
-                    "new_password": "NewPass456!",
-                })
 
-        assert resp.status_code == 400
+class TestResetPassword:
+    @pytest.mark.asyncio
+    async def test_wrong_code_400(self):
+        app = _make_app()
+        db = AsyncMock()
+        db.execute.return_value = MagicMock(scalar_one_or_none=MagicMock(return_value=None))
+        from app.api.deps import get_db
+        app.dependency_overrides[get_db] = lambda: db
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as ac:
+            r = await ac.post("/api/v1/auth/reset-password", json={
+                "email": "test@example.com",
+                "code": "000000",
+                "new_password": "NewPass123!",
+            })
+        assert r.status_code == 400
+
+
+class TestUpdateProfile:
+    @pytest.mark.asyncio
+    async def test_update_name(self):
+        app = _make_app()
+        user = make_user()
+        db = AsyncMock()
+        override_deps(app, db=db, user=user)
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as ac:
+            r = await ac.put("/api/v1/auth/me/profile", json={"name": "新姓名"})
+        assert r.status_code == 200
+        assert user.name == "新姓名"

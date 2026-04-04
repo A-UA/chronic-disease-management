@@ -7,7 +7,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_org, get_current_active_user, get_current_tenant_id, get_db, check_permission
+from app.api.deps import (
+    get_current_org_id, get_current_active_user, get_current_tenant_id,
+    inject_rls_context, get_effective_org_id, get_db, check_permission,
+)
 from app.core.config import settings
 from app.db.models import ApiKey, User
 from app.schemas.api_key import ApiKeyCreate, ApiKeyUpdate, ApiKeyRead, ApiKeyCreateResponse
@@ -18,7 +21,7 @@ router = APIRouter()
 async def create_api_key(
     data: ApiKeyCreate,
     tenant_id: int = Depends(get_current_tenant_id),
-    org_id: int = Depends(get_current_org),
+    org_id: int = Depends(get_current_org_id),
     current_user: User = Depends(get_current_active_user),
     _org_member=Depends(check_permission("org:manage")),
     db: AsyncSession = Depends(get_db)
@@ -69,7 +72,7 @@ async def create_api_key(
 async def list_api_keys(
     skip: int = 0,
     limit: int = 50,
-    org_id: int = Depends(get_current_org),
+    org_id: int = Depends(get_current_org_id),
     _org_member=Depends(check_permission("org:manage")),
     db: AsyncSession = Depends(get_db)
 ):
@@ -83,7 +86,7 @@ async def list_api_keys(
 async def update_api_key(
     api_key_id: int,
     data: ApiKeyUpdate,
-    org_id: int = Depends(get_current_org),
+    org_id: int = Depends(get_current_org_id),
     _org_member=Depends(check_permission("org:manage")),
     db: AsyncSession = Depends(get_db)
 ):
@@ -104,7 +107,7 @@ async def update_api_key(
 @router.post("/{api_key_id}/revoke", response_model=ApiKeyRead)
 async def revoke_api_key(
     api_key_id: int,
-    org_id: int = Depends(get_current_org),
+    org_id: int = Depends(get_current_org_id),
     _org_member=Depends(check_permission("org:manage")),
     db: AsyncSession = Depends(get_db)
 ):

@@ -5,7 +5,7 @@ from typing import List, Optional
 from sqlalchemy.orm import selectinload
 from pydantic import BaseModel
 
-from app.api.deps import get_db, get_current_org, get_current_tenant_id, check_permission, check_org_admin
+from app.api.deps import get_db, get_current_org_id, get_current_tenant_id, check_permission, check_org_admin
 from app.db.models import Role, Permission, Resource, Action, RoleConstraint, OrganizationUserRole, OrganizationUser
 from app.schemas.rbac import RoleRead, PermissionRead, RoleCreate
 from app.services.rbac import RBACService
@@ -36,7 +36,7 @@ async def list_actions(
 @router.get("/roles", response_model=List[RoleRead])
 async def list_roles(
     tenant_id: int = Depends(get_current_tenant_id),
-    org_id: int = Depends(get_current_org),
+    org_id: int = Depends(get_current_org_id),
     _org_admin=Depends(check_org_admin()),
     db: AsyncSession = Depends(get_db),
 ):
@@ -53,7 +53,7 @@ async def list_roles(
 async def create_custom_role(
     role_in: RoleCreate,
     tenant_id: int = Depends(get_current_tenant_id),
-    org_id: int = Depends(get_current_org),
+    org_id: int = Depends(get_current_org_id),
     org_admin: OrganizationUser = Depends(check_org_admin()),
     db: AsyncSession = Depends(get_db),
 ):
@@ -108,7 +108,7 @@ async def assign_user_roles(
     user_id: int,
     role_ids: List[int],
     tenant_id: int = Depends(get_current_tenant_id),
-    org_id: int = Depends(get_current_org),
+    org_id: int = Depends(get_current_org_id),
     org_admin: OrganizationUser = Depends(check_org_admin()),
     db: AsyncSession = Depends(get_db),
 ):
@@ -170,7 +170,7 @@ async def update_role(
     role_id: int,
     data: RoleUpdate,
     tenant_id: int = Depends(get_current_tenant_id),
-    org_id: int = Depends(get_current_org),
+    org_id: int = Depends(get_current_org_id),
     org_admin: OrganizationUser = Depends(check_org_admin()),
     db: AsyncSession = Depends(get_db),
 ):
@@ -202,7 +202,7 @@ async def update_role(
 async def delete_role(
     role_id: int,
     tenant_id: int = Depends(get_current_tenant_id),
-    org_id: int = Depends(get_current_org),
+    org_id: int = Depends(get_current_org_id),
     org_admin: OrganizationUser = Depends(check_org_admin()),
     db: AsyncSession = Depends(get_db),
 ):

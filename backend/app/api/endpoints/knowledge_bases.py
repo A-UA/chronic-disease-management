@@ -4,7 +4,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.api.deps import get_db, get_current_user, get_current_org, get_current_tenant_id
+from app.api.deps import (
+    get_db, get_current_user, get_current_org_id, get_effective_org_id,
+    get_current_tenant_id, inject_rls_context,
+)
 from app.db.models import User, KnowledgeBase
 from pydantic import BaseModel, ConfigDict
 
@@ -31,7 +34,7 @@ async def create_knowledge_base(
     kb_in: KBCreate,
     current_user: User = Depends(get_current_user),
     tenant_id: int = Depends(get_current_tenant_id),
-    org_id: int = Depends(get_current_org),
+    org_id: int = Depends(get_current_org_id),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     # 逻辑已经在 get_current_org 中校验了权限和 RLS
@@ -52,11 +55,14 @@ async def create_knowledge_base(
 async def list_knowledge_bases(
     skip: int = 0,
     limit: int = 100,
-    org_id: int = Depends(get_current_org),
+    tenant_id: int = Depends(inject_rls_context),
+    effective_org_id: int | None = Depends(get_effective_org_id),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
-    # 依赖 RLS，直接查询即可，只能查到当前 org_id 的数据
-    stmt = select(KnowledgeBase).offset(skip).limit(limit)
+    stmt = select(KnowledgeBase).where(KnowledgeBase.tenant_id == tenant_id)
+    if effective_org_id is not None:
+        stmt = stmt.where(KnowledgeBase.org_id == effective_org_id)
+    stmt = stmt.offset(skip).limit(limit)
     result = await db.execute(stmt)
     return result.scalars().all()
 
@@ -64,17 +70,14 @@ async def list_knowledge_bases(
 @router.delete("/{kb_id}")
 async def delete_knowledge_base(
     kb_id: int,
-    org_id: int = Depends(get_current_org),
+    tenant_id: int = Depends(inject_rls_context),
+    effective_org_id: int | None = Depends(get_effective_org_id),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     kb = await db.get(KnowledgeBase, kb_id)
-    if not kb:
+    if not kb or kb.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Knowledge base not found")
-
-    # 因为 get_current_org 会注入 RLS，如果 kb 不属于当前 org，
-    # 这里的 db.get 可能会返回 None 或在后续操作中报错（取决于 RLS 严格程度）
-    # 为稳妥起见，手动校验 org_id
-    if kb.org_id != org_id:
+    if effective_org_id is not None and kb.org_id != effective_org_id:
         raise HTTPException(status_code=403, detail="Not enough permissions")
 
     await db.delete(kb)
@@ -91,13 +94,16 @@ class KBUpdate(BaseModel):
 async def update_knowledge_base(
     kb_id: int,
     data: KBUpdate,
-    org_id: int = Depends(get_current_org),
+    tenant_id: int = Depends(inject_rls_context),
+    effective_org_id: int | None = Depends(get_effective_org_id),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     """更新知识库名称和描述"""
     kb = await db.get(KnowledgeBase, kb_id)
-    if not kb or kb.org_id != org_id:
+    if not kb or kb.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Knowledge base not found")
+    if effective_org_id is not None and kb.org_id != effective_org_id:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
 
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(kb, field, value)
@@ -109,7 +115,8 @@ async def update_knowledge_base(
 @router.get("/{kb_id}/stats")
 async def get_knowledge_base_stats(
     kb_id: int,
-    org_id: int = Depends(get_current_org),
+    tenant_id: int = Depends(inject_rls_context),
+    effective_org_id: int | None = Depends(get_effective_org_id),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     """获取知识库统计信息：文档数、chunk 数、总 token 数"""
@@ -117,9 +124,9 @@ async def get_knowledge_base_stats(
     from app.db.models import Document, Chunk
 
     kb = await db.get(KnowledgeBase, kb_id)
-    if not kb:
+    if not kb or kb.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Knowledge base not found")
-    if kb.org_id != org_id:
+    if effective_org_id is not None and kb.org_id != effective_org_id:
         raise HTTPException(status_code=403, detail="Not enough permissions")
 
     # 文档数

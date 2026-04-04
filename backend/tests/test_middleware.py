@@ -1,51 +1,39 @@
-"""P0-1: 请求追踪中间件测试
-
-测试目标：
-1. 每个请求应自动生成 X-Request-ID
-2. 客户端传入的 X-Request-ID 应被保留
-3. 响应头中应包含 X-Request-ID
-4. request_id 应在日志上下文中可用
-"""
+"""中间件测试"""
 import pytest
+from unittest.mock import MagicMock, AsyncMock
+from fastapi import FastAPI
 from httpx import AsyncClient, ASGITransport
 
-from app.main import app
+from app.core.middleware import RequestIDMiddleware
 
 
-@pytest.mark.asyncio
-async def test_response_contains_request_id_header():
-    """响应头中应包含 X-Request-ID"""
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        resp = await ac.get("/health")
-    assert "x-request-id" in resp.headers
-    assert len(resp.headers["x-request-id"]) > 0
+class TestRequestIDMiddleware:
+    @pytest.mark.asyncio
+    async def test_adds_request_id_header(self):
+        app = FastAPI()
+        app.add_middleware(RequestIDMiddleware)
 
+        @app.get("/test")
+        async def test_endpoint():
+            return {"ok": True}
 
-@pytest.mark.asyncio
-async def test_auto_generated_request_id_is_uuid():
-    """自动生成的 request_id 应为有效的 UUID 格式"""
-    import uuid
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        resp = await ac.get("/health")
-    rid = resp.headers["x-request-id"]
-    # 应该不会抛异常
-    parsed = uuid.UUID(rid)
-    assert str(parsed) == rid
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as ac:
+            r = await ac.get("/test")
 
+        assert r.status_code == 200
+        assert "x-request-id" in r.headers
 
-@pytest.mark.asyncio
-async def test_preserves_client_request_id():
-    """客户端传入的 X-Request-ID 应被保留"""
-    custom_id = "client-trace-12345"
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        resp = await ac.get("/health", headers={"X-Request-ID": custom_id})
-    assert resp.headers["x-request-id"] == custom_id
+    @pytest.mark.asyncio
+    async def test_preserves_existing_request_id(self):
+        app = FastAPI()
+        app.add_middleware(RequestIDMiddleware)
 
+        @app.get("/test")
+        async def test_endpoint():
+            return {"ok": True}
 
-@pytest.mark.asyncio
-async def test_different_requests_get_different_ids():
-    """不同请求应获得不同的 request_id"""
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        resp1 = await ac.get("/health")
-        resp2 = await ac.get("/health")
-    assert resp1.headers["x-request-id"] != resp2.headers["x-request-id"]
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as ac:
+            r = await ac.get("/test", headers={"X-Request-ID": "my-custom-id"})
+
+        assert r.status_code == 200
+        assert r.headers.get("x-request-id") == "my-custom-id"

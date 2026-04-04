@@ -1,4 +1,8 @@
-"""对话生命周期管理端点"""
+"""对话生命周期管理端点
+
+对话是用户个人资源，通过 user_id 过滤即可。
+tenant_id 通过 RLS 保证隔离。
+"""
 from datetime import datetime
 from typing import Any, List
 
@@ -7,7 +11,9 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, get_current_org, get_db
+from app.api.deps import (
+    get_current_user, get_current_tenant_id, inject_rls_context, get_db,
+)
 from app.db.models import User, Conversation, Message
 
 router = APIRouter()
@@ -54,15 +60,15 @@ async def list_conversations(
     skip: int = 0,
     limit: int = 50,
     current_user: User = Depends(get_current_user),
-    org_id: int = Depends(get_current_org),
+    tenant_id: int = Depends(inject_rls_context),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
-    """列出当前用户的对话列表"""
+    """列出当前用户的对话列表（RLS 自动租户隔离）"""
     stmt = (
         select(Conversation)
         .where(
             Conversation.user_id == current_user.id,
-            Conversation.org_id == org_id,
+            Conversation.tenant_id == tenant_id,
         )
         .order_by(Conversation.created_at.desc())
         .offset(skip)
@@ -76,7 +82,7 @@ async def list_conversations(
 async def get_conversation_detail(
     conversation_id: int,
     current_user: User = Depends(get_current_user),
-    org_id: int = Depends(get_current_org),
+    tenant_id: int = Depends(inject_rls_context),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     """获取对话详情，包含消息历史"""
@@ -85,7 +91,7 @@ async def get_conversation_detail(
         raise HTTPException(status_code=404, detail="Conversation not found")
     if conv.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized")
-    if conv.org_id != org_id:
+    if conv.tenant_id != tenant_id:
         raise HTTPException(status_code=403, detail="Not authorized")
 
     stmt = (
@@ -110,14 +116,14 @@ async def rename_conversation(
     conversation_id: int,
     update_in: ConversationUpdate,
     current_user: User = Depends(get_current_user),
-    org_id: int = Depends(get_current_org),
+    tenant_id: int = Depends(inject_rls_context),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     """重命名对话"""
     conv = await db.get(Conversation, conversation_id)
     if not conv:
         raise HTTPException(status_code=404, detail="Conversation not found")
-    if conv.user_id != current_user.id or conv.org_id != org_id:
+    if conv.user_id != current_user.id or conv.tenant_id != tenant_id:
         raise HTTPException(status_code=403, detail="Not authorized")
 
     conv.title = update_in.title
@@ -130,14 +136,14 @@ async def rename_conversation(
 async def delete_conversation(
     conversation_id: int,
     current_user: User = Depends(get_current_user),
-    org_id: int = Depends(get_current_org),
+    tenant_id: int = Depends(inject_rls_context),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     """删除对话及其所有消息"""
     conv = await db.get(Conversation, conversation_id)
     if not conv:
         raise HTTPException(status_code=404, detail="Conversation not found")
-    if conv.user_id != current_user.id or conv.org_id != org_id:
+    if conv.user_id != current_user.id or conv.tenant_id != tenant_id:
         raise HTTPException(status_code=403, detail="Not authorized")
 
     await db.delete(conv)

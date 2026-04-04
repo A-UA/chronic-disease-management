@@ -5,11 +5,14 @@ from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 from pydantic import BaseModel, ConfigDict
 
-from app.api.deps import get_db, get_current_user, get_current_org, get_current_tenant_id, check_permission
+from app.api.deps import (
+    get_db, get_current_user, get_current_org_id, get_effective_org_id,
+    get_current_tenant_id, inject_rls_context, check_permission,
+)
 from app.db.models import (
-    User, 
-    PatientProfile, 
-    PatientManagerAssignment, 
+    User,
+    PatientProfile,
+    PatientManagerAssignment,
     ManagementSuggestion,
     ManagerProfile
 )
@@ -52,20 +55,26 @@ class AssignmentCreate(BaseModel):
     manager_id: int
     assignment_role: str = "main"
 
-# --- Unified Endpoints ---
+# --- 查询类端点（admin 跨部门） ---
 
 @router.get("", response_model=List[ManagerDetailRead])
 async def list_org_managers(
-    org_id: int = Depends(get_current_org),
+    tenant_id: int = Depends(inject_rls_context),
+    effective_org_id: int | None = Depends(get_effective_org_id),
     _permission=Depends(check_permission("org_member:manage")),
     db: AsyncSession = Depends(get_db),
 ):
-    """[管理视图] 列出本机构所有管理师及其工作负荷"""
+    """[管理视图] 列出管理师及其工作负荷
+    - admin/owner: 显示全租户管理师
+    - staff/manager: 显示本部门管理师
+    """
     stmt = (
         select(ManagerProfile)
         .options(selectinload(ManagerProfile.user))
-        .where(ManagerProfile.org_id == org_id)
+        .where(ManagerProfile.tenant_id == tenant_id)
     )
+    if effective_org_id is not None:
+        stmt = stmt.where(ManagerProfile.org_id == effective_org_id)
     result = await db.execute(stmt)
     managers = result.scalars().all()
 
@@ -81,10 +90,12 @@ async def list_org_managers(
         ))
     return reads
 
+# --- 个人视图端点 ---
+
 @router.get("/my-patients", response_model=List[PatientBriefRead])
 async def get_my_assigned_patients(
     current_user: User = Depends(get_current_user),
-    org_id: int = Depends(get_current_org),
+    org_id: int = Depends(get_current_org_id),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     """[管理师视图] 查看分配给我的患者"""
@@ -99,20 +110,22 @@ async def get_my_assigned_patients(
     result = await db.execute(stmt)
     return result.scalars().all()
 
+# --- 创建类端点（固定到当前部门） ---
+
 @router.post("/assignments")
 async def create_assignment(
     data: AssignmentCreate,
     tenant_id: int = Depends(get_current_tenant_id),
-    org_id: int = Depends(get_current_org),
+    org_id: int = Depends(get_current_org_id),
     _permission=Depends(check_permission("org_member:manage")),
     db: AsyncSession = Depends(get_db),
 ):
-    """[管理视图] 分配患者给管理师 (SSD 兼容)"""
+    """[管理视图] 分配患者给管理师"""
     from sqlalchemy.dialects.postgresql import insert
     stmt = (
         insert(PatientManagerAssignment)
         .values(
-            tenant_id=tenant_id, org_id=org_id, manager_id=data.manager_id, 
+            tenant_id=tenant_id, org_id=org_id, manager_id=data.manager_id,
             patient_id=data.patient_id, assignment_role=data.assignment_role
         )
         .on_conflict_do_update(
@@ -130,12 +143,11 @@ async def create_patient_suggestion(
     suggest_in: SuggestionCreate,
     current_user: User = Depends(get_current_user),
     tenant_id: int = Depends(get_current_tenant_id),
-    org_id: int = Depends(get_current_org),
+    org_id: int = Depends(get_current_org_id),
     _ = Depends(check_permission("suggestion:create")),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     """[管理师视图] 为患者创建管理建议"""
-    # 校验分配关系
     stmt = select(PatientManagerAssignment).where(
         PatientManagerAssignment.manager_id == current_user.id,
         PatientManagerAssignment.patient_id == patient_id,
@@ -154,18 +166,23 @@ async def create_patient_suggestion(
     await db.refresh(suggestion)
     return suggestion
 
+# --- 查询类端点（admin 跨部门） ---
+
 @router.get("/patients/{patient_id}/suggestions", response_model=List[SuggestionRead])
 async def get_patient_suggestions(
     patient_id: int,
-    org_id: int = Depends(get_current_org),
+    tenant_id: int = Depends(inject_rls_context),
+    effective_org_id: int | None = Depends(get_effective_org_id),
     _ = Depends(check_permission("suggestion:read")),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     """获取患者的管理建议"""
     stmt = select(ManagementSuggestion).where(
         ManagementSuggestion.patient_id == patient_id,
-        ManagementSuggestion.org_id == org_id
+        ManagementSuggestion.tenant_id == tenant_id,
     )
+    if effective_org_id is not None:
+        stmt = stmt.where(ManagementSuggestion.org_id == effective_org_id)
     result = await db.execute(stmt)
     return result.scalars().all()
 
@@ -173,7 +190,8 @@ async def get_patient_suggestions(
 @router.delete("/assignments/{patient_id}")
 async def unassign_patient(
     patient_id: int,
-    org_id: int = Depends(get_current_org),
+    tenant_id: int = Depends(inject_rls_context),
+    effective_org_id: int | None = Depends(get_effective_org_id),
     _ = Depends(check_permission("org_member:manage")),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
@@ -181,8 +199,10 @@ async def unassign_patient(
     from sqlalchemy import delete
     stmt = delete(PatientManagerAssignment).where(
         PatientManagerAssignment.patient_id == patient_id,
-        PatientManagerAssignment.org_id == org_id,
+        PatientManagerAssignment.tenant_id == tenant_id,
     )
+    if effective_org_id is not None:
+        stmt = stmt.where(PatientManagerAssignment.org_id == effective_org_id)
     result = await db.execute(stmt)
     if result.rowcount == 0:
         raise HTTPException(status_code=404, detail="Assignment not found")
@@ -208,18 +228,16 @@ class ManagerProfileUpdate(BaseModel):
 async def create_manager_profile(
     data: ManagerProfileCreate,
     tenant_id: int = Depends(get_current_tenant_id),
-    org_id: int = Depends(get_current_org),
+    org_id: int = Depends(get_current_org_id),
     _permission=Depends(check_permission("org_member:manage")),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
-    """[管理视图] 创建管理师档案"""
-    # 校验用户存在
+    """[管理视图] 创建管理师档案（创建到当前部门）"""
     stmt = select(User).where(User.id == data.user_id)
     result = await db.execute(stmt)
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="User not found")
 
-    # 校验不重复
     stmt2 = select(ManagerProfile).where(
         ManagerProfile.user_id == data.user_id,
         ManagerProfile.org_id == org_id,
@@ -248,13 +266,16 @@ async def create_manager_profile(
 async def update_manager_profile(
     profile_id: int,
     data: ManagerProfileUpdate,
-    org_id: int = Depends(get_current_org),
+    tenant_id: int = Depends(inject_rls_context),
+    effective_org_id: int | None = Depends(get_effective_org_id),
     _permission=Depends(check_permission("org_member:manage")),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     """[管理视图] 更新管理师档案"""
     profile = await db.get(ManagerProfile, profile_id)
-    if not profile or profile.org_id != org_id:
+    if not profile or profile.tenant_id != tenant_id:
+        raise HTTPException(status_code=404, detail="Manager profile not found")
+    if effective_org_id is not None and profile.org_id != effective_org_id:
         raise HTTPException(status_code=404, detail="Manager profile not found")
 
     for field, value in data.model_dump(exclude_unset=True).items():
@@ -270,13 +291,16 @@ async def update_manager_profile(
 @router.delete("/profiles/{profile_id}")
 async def deactivate_manager_profile(
     profile_id: int,
-    org_id: int = Depends(get_current_org),
+    tenant_id: int = Depends(inject_rls_context),
+    effective_org_id: int | None = Depends(get_effective_org_id),
     _permission=Depends(check_permission("org_member:manage")),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     """[管理视图] 停用管理师档案（软删除）"""
     profile = await db.get(ManagerProfile, profile_id)
-    if not profile or profile.org_id != org_id:
+    if not profile or profile.tenant_id != tenant_id:
+        raise HTTPException(status_code=404, detail="Manager profile not found")
+    if effective_org_id is not None and profile.org_id != effective_org_id:
         raise HTTPException(status_code=404, detail="Manager profile not found")
 
     profile.is_active = False
@@ -296,13 +320,13 @@ async def update_suggestion(
     suggestion_id: int,
     data: SuggestionUpdate,
     current_user: User = Depends(get_current_user),
-    org_id: int = Depends(get_current_org),
+    tenant_id: int = Depends(inject_rls_context),
     _ = Depends(check_permission("suggestion:create")),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     """[管理师视图] 修改自己发出的管理建议"""
     suggestion = await db.get(ManagementSuggestion, suggestion_id)
-    if not suggestion or suggestion.org_id != org_id:
+    if not suggestion or suggestion.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Suggestion not found")
     if suggestion.manager_id != current_user.id:
         raise HTTPException(status_code=403, detail="Can only edit your own suggestions")
@@ -322,13 +346,13 @@ async def update_suggestion(
 async def delete_suggestion(
     suggestion_id: int,
     current_user: User = Depends(get_current_user),
-    org_id: int = Depends(get_current_org),
+    tenant_id: int = Depends(inject_rls_context),
     _ = Depends(check_permission("suggestion:create")),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     """[管理师视图] 撤回自己的管理建议"""
     suggestion = await db.get(ManagementSuggestion, suggestion_id)
-    if not suggestion or suggestion.org_id != org_id:
+    if not suggestion or suggestion.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Suggestion not found")
     if suggestion.manager_id != current_user.id:
         raise HTTPException(status_code=403, detail="Can only delete your own suggestions")
@@ -336,4 +360,3 @@ async def delete_suggestion(
     await db.delete(suggestion)
     await db.commit()
     return {"status": "ok"}
-
