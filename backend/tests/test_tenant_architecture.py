@@ -127,21 +127,25 @@ class TestRoleModelTenantId:
 class TestJWTTokens:
     """JWT 令牌相关功能"""
 
-    def test_access_token_contains_tenant_id(self):
+    def test_access_token_contains_full_context(self):
+        """访问令牌应包含 tenant_id + org_id + roles"""
         from app.core.security import create_access_token, ALGORITHM
         from app.core.config import settings
         import jwt as pyjwt
 
         token = create_access_token(
-            subject="123", tenant_id=456
+            subject="123", tenant_id=456, org_id=789, roles=["admin"]
         )
         payload = pyjwt.decode(
             token, settings.JWT_SECRET, algorithms=[ALGORITHM]
         )
         assert payload["sub"] == "123"
-        assert payload["tenant_id"] == "456"  # 存储为字符串
+        assert payload["tenant_id"] == "456"
+        assert payload["org_id"] == "789"
+        assert payload["roles"] == ["admin"]
 
-    def test_selection_token_has_purpose(self):
+    def test_selection_token_has_org_purpose(self):
+        """selection token 的 purpose 应为 org_selection"""
         from app.core.security import create_selection_token, ALGORITHM
         from app.core.config import settings
         import jwt as pyjwt
@@ -151,10 +155,10 @@ class TestJWTTokens:
             token, settings.JWT_SECRET, algorithms=[ALGORITHM]
         )
         assert payload["sub"] == "321"
-        assert payload["purpose"] == "tenant_selection"
+        assert payload["purpose"] == "org_selection"
 
-    def test_access_token_without_tenant_id(self):
-        """不传 tenant_id 时令牌也能正常生成"""
+    def test_access_token_without_optional_fields(self):
+        """不传可选字段时令牌也能正常生成"""
         from app.core.security import create_access_token, ALGORITHM
         from app.core.config import settings
         import jwt as pyjwt
@@ -164,7 +168,23 @@ class TestJWTTokens:
             token, settings.JWT_SECRET, algorithms=[ALGORITHM]
         )
         assert payload["sub"] == "100"
-        assert "tenant_id" not in payload or payload["tenant_id"] is None
+        assert "tenant_id" not in payload
+        assert "org_id" not in payload
+        assert "roles" not in payload
+
+    def test_admin_roles_in_token(self):
+        """多角色能正确序列化到 JWT"""
+        from app.core.security import create_access_token, ALGORITHM
+        from app.core.config import settings
+        import jwt as pyjwt
+
+        token = create_access_token(
+            subject="1", tenant_id=1, org_id=1, roles=["staff", "manager"]
+        )
+        payload = pyjwt.decode(
+            token, settings.JWT_SECRET, algorithms=[ALGORITHM]
+        )
+        assert set(payload["roles"]) == {"staff", "manager"}
 
 
 # ───────────────────────────────────────────
@@ -179,6 +199,18 @@ class TestDepsExistence:
         from app.api.deps import get_current_tenant_id
         assert callable(get_current_tenant_id)
 
+    def test_get_current_org_id_exists(self):
+        from app.api.deps import get_current_org_id
+        assert callable(get_current_org_id)
+
+    def test_get_current_roles_exists(self):
+        from app.api.deps import get_current_roles
+        assert callable(get_current_roles)
+
+    def test_get_effective_org_id_exists(self):
+        from app.api.deps import get_effective_org_id
+        assert callable(get_effective_org_id)
+
     def test_inject_rls_context_exists(self):
         from app.api.deps import inject_rls_context
         assert callable(inject_rls_context)
@@ -190,6 +222,13 @@ class TestDepsExistence:
     def test_verify_quota_exists(self):
         from app.api.deps import verify_quota
         assert callable(verify_quota)
+
+    def test_tenant_wide_roles_defined(self):
+        """应定义租户级访问角色集合"""
+        from app.api.deps import TENANT_WIDE_ROLES
+        assert "admin" in TENANT_WIDE_ROLES
+        assert "owner" in TENANT_WIDE_ROLES
+        assert "staff" not in TENANT_WIDE_ROLES
 
 
 # ───────────────────────────────────────────

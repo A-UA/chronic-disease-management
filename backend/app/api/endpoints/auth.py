@@ -8,7 +8,8 @@ from sqlalchemy.orm import selectinload
 
 from app.api.deps import (
     get_db, get_current_user, get_current_org_user,
-    get_current_tenant_id, inject_rls_context,
+    get_current_tenant_id, get_current_org_id, get_current_roles,
+    inject_rls_context,
 )
 from app.core import security
 from app.core.config import settings
@@ -119,64 +120,88 @@ async def login_access_token(
     if not user or not security.verify_password(form_data.password, user.password_hash):
         raise HTTPException(status_code=400, detail="Incorrect email or password")
 
-    # 2. 查用户所属租户列表
-    stmt_tenants = (
-        select(Tenant)
-        .join(Organization, Organization.tenant_id == Tenant.id)
-        .join(OrganizationUser, OrganizationUser.org_id == Organization.id)
-        .where(OrganizationUser.user_id == user.id, Tenant.status == "active")
-        .distinct()
+    # 2. 查用户所属部门列表（含租户信息和角色）
+    stmt_orgs = (
+        select(OrganizationUser)
+        .join(Organization, Organization.id == OrganizationUser.org_id)
+        .join(Tenant, Tenant.id == Organization.tenant_id)
+        .options(
+            selectinload(OrganizationUser.organization),
+            selectinload(OrganizationUser.rbac_roles),
+        )
+        .where(
+            OrganizationUser.user_id == user.id,
+            Tenant.status == "active",
+        )
     )
-    result_tenants = await db.execute(stmt_tenants)
-    tenants = result_tenants.scalars().all()
+    result_orgs = await db.execute(stmt_orgs)
+    org_users = result_orgs.scalars().all()
 
-    if len(tenants) == 0:
+    if len(org_users) == 0:
         raise HTTPException(
             status_code=400,
-            detail="User is not a member of any active tenant",
+            detail="User is not a member of any active organization",
         )
 
-    if len(tenants) == 1:
-        # 单租户 → 自动签发含 tenant_id 的 JWT
-        tenant = tenants[0]
+    if len(org_users) == 1:
+        # 单部门 → 自动签发完整 JWT
+        ou = org_users[0]
+        org = ou.organization
+        role_codes = [r.code for r in ou.rbac_roles]
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         token = security.create_access_token(
-            user.id, tenant_id=tenant.id, expires_delta=access_token_expires,
+            user.id,
+            tenant_id=org.tenant_id,
+            org_id=org.id,
+            roles=role_codes,
+            expires_delta=access_token_expires,
         )
         return {
             "access_token": token,
             "token_type": "bearer",
-            "tenant": {"id": tenant.id, "name": tenant.name},
-            "require_tenant_selection": False,
+            "organization": {
+                "id": org.id, "name": org.name,
+                "tenant_id": org.tenant_id,
+            },
+            "require_org_selection": False,
         }
 
-    # 多租户 → 返回选择列表 + 临时 token
+    # 多部门 → 返回部门列表 + 临时 token
     selection_token = security.create_selection_token(user.id)
+    org_list = []
+    for ou in org_users:
+        org = ou.organization
+        org_list.append({
+            "id": org.id,
+            "name": org.name,
+            "tenant_id": org.tenant_id,
+            "tenant_name": org.tenant.name if hasattr(org, "tenant") and org.tenant else None,
+        })
     return {
         "access_token": None,
         "token_type": "bearer",
-        "tenants": [{"id": t.id, "name": t.name} for t in tenants],
-        "require_tenant_selection": True,
+        "organizations": org_list,
+        "require_org_selection": True,
         "selection_token": selection_token,
     }
 
 
-class SelectTenantRequest(BaseModel):
-    tenant_id: int
+class SelectOrgRequest(BaseModel):
+    org_id: int
     selection_token: str
 
 
-@router.post("/select-tenant")
-async def select_tenant(
-    data: SelectTenantRequest,
+@router.post("/select-org")
+async def select_org(
+    data: SelectOrgRequest,
     db: AsyncSession = Depends(get_db),
 ) -> Any:
-    """多租户用户登录后选择租户"""
+    """登录后选择部门，签发含 tenant_id + org_id + roles 的 JWT"""
     try:
         payload = pyjwt.decode(
             data.selection_token, settings.JWT_SECRET, algorithms=[security.ALGORITHM]
         )
-        if payload.get("purpose") != "tenant_selection":
+        if payload.get("purpose") != "org_selection":
             raise HTTPException(status_code=400, detail="Invalid selection token")
         user_id = int(payload["sub"])
     except pyjwt.PyJWTError:
@@ -184,122 +209,146 @@ async def select_tenant(
             status_code=400, detail="Invalid or expired selection token"
         )
 
-    # 校验用户确实属于该租户
+    # 校验用户确实属于该部门并获取角色
     stmt = (
         select(OrganizationUser)
-        .join(Organization, Organization.id == OrganizationUser.org_id)
         .where(
             OrganizationUser.user_id == user_id,
-            Organization.tenant_id == data.tenant_id,
+            OrganizationUser.org_id == data.org_id,
         )
-        .limit(1)
+        .options(selectinload(OrganizationUser.rbac_roles))
     )
     result = await db.execute(stmt)
-    if not result.scalar_one_or_none():
+    ou = result.scalar_one_or_none()
+    if not ou:
         raise HTTPException(
-            status_code=403, detail="User is not a member of this tenant"
+            status_code=403, detail="User is not a member of this organization"
         )
 
-    tenant = await db.get(Tenant, data.tenant_id)
+    org = await db.get(Organization, data.org_id)
+    role_codes = [r.code for r in ou.rbac_roles]
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     token = security.create_access_token(
-        user_id, tenant_id=tenant.id, expires_delta=access_token_expires,
+        user_id,
+        tenant_id=org.tenant_id,
+        org_id=org.id,
+        roles=role_codes,
+        expires_delta=access_token_expires,
     )
     return {
         "access_token": token,
         "token_type": "bearer",
-        "tenant": {"id": tenant.id, "name": tenant.name},
+        "organization": {
+            "id": org.id, "name": org.name,
+            "tenant_id": org.tenant_id,
+        },
     }
 
 
-class SwitchTenantRequest(BaseModel):
-    tenant_id: int
+class SwitchOrgRequest(BaseModel):
+    org_id: int
 
 
-@router.post("/switch-tenant")
-async def switch_tenant(
-    data: SwitchTenantRequest,
+@router.post("/switch-org")
+async def switch_org(
+    data: SwitchOrgRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
-    """已登录用户切换租户"""
+    """已登录用户切换部门（可跨租户）"""
+    stmt = (
+        select(OrganizationUser)
+        .where(
+            OrganizationUser.user_id == current_user.id,
+            OrganizationUser.org_id == data.org_id,
+        )
+        .options(selectinload(OrganizationUser.rbac_roles))
+    )
+    result = await db.execute(stmt)
+    ou = result.scalar_one_or_none()
+    if not ou:
+        raise HTTPException(
+            status_code=403, detail="User is not a member of this organization"
+        )
+
+    org = await db.get(Organization, data.org_id)
+    role_codes = [r.code for r in ou.rbac_roles]
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    token = security.create_access_token(
+        current_user.id,
+        tenant_id=org.tenant_id,
+        org_id=org.id,
+        roles=role_codes,
+        expires_delta=access_token_expires,
+    )
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "organization": {
+            "id": org.id, "name": org.name,
+            "tenant_id": org.tenant_id,
+        },
+    }
+
+
+@router.get("/my-orgs")
+async def list_my_organizations(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """获取当前用户可用的部门列表"""
     stmt = (
         select(OrganizationUser)
         .join(Organization, Organization.id == OrganizationUser.org_id)
+        .join(Tenant, Tenant.id == Organization.tenant_id)
+        .options(selectinload(OrganizationUser.organization))
         .where(
             OrganizationUser.user_id == current_user.id,
-            Organization.tenant_id == data.tenant_id,
+            Tenant.status == "active",
         )
-        .limit(1)
     )
     result = await db.execute(stmt)
-    if not result.scalar_one_or_none():
-        raise HTTPException(
-            status_code=403, detail="User is not a member of this tenant"
-        )
-
-    tenant = await db.get(Tenant, data.tenant_id)
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    token = security.create_access_token(
-        current_user.id, tenant_id=tenant.id, expires_delta=access_token_expires,
-    )
-    return {
-        "access_token": token,
-        "token_type": "bearer",
-        "tenant": {"id": tenant.id, "name": tenant.name},
-    }
-
-
-@router.get("/tenants")
-async def list_my_tenants(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-) -> Any:
-    """获取当前用户可用的租户列表"""
-    stmt = (
-        select(Tenant)
-        .join(Organization, Organization.tenant_id == Tenant.id)
-        .join(OrganizationUser, OrganizationUser.org_id == Organization.id)
-        .where(OrganizationUser.user_id == current_user.id, Tenant.status == "active")
-        .distinct()
-    )
-    result = await db.execute(stmt)
-    tenants = result.scalars().all()
+    org_users = result.scalars().all()
     return [
-        {"id": t.id, "name": t.name, "plan_type": t.plan_type, "status": t.status}
-        for t in tenants
+        {
+            "id": ou.organization.id,
+            "name": ou.organization.name,
+            "tenant_id": ou.organization.tenant_id,
+        }
+        for ou in org_users
     ]
 
 
 @router.get("/me", response_model=UserRead)
 async def read_current_user(
     current_user: User = Depends(get_current_user),
+    tenant_id: int = Depends(get_current_tenant_id),
+    org_id: int = Depends(get_current_org_id),
+    roles: list[str] = Depends(get_current_roles),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
-    """获取当前登录用户信息（包含组织 ID 和递归有效权限）"""
+    """获取当前登录用户信息（从 JWT 获取上下文，计算有效权限）"""
+    user_data = UserRead.model_validate(current_user)
+    user_data.org_id = org_id
+    user_data.tenant_id = tenant_id
+
+    # 从 DB 加载角色权限
     stmt = (
-        select(User)
-        .options(
-            selectinload(User.organizations).selectinload(OrganizationUser.rbac_roles)
+        select(OrganizationUser)
+        .where(
+            OrganizationUser.user_id == current_user.id,
+            OrganizationUser.org_id == org_id,
         )
-        .where(User.id == current_user.id)
+        .options(selectinload(OrganizationUser.rbac_roles))
     )
-    res = await db.execute(stmt)
-    full_user = res.scalar_one()
+    result = await db.execute(stmt)
+    org_user = result.scalar_one_or_none()
 
-    user_data = UserRead.model_validate(full_user)
-    if full_user.organizations:
-        org_user = full_user.organizations[0]
-        user_data.org_id = org_user.org_id
-        user_data.tenant_id = org_user.tenant_id
-
-        if org_user.rbac_roles:
-            role_ids = [r.id for r in org_user.rbac_roles]
-            user_data.permissions = list(
-                await RBACService.get_effective_permissions(db, role_ids)
-            )
-        else:
-            user_data.permissions = []
+    if org_user and org_user.rbac_roles:
+        role_ids = [r.id for r in org_user.rbac_roles]
+        user_data.permissions = list(
+            await RBACService.get_effective_permissions(db, role_ids)
+        )
     else:
         user_data.permissions = []
 

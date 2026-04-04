@@ -1,6 +1,19 @@
-"""依赖注入：认证 → 租户上下文 → 部门上下文 → 权限校验"""
+"""依赖注入：认证 → 租户/部门上下文（从 JWT） → RLS 注入 → 权限校验
 
-import json
+JWT payload 结构：
+{
+    "sub": "user_id",
+    "tenant_id": "从 org 反查",
+    "org_id": "用户选中的部门",
+    "roles": ["admin"],   // 用户在该部门的角色
+    "exp": "..."
+}
+
+访问范围规则：
+- admin / owner 角色 → tenant 级（org_id 过滤可选）
+- staff / manager 角色 → department 级（强制 org_id 过滤）
+"""
+
 import logging
 from datetime import datetime, timezone
 
@@ -22,6 +35,9 @@ from app.db.models import (
 from app.services.rbac import RBACService
 
 logger = logging.getLogger(__name__)
+
+# 可跨部门查看的角色
+TENANT_WIDE_ROLES = {"admin", "owner"}
 
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/auth/login/access-token"
@@ -80,7 +96,7 @@ async def get_current_tenant_id(
         if tenant_id is None:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Token does not contain tenant context. Please select a tenant.",
+                detail="Token does not contain tenant context. Please select an organization.",
             )
         return int(tenant_id)
     except jwt.PyJWTError:
@@ -90,75 +106,83 @@ async def get_current_tenant_id(
         )
 
 
-# ── 第 3 层：RLS 上下文注入 ──
+# ── 第 3 层：部门上下文（从 JWT 读取，零查询） ──
+
+async def get_current_org_id(
+    token: str = Depends(oauth2_scheme),
+) -> int:
+    """从 JWT payload 直接读取 org_id"""
+    try:
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[ALGORITHM])
+        org_id = payload.get("org_id")
+        if org_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Token does not contain organization context.",
+            )
+        return int(org_id)
+    except jwt.PyJWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+        )
+
+
+async def get_current_roles(
+    token: str = Depends(oauth2_scheme),
+) -> list[str]:
+    """从 JWT payload 读取当前用户角色列表"""
+    try:
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[ALGORITHM])
+        return payload.get("roles", [])
+    except jwt.PyJWTError:
+        return []
+
+
+async def get_effective_org_id(
+    roles: list[str] = Depends(get_current_roles),
+    org_id: int = Depends(get_current_org_id),
+) -> int | None:
+    """根据角色决定是否进行部门过滤
+
+    - admin/owner → 返回 None（租户级访问，不限部门）
+    - staff/manager → 返回 org_id（严格限定本部门）
+    """
+    if set(roles) & TENANT_WIDE_ROLES:
+        return None
+    return org_id
+
+
+# ── 第 4 层：RLS 上下文注入 ──
 
 async def inject_rls_context(
     tenant_id: int = Depends(get_current_tenant_id),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> int:
-    """将 tenant_id 和 user_id 注入 PostgreSQL 会话变量，用于 RLS"""
+    """将 tenant_id 注入 PostgreSQL 会话变量，用于 RLS"""
     await db.execute(
         text("SELECT set_config('app.current_tenant_id', :tid, true)"),
         {"tid": str(tenant_id)},
     )
-    # user_id 已在 get_current_user 中注入
     return tenant_id
 
 
-# ── 第 4 层：部门上下文（从 Header 读取，可选） ──
+# ── 第 5 层：OrganizationUser 上下文（需要 DB 查询，用于需要角色-权限细节的端点） ──
 
 async def get_current_org_user(
-    request: Request,
     tenant_id: int = Depends(inject_rls_context),
+    org_id: int = Depends(get_current_org_id),
+    roles: list[str] = Depends(get_current_roles),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> OrganizationUser:
-    """从 X-Organization-ID 请求头获取部门上下文，支持管理员穿透"""
-    org_id_header = request.headers.get("X-Organization-ID")
-    requested_org_id: int | None = None
-
-    if org_id_header:
-        try:
-            requested_org_id = int(org_id_header)
-        except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid Organization ID")
-
-    if requested_org_id is None:
-        # 未指定部门 → 取用户在该租户下的第一个部门
-        stmt = (
-            select(OrganizationUser)
-            .where(
-                OrganizationUser.tenant_id == tenant_id,
-                OrganizationUser.user_id == current_user.id,
-            )
-            .options(
-                selectinload(OrganizationUser.rbac_roles).selectinload(Role.permissions)
-            )
-            .limit(1)
-        )
-        result = await db.execute(stmt)
-        org_user = result.scalar_one_or_none()
-        if not org_user:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="User is not a member of any organization in this tenant",
-            )
-        return org_user
-
-    # 有指定部门 → 校验归属
-    org = await db.get(Organization, requested_org_id)
-    if not org or org.tenant_id != tenant_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Organization does not belong to current tenant",
-        )
-
-    # 尝试直接获取用户在该部门的身份
+    """获取用户在当前部门的组织身份（含角色和权限）"""
+    # 直接查本部门
     stmt = (
         select(OrganizationUser)
         .where(
-            OrganizationUser.org_id == requested_org_id,
+            OrganizationUser.org_id == org_id,
             OrganizationUser.user_id == current_user.id,
         )
         .options(
@@ -171,28 +195,27 @@ async def get_current_org_user(
     if org_user:
         return org_user
 
-    # 不是直接成员 → 检查是否是租户管理员（穿透访问）
-    stmt_admin = (
-        select(OrganizationUser)
-        .where(
-            OrganizationUser.tenant_id == tenant_id,
-            OrganizationUser.user_id == current_user.id,
+    # 不是直接成员但有 admin/owner 角色 → 构造穿透 OrgUser
+    if set(roles) & TENANT_WIDE_ROLES:
+        # 用用户在该租户下任一部门的角色来穿透
+        stmt_any = (
+            select(OrganizationUser)
+            .where(
+                OrganizationUser.tenant_id == tenant_id,
+                OrganizationUser.user_id == current_user.id,
+            )
+            .options(selectinload(OrganizationUser.rbac_roles))
+            .limit(1)
         )
-        .options(selectinload(OrganizationUser.rbac_roles))
-    )
-    result_admin = await db.execute(stmt_admin)
-    admin_org_users = result_admin.scalars().all()
-
-    for ou in admin_org_users:
-        role_codes = {r.code for r in ou.rbac_roles}
-        if role_codes & {"admin", "owner"}:
-            # 构造临时 OrganizationUser 实现穿透
+        result_any = await db.execute(stmt_any)
+        any_ou = result_any.scalar_one_or_none()
+        if any_ou:
             return OrganizationUser(
                 tenant_id=tenant_id,
-                org_id=requested_org_id,
+                org_id=org_id,
                 user_id=current_user.id,
-                user_type=ou.user_type,
-                rbac_roles=list(ou.rbac_roles),
+                user_type=any_ou.user_type,
+                rbac_roles=list(any_ou.rbac_roles),
             )
 
     raise HTTPException(
@@ -202,9 +225,9 @@ async def get_current_org_user(
 
 
 async def get_current_org(
-    org_user: OrganizationUser = Depends(get_current_org_user),
+    org_id: int = Depends(get_current_org_id),
 ) -> int:
-    return org_user.org_id
+    return org_id
 
 
 # ── 权限校验 ──

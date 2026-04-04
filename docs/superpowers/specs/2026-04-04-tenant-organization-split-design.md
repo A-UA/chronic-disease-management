@@ -23,7 +23,7 @@
 | Tenant 定位 | 完整客户实体（含计费+客户信息） | 表结构一次设计对，UI 后续补 |
 | 业务表字段 | `tenant_id` + `org_id` 双字段 | 部门间也需要数据隔离 |
 | 组织树层级 | 仅在 `organizations` 表（部门层级） | 集团跨租户管理是后期需求 |
-| 前端上下文 | JWT 内嵌 `tenant_id` + Header 传 `X-Organization-ID` | 业内成熟做法，零额外查询 |
+| 前端上下文 | JWT 内嵌 `tenant_id` + `org_id` + `roles` | 一次登录全部解决，零额外 Header |
 | RLS 策略 | 仅在 `tenant_id` 上建 RLS | 部门隔离是可被管理员覆盖的业务规则，放应用层 |
 | 迁移策略 | 删除全部旧迁移，从零重建 | 历史迁移存在类型冲突和分叉 |
 
@@ -152,37 +152,46 @@ class Organization(Base, IDMixin, TimestampMixin):
 ```json
 {
   "sub": "<user_id>",
-  "tenant_id": "<tenant_id>",
+  "tenant_id": "<从 org 反查>",
+  "org_id": "<用户选中的部门>",
+  "roles": ["admin"],
   "exp": "..."
 }
 ```
+
+访问范围规则：
+- `admin / owner` 角色 → 租户级访问（不受 `org_id` 限制）
+- `staff / manager` 角色 → 部门级访问（严格限定 `org_id`）
 
 ### 4.2 登录流程
 
 ```
 POST /auth/login {email, password}
   → 验证密码
-  → 查用户所属租户列表（通过 organization_users → organizations → tenants）
-  → 0 个租户 → 400 错误
-  → 1 个租户 → 自动选中，返回含 tenant_id 的 JWT
-  → N 个租户 → 返回租户列表 + selection_token，等待选择
+  → 查用户所属部门列表（通过 organization_users → organizations → tenants）
+  → 0 个部门 → 400 错误
+  → 1 个部门 → 自动选中，返回含 tenant_id + org_id + roles 的 JWT
+  → N 个部门 → 返回部门列表 + selection_token，等待选择
 ```
 
-单租户响应：
+单部门响应：
 ```json
 {
   "access_token": "eyJ...",
-  "tenant": {"id": 123, "name": "北京协和医院"},
-  "require_tenant_selection": false
+  "organization": {"id": 200, "name": "心内科", "tenant_id": 123},
+  "require_org_selection": false
 }
 ```
 
-多租户响应：
+多部门响应：
 ```json
 {
   "access_token": null,
-  "tenants": [{"id": 123, "name": "..."}, {"id": 456, "name": "..."}],
-  "require_tenant_selection": true,
+  "organizations": [
+    {"id": 200, "name": "心内科", "tenant_id": 123},
+    {"id": 300, "name": "神经科", "tenant_id": 123}
+  ],
+  "require_org_selection": true,
   "selection_token": "短期临时token"
 }
 ```
@@ -191,9 +200,9 @@ POST /auth/login {email, password}
 
 | 端点 | 方法 | 说明 |
 |------|------|------|
-| `POST /auth/select-tenant` | POST | 登录后选择租户，body: `{tenant_id}`，需要 `selection_token` |
-| `POST /auth/switch-tenant` | POST | 已登录切换租户，body: `{tenant_id}`，需要有效 JWT |
-| `GET /auth/tenants` | GET | 获取当前用户可用租户列表 |
+| `POST /auth/select-org` | POST | 登录后选择部门，body: `{org_id}`，需要 `selection_token` |
+| `POST /auth/switch-org` | POST | 已登录切换部门，body: `{org_id}`，需要有效 JWT |
+| `GET /auth/my-orgs` | GET | 获取当前用户可用部门列表 |
 
 ### 4.4 依赖注入重构
 
@@ -201,26 +210,30 @@ POST /auth/login {email, password}
 
 ```python
 # 1. 从 JWT 读取租户 ID（零查询）
-async def get_current_tenant(token) -> int:
-    return token.payload["tenant_id"]
+async def get_current_tenant_id(token) -> int:
+    return int(token.payload["tenant_id"])
 
-# 2. 注入 RLS 上下文
+# 2. 从 JWT 读取部门 ID（零查询）
+async def get_current_org_id(token) -> int:
+    return int(token.payload["org_id"])
+
+# 3. 从 JWT 读取角色列表（零查询）
+async def get_current_roles(token) -> list[str]:
+    return token.payload.get("roles", [])
+
+# 4. 根据角色决定访问范围（零查询）
+TENANT_WIDE_ROLES = {"admin", "owner"}
+async def get_effective_org_id(roles, org_id) -> int | None:
+    if set(roles) & TENANT_WIDE_ROLES:
+        return None  # 管理员：租户级访问
+    return org_id    # 普通用户：部门级访问
+
+# 5. 注入 RLS 上下文
 async def inject_rls_context(tenant_id, db):
     await db.execute(
         text("SELECT set_config('app.current_tenant_id', :tid, true)"),
         {"tid": str(tenant_id)}
     )
-
-# 3. 获取部门上下文（可选）
-async def get_current_org_user(request, tenant_id, db) -> OrganizationUser | None:
-    org_id = request.headers.get("X-Organization-ID")
-    if org_id:
-        org = await db.get(Organization, int(org_id))
-        if not org or org.tenant_id != tenant_id:
-            raise HTTPException(403, "部门不属于当前租户")
-        # 查 OrganizationUser 记录和角色
-        ...
-    return None  # 管理员不需要指定部门
 ```
 
 ### 4.5 端点注入模式
@@ -228,13 +241,15 @@ async def get_current_org_user(request, tenant_id, db) -> OrganizationUser | Non
 ```python
 @router.get("/patients")
 async def list_patients(
-    tenant_id: int = Depends(get_current_tenant),
-    org_user: OrganizationUser | None = Depends(get_current_org_user),
+    tenant_id: int = Depends(get_current_tenant_id),
+    effective_org_id: int | None = Depends(get_effective_org_id),
     db = Depends(get_db),
 ):
     stmt = select(PatientProfile).where(PatientProfile.tenant_id == tenant_id)
-    if org_user and not is_tenant_admin(org_user):
-        stmt = stmt.where(PatientProfile.org_id == org_user.org_id)
+    if effective_org_id is not None:
+        # 普通用户：仅看本部门
+        stmt = stmt.where(PatientProfile.org_id == effective_org_id)
+    # admin/owner：看全租户
     ...
 ```
 
@@ -322,10 +337,10 @@ DEFAULT_ORG = {
 
 ## 8. 前端适配（最小范围）
 
-- `stores/auth.ts`：存储 `tenant_id`
-- `api/auth.ts`：新增 `selectTenant()`、`switchTenant()`、`getTenants()`
-- 登录页：处理 `require_tenant_selection` 响应
-- `api/client.ts`：无变化（`X-Organization-ID` 保持）
+- `stores/auth.ts`：存储 `tenant_id`、`org_id`、`roles`（从 JWT 解析）
+- `api/auth.ts`：新增 `selectOrg()`、`switchOrg()`、`getMyOrgs()`
+- 登录页：处理 `require_org_selection` 响应（显示部门选择列表）
+- `api/client.ts`：移除 `X-Organization-ID` Header 注入，仅保留 `Authorization`
 
 ## 9. 不在本次范围
 

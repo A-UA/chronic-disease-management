@@ -19,6 +19,8 @@ def get_password_hash(password: str) -> str:
 def create_access_token(
     subject: str | int,
     tenant_id: int | None = None,
+    org_id: int | None = None,
+    roles: list[str] | None = None,
     expires_delta: timedelta | None = None,
 ) -> str:
     if expires_delta:
@@ -31,12 +33,16 @@ def create_access_token(
     to_encode: dict = {"exp": expire, "sub": str(subject)}
     if tenant_id is not None:
         to_encode["tenant_id"] = str(tenant_id)
+    if org_id is not None:
+        to_encode["org_id"] = str(org_id)
+    if roles:
+        to_encode["roles"] = roles
     encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET, algorithm=ALGORITHM)
     return encoded_jwt
 
 
 def create_selection_token(user_id: str | int) -> str:
-    """创建短期临时 token，仅用于 select-tenant 端点"""
+    """创建短期临时 token，仅用于 select-org 端点"""
     expire = datetime.now(timezone.utc) + timedelta(minutes=5)
-    to_encode = {"exp": expire, "sub": str(user_id), "purpose": "tenant_selection"}
+    to_encode = {"exp": expire, "sub": str(user_id), "purpose": "org_selection"}
     return jwt.encode(to_encode, settings.JWT_SECRET, algorithm=ALGORITHM)
