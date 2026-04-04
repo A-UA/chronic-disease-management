@@ -86,6 +86,11 @@ async def create_health_metric(
     db.add(metric)
     await db.commit()
     await db.refresh(metric)
+
+    # 告警检测
+    from app.services.health_alert import check_metric_alert
+    alerts = check_metric_alert(data.metric_type, data.value, data.value_secondary)
+
     return {
         "id": metric.id,
         "patient_id": metric.patient_id,
@@ -95,6 +100,10 @@ async def create_health_metric(
         "unit": metric.unit,
         "measured_at": str(metric.measured_at),
         "note": metric.note,
+        "alerts": [
+            {"level": a.level, "message": a.message}
+            for a in alerts
+        ] if alerts else [],
     }
 
 

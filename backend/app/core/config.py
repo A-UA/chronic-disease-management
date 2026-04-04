@@ -56,6 +56,14 @@ class Settings(BaseSettings):
     RAG_CACHE_TTL: int = 3600  # 检索缓存 TTL（秒）
     RAG_ENABLE_CONTEXTUAL_INGESTION: bool = False  # 是否开启入库背景增强（消耗额外 Token）
 
+    # SMTP 邮件（可选，未配置时验证码仅输出到日志）
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 465
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = ""
+    SMTP_TLS: bool = False  # True=STARTTLS, False=SSL
+
     # CORS
     CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:5173"]
 

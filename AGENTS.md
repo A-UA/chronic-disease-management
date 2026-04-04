@@ -1,6 +1,6 @@
 # 慢病管理多租户 AI SaaS — 项目指南
 
-更新时间：2026-04-04
+更新时间：2026-04-05
 
 ## 1. 项目概览
 
@@ -11,7 +11,7 @@
 - **慢病管理业务**：患者档案、健康指标录入与趋势分析、管理师分配与管理建议、家属关联与跨组织查看
 - **RAG 知识问答**：文档入库 → 检索 → 引用化问答 → 评测闭环
 - **企业级工程能力**：多租户隔离 (RLS)、层级 RBAC 权限、组织树穿透、审计日志、配额管理
-- **管理后台**：动态菜单路由、仪表盘、患者管理、健康趋势图
+- **管理后台**：动态菜单路由、仪表盘、患者管理、健康趋势图、知识库管理、AI 问答、成员管理、审计日志
 
 ### 技术栈
 
@@ -74,7 +74,7 @@ chronic-disease-management/
 │   │   │   ├── session.py             # AsyncSession 工厂
 │   │   │   └── seed_data.py           # 统一种子数据（RBAC + 菜单 + 超管账号）
 │   │   ├── schemas/                   # Pydantic 请求/响应模型
-│   │   └── services/                  # 业务服务层（16 个文件）
+│   │   └── services/                  # 业务服务层（19 个文件）
 │   ├── alembic/                       # 数据库迁移脚本
 │   ├── tests/                         # 自动化测试
 │   ├── scripts/                       # 辅助脚本
@@ -86,14 +86,18 @@ chronic-disease-management/
 │   │       │   ├── main.tsx           # React 入口
 │   │       │   ├── global.css         # 全局样式重置
 │   │       │   ├── api/               # HTTP 客户端与接口封装
-│   │       │   │   ├── client.ts      # ky 实例（Token/OrgID 注入、401 拦截）
-│   │       │   │   ├── auth.ts        # 登录/用户信息/菜单树
+│   │       │   │   ├── client.ts      # ky 实例（Token 注入、401 拦截）
+│   │       │   │   ├── auth.ts        # 登录/选部门/切换部门/用户信息/菜单树
 │   │       │   │   ├── dashboard.ts   # 仪表盘统计
 │   │       │   │   ├── patients.ts    # 患者 CRUD
-│   │       │   │   └── health-metrics.ts  # 健康指标趋势
+│   │       │   │   ├── health-metrics.ts  # 健康指标趋势
+│   │       │   │   ├── knowledge.ts   # 知识库 + 文档管理
+│   │       │   │   ├── chat.ts        # AI 对话（SSE 流式）
+│   │       │   │   ├── members.ts     # 成员 + 角色权限
+│   │       │   │   └── audit.ts       # 审计日志
 │   │       │   ├── types/             # TypeScript 类型定义
 │   │       │   ├── stores/            # zustand 状态管理
-│   │       │   │   └── auth.ts        # 认证状态（token/user/menus/permissions）
+│   │       │   │   └── auth.ts        # 认证状态（token/user/menus/permissions/currentOrg/pendingOrgs）
 │   │       │   ├── hooks/             # 自定义 Hooks
 │   │       │   │   └── usePermission.ts   # 权限判断
 │   │       │   ├── router/            # 路由系统
@@ -106,11 +110,17 @@ chronic-disease-management/
 │   │       │   ├── components/
 │   │       │   │   └── PageLoading.tsx    # 全局加载
 │   │       │   └── pages/
-│   │       │       ├── login/index.tsx        # 登录页
+│   │       │       ├── login/index.tsx        # 登录页（含多部门选择）
 │   │       │       ├── dashboard/index.tsx    # 仪表盘（统计卡片+趋势图）
 │   │       │       ├── patients/index.tsx     # 患者列表（ProTable）
 │   │       │       ├── patients/[id].tsx      # 患者详情
 │   │       │       ├── patients/components/HealthTrendChart.tsx  # 健康趋势图
+│   │       │       ├── knowledge/list.tsx     # 知识库列表
+│   │       │       ├── knowledge/documents.tsx # 文档管理
+│   │       │       ├── chat/index.tsx         # AI 问答（SSE 流式渲染）
+│   │       │       ├── members/index.tsx      # 成员管理
+│   │       │       ├── roles/index.tsx        # 角色权限
+│   │       │       ├── audit/index.tsx        # 操作审计日志
 │   │       │       ├── 403.tsx               # 无权限页
 │   │       │       └── 404.tsx               # 未找到页
 │   │       ├── vite.config.ts         # Vite 配置（React 插件 + 代理）
@@ -131,7 +141,7 @@ chronic-disease-management/
 
 | 路由前缀 | 模块 | 核心功能 |
 |---------|------|---------|
-| `/auth` | `auth.py` | 注册、登录、`/me`（含递归权限）、菜单树（menus 表驱动）、修改密码、密码重置 |
+| `/auth` | `auth.py` | 注册、登录（含多部门选择）、`/me`、菜单树、`/select-org`、`/switch-org`、`/my-orgs`、修改密码、SMTP 密码重置 |
 | `/external` | `external_api.py` | API Key 认证的外部接口 |
 
 ### 业务资源
@@ -139,7 +149,7 @@ chronic-disease-management/
 | 路由前缀 | 模块 | 核心功能 |
 |---------|------|---------|
 | `/patients` | `patients.py` | 患者档案 CRUD（含 `/me` 个人视图与管理视图） |
-| `/health-metrics` | `health_metrics.py` | 健康指标录入/查询/趋势/修改/删除，含 `/patients/{id}/trend` 管理端趋势接口 |
+| `/health-metrics` | `health_metrics.py` | 健康指标录入（含异常告警检测）/查询/趋势/修改/删除 |
 | `/family` | `family.py` | 家属关联创建/查看/解绑、跨组织查看 |
 | `/managers` | `managers.py` | 管理师档案 CRUD、患者分配/取消、管理建议 CRUD |
 | `/chat` | `chat.py` | RAG 对话（SSE 流式）、配额校验、引用抽取 |
@@ -320,7 +330,7 @@ vp build                              # 生产构建
 | `LLM_BASE_URL` / `LLM_API_KEY` | — | LLM 接口地址和密钥 |
 | `EMBEDDING_PROVIDER` | `openai` | Embedding 供应商（推荐 `zhipu`） |
 | `EMBEDDING_MODEL` | `text-embedding-3-small` | Embedding 模型 |
-| `RERANKER_PROVIDER` | `noop` | Reranker 供应商 |
+| `RERANKER_PROVIDER` | `noop` | Reranker 供应商（支持 `zhipu`/`openai_compatible`/`simple`） |
 
 ### RAG 参数
 
@@ -350,8 +360,9 @@ vp build                              # 生产构建
 - **API 设计**：新增功能优先走 Provider / Service 抽象
 - **导入规范**：不要在导入阶段初始化外部服务（延迟初始化模式）
 - **权限控制**：管理类接口使用 `check_permission("resource:action")` 依赖注入
-- **组织隔离**：涉及租户数据的端点必须注入 `get_current_org` 并校验 `org_id`
-- **审计日志**：敏感操作需调用 `audit_action()` 记录
+- **认证架构**：JWT 内嵌 tenant_id/org_id/roles，前端不解析 JWT，权限通过 `/auth/me` 获取
+- **组织隔离**：涉及租户数据的端点必须注入 `inject_rls_context`，RLS 策略在数据库层强制隔离
+- **审计日志**：敏感操作可用 `audit_action()`（事务内同步）或 `fire_audit()`（即发即忘异步）
 - **种子数据**：所有预制数据统一写入 `app/db/seed_data.py`
 - **终端环境**：使用 PowerShell，命令用 `;` 分隔（不是 `&&`），注意 stderr 的 INFO 日志会导致假性 exit code 1
 
@@ -365,15 +376,24 @@ vp build                              # 生产构建
 - **新增页面**：在 `pages/` 创建组件 → 在 `router/registry.tsx` 注册 menu code 映射
 - **提交前检查**：pre-commit hook 自动运行 `vp check --fix`
 
-## 10. 待办事项
+## 10. 已完成事项
 
-- [ ] 接入真实 Embedding Provider（推荐智谱 `embedding-3`）
-- [ ] Reranker 从 `noop` 切换到实际 Provider
-- [ ] 前端：知识库管理模块
-- [ ] 前端：成员管理与角色权限模块
-- [ ] 前端：AI 问答对话界面（SSE 流式）
-- [ ] 前端：操作审计日志查看
-- [ ] 密码重置邮件接入 SMTP
-- [ ] 审计日志异步化（当前同步写入）
-- [ ] 健康指标异常告警逻辑
-- [ ] 多轮对话压缩与专项评测
+- [x] 接入真实 Embedding Provider（zhipu 代码就绪，需 `.env` 配置）
+- [x] Reranker 新增 `zhipu` Provider
+- [x] PostgreSQL RLS 策略（17 + 2 + 1 表全覆盖）
+- [x] 前端：知识库管理模块
+- [x] 前端：成员管理与角色权限模块
+- [x] 前端：AI 问答对话界面（SSE 流式）
+- [x] 前端：操作审计日志查看
+- [x] 前端：多部门登录 + 部门切换
+- [x] 密码重置邮件接入 SMTP（降级兼容日志模式）
+- [x] 审计日志异步化（`fire_audit` 即发即忘）
+- [x] 健康指标异常告警逻辑（血压/血糖/心率/血氧/BMI）
+- [x] 多轮对话压缩（LLM 摘要 + 最近消息保留）
+
+## 11. 测试覆盖
+
+```
+后端：191 tests passed（API 层 + 服务层 + RLS）
+前端：vp check — 39 files, 0 error, 0 warning
+```

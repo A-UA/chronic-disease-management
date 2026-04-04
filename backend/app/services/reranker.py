@@ -1,4 +1,4 @@
-﻿import json
+import json
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Protocol
 
@@ -116,6 +116,14 @@ def get_reranker_provider() -> RerankerProvider:
         return NoopRerankerProvider()
     if provider_name == "simple":
         return SimpleRerankerProvider()
+    if provider_name == "zhipu":
+        api_key = settings.RERANKER_API_KEY or settings.LLM_API_KEY
+        if not api_key:
+            raise ValueError("RERANKER_API_KEY is required when RERANKER_PROVIDER=zhipu")
+        base_url = settings.RERANKER_BASE_URL or "https://open.bigmodel.cn/api/paas/v4/"
+        model_name = settings.RERANKER_MODEL or "reranker"
+        client = AsyncOpenAI(api_key=api_key, base_url=base_url)
+        return OpenAICompatibleRerankerProvider(client, model_name=model_name)
     if provider_name in {"openai_compatible", "xiaomi_mimo"}:
         api_key = settings.RERANKER_API_KEY or settings.LLM_API_KEY
         base_url = settings.RERANKER_BASE_URL or settings.LLM_BASE_URL

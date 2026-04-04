@@ -507,9 +507,9 @@ async def forgot_password(
         db.add(token)
         await db.commit()
 
-        logger.info(
-            f"[密码重置] 用户 {data.email} 的验证码: {code}（15分钟内有效）"
-        )
+        # 发送邮件（SMTP 未配置时降级为日志）
+        from app.services.email import send_reset_code_email
+        await send_reset_code_email(data.email, code)
 
     return {"message": "If the email exists, a reset code has been sent."}
 
