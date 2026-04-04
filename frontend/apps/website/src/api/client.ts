@@ -1,7 +1,6 @@
 import ky from "ky";
 
 const TOKEN_KEY = "cdm_token";
-const ORG_KEY = "cdm_org_id";
 
 export const apiClient = ky.create({
   prefixUrl: "/api/v1",
@@ -13,17 +12,14 @@ export const apiClient = ky.create({
         if (token) {
           request.headers.set("Authorization", `Bearer ${token}`);
         }
-        const orgId = localStorage.getItem(ORG_KEY);
-        if (orgId) {
-          request.headers.set("X-Organization-ID", orgId);
-        }
+        // 注意：不再注入 X-Organization-ID
+        // org_id 已内嵌在 JWT 中，由后端从 token 解析
       },
     ],
     afterResponse: [
       async (_request, _options, response) => {
         if (response.status === 401) {
           localStorage.removeItem(TOKEN_KEY);
-          localStorage.removeItem(ORG_KEY);
           window.location.href = "/login";
         }
       },
@@ -37,11 +33,6 @@ export function setToken(token: string) {
 
 export function clearToken() {
   localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(ORG_KEY);
-}
-
-export function setOrgId(orgId: string) {
-  localStorage.setItem(ORG_KEY, orgId);
 }
 
 export function getStoredToken(): string | null {

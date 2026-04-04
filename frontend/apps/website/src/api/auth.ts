@@ -1,7 +1,7 @@
 import { apiClient } from "./client";
-import type { TokenResponse, UserInfo, MenuItem } from "@/types/auth";
+import type { LoginResponse, SelectOrgResponse, UserInfo, MenuItem, OrgBrief } from "@/types/auth";
 
-export async function loginApi(username: string, password: string): Promise<TokenResponse> {
+export async function loginApi(username: string, password: string): Promise<LoginResponse> {
   const formData = new URLSearchParams();
   formData.append("username", username);
   formData.append("password", password);
@@ -11,7 +11,29 @@ export async function loginApi(username: string, password: string): Promise<Toke
       body: formData,
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
     })
-    .json<TokenResponse>();
+    .json<LoginResponse>();
+}
+
+/** 多部门登录时，用 selection_token 选择部门 */
+export async function selectOrgApi(
+  orgId: string,
+  selectionToken: string,
+): Promise<SelectOrgResponse> {
+  return apiClient
+    .post("auth/select-org", {
+      json: { org_id: orgId, selection_token: selectionToken },
+    })
+    .json<SelectOrgResponse>();
+}
+
+/** 已登录用户切换部门 */
+export async function switchOrgApi(orgId: string): Promise<SelectOrgResponse> {
+  return apiClient.post("auth/switch-org", { json: { org_id: orgId } }).json<SelectOrgResponse>();
+}
+
+/** 获取当前用户可用的部门列表 */
+export async function getMyOrgsApi(): Promise<OrgBrief[]> {
+  return apiClient.get("auth/my-orgs").json<OrgBrief[]>();
 }
 
 export async function getMeApi(): Promise<UserInfo> {

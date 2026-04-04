@@ -3,9 +3,39 @@ export interface LoginRequest {
   password: string;
 }
 
-export interface TokenResponse {
+/** 单部门登录直接返回的完整响应 */
+export interface LoginSuccessResponse {
   access_token: string;
   token_type: string;
+  require_org_selection: false;
+  organization: OrgBrief;
+}
+
+/** 多部门登录需要选择部门的响应 */
+export interface OrgSelectionResponse {
+  access_token: null;
+  token_type: string;
+  require_org_selection: true;
+  selection_token: string;
+  organizations: OrgBrief[];
+}
+
+/** 登录接口的联合类型响应 */
+export type LoginResponse = LoginSuccessResponse | OrgSelectionResponse;
+
+/** 部门摘要信息 */
+export interface OrgBrief {
+  id: string;
+  name: string;
+  tenant_id: string;
+  tenant_name?: string | null;
+}
+
+/** select-org / switch-org 返回 */
+export interface SelectOrgResponse {
+  access_token: string;
+  token_type: string;
+  organization: OrgBrief;
 }
 
 export interface UserInfo {
