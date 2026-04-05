@@ -17,7 +17,9 @@
     "ky": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "react-markdown": "catalog:",
     "react-router-dom": "catalog:",
+    "remark-gfm": "catalog:",
     "zustand": "catalog:"
   },
   "devDependencies": {
