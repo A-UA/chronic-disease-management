@@ -24,6 +24,8 @@ class KBRead(BaseModel):
     name: str
     description: str | None
     org_id: int
+    document_count: int = 0
+    chunk_count: int = 0
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -48,10 +50,18 @@ async def create_knowledge_base(
     db.add(kb)
     await db.commit()
     await db.refresh(kb)
-    return kb
+    return KBRead(
+        id=kb.id,
+        name=kb.name,
+        description=kb.description,
+        org_id=kb.org_id,
+        document_count=0,
+        chunk_count=0,
+        created_at=kb.created_at,
+    )
 
 
-@router.get("", response_model=List[KBRead])
+@router.get("", response_model=list[KBRead])
 async def list_knowledge_bases(
     skip: int = 0,
     limit: int = 100,
@@ -59,12 +69,57 @@ async def list_knowledge_bases(
     effective_org_id: int | None = Depends(get_effective_org_id),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
-    stmt = select(KnowledgeBase).where(KnowledgeBase.tenant_id == tenant_id)
+    from sqlalchemy import func
+    from app.db.models import Document, Chunk
+
+    # 子查询：每个 KB 的文档数
+    doc_count_sq = (
+        select(
+            Document.kb_id,
+            func.count(Document.id).label("document_count"),
+        )
+        .group_by(Document.kb_id)
+        .subquery()
+    )
+
+    # 子查询：每个 KB 的切块数
+    chunk_count_sq = (
+        select(
+            Chunk.kb_id,
+            func.count(Chunk.id).label("chunk_count"),
+        )
+        .group_by(Chunk.kb_id)
+        .subquery()
+    )
+
+    stmt = (
+        select(
+            KnowledgeBase,
+            func.coalesce(doc_count_sq.c.document_count, 0).label("document_count"),
+            func.coalesce(chunk_count_sq.c.chunk_count, 0).label("chunk_count"),
+        )
+        .outerjoin(doc_count_sq, KnowledgeBase.id == doc_count_sq.c.kb_id)
+        .outerjoin(chunk_count_sq, KnowledgeBase.id == chunk_count_sq.c.kb_id)
+        .where(KnowledgeBase.tenant_id == tenant_id)
+    )
     if effective_org_id is not None:
         stmt = stmt.where(KnowledgeBase.org_id == effective_org_id)
     stmt = stmt.offset(skip).limit(limit)
+
     result = await db.execute(stmt)
-    return result.scalars().all()
+    rows = result.all()
+    return [
+        KBRead(
+            id=kb.id,
+            name=kb.name,
+            description=kb.description,
+            org_id=kb.org_id,
+            document_count=doc_cnt,
+            chunk_count=chunk_cnt,
+            created_at=kb.created_at,
+        )
+        for kb, doc_cnt, chunk_cnt in rows
+    ]
 
 
 @router.delete("/{kb_id}")
