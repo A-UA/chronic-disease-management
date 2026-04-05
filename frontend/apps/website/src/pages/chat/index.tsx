@@ -1,6 +1,24 @@
 import { useState, useEffect, useRef, useCallback, memo } from "react";
-import { Card, Input, Button, List, Select, App, Space, Typography, Spin, Tag } from "antd";
-import { SendOutlined, RobotOutlined, UserOutlined, PlusOutlined } from "@ant-design/icons";
+import {
+  Card,
+  Input,
+  Button,
+  List,
+  Select,
+  App,
+  Space,
+  Typography,
+  Spin,
+  Tag,
+  Popover,
+} from "antd";
+import {
+  SendOutlined,
+  RobotOutlined,
+  UserOutlined,
+  PlusOutlined,
+  FileTextOutlined,
+} from "@ant-design/icons";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { listConversations, getConversation, sendChat, type ChatConversation } from "@/api/chat";
@@ -10,133 +28,217 @@ import { listKBs, type KnowledgeBase } from "@/api/knowledge";
  *  类型
  * ================================================================ */
 
+interface Citation {
+  doc_id: string;
+  chunk_id?: string;
+  ref: string;
+  page?: number;
+  snippet: string;
+}
+
 interface Message {
   role: "user" | "assistant";
   content: string;
+  citations?: Citation[];
 }
 
 /* ================================================================
- *  Markdown 自定义组件：[Doc n] 引用高亮
+ *  [Doc n] 引用匹配 — 支持单引用和多引用
+ *
+ *  匹配模式：
+ *    [Doc 1]          → 单个引用
+ *    [Doc 1, Doc 3]   → 多个引用
+ *    [Doc 1][Doc 3]   → 相邻引用
  * ================================================================ */
 
-/**
- * 将文本中的 [Doc n] 替换为蓝色 Tag。
- * 作为 react-markdown 的自定义 text/paragraph 渲染器使用。
- */
-function renderWithDocRefs(text: string) {
-  const parts = text.split(/(\[Doc\s*\d+\])/gi);
-  return parts.map((part, i) =>
-    /^\[Doc\s*\d+\]$/i.test(part) ? (
-      <Tag key={i} color="geekblue" className="mx-0.5 text-xs cursor-default">
-        {part}
+// 匹配 [Doc N] 或 [Doc N, Doc M, ...] 两种格式
+const DOC_REF_RE = /(\[(?:Doc\s*\d+(?:\s*,\s*Doc\s*\d+)*)\])/gi;
+// 从匹配的字符串中提取所有 Doc 编号
+const DOC_NUM_RE = /Doc\s*(\d+)/gi;
+
+function extractDocNums(matched: string): number[] {
+  const nums: number[] = [];
+  let m: RegExpExecArray | null;
+  DOC_NUM_RE.lastIndex = 0;
+  while ((m = DOC_NUM_RE.exec(matched)) !== null) {
+    nums.push(parseInt(m[1], 10));
+  }
+  return nums;
+}
+
+/* ================================================================
+ *  引用 Popover 组件
+ * ================================================================ */
+
+function DocRefTag({ text, citations }: { text: string; citations: Citation[] }) {
+  const nums = extractDocNums(text);
+  const matched = nums
+    .map((n) => citations.find((c) => c.ref === `Doc ${n}`))
+    .filter(Boolean) as Citation[];
+
+  if (matched.length === 0) {
+    return (
+      <Tag color="geekblue" className="mx-0.5 text-xs cursor-default">
+        {text}
       </Tag>
+    );
+  }
+
+  const popoverContent = (
+    <div className="max-w-sm space-y-2">
+      {matched.map((c, i) => (
+        <div key={i} className="text-xs">
+          <div className="font-semibold text-blue-600 mb-0.5 flex items-center gap-1">
+            <FileTextOutlined />
+            {c.ref}
+            {c.page != null && (
+              <span className="text-gray-400 font-normal ml-1">第 {c.page} 页</span>
+            )}
+          </div>
+          <div className="text-gray-600 leading-relaxed bg-gray-50 rounded p-2 border border-gray-100">
+            {c.snippet || "（无摘要）"}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  return (
+    <Popover
+      content={popoverContent}
+      title={<span className="text-sm font-semibold">📄 参考来源</span>}
+      trigger="click"
+      placement="top"
+    >
+      <Tag
+        color="geekblue"
+        className="mx-0.5 text-xs cursor-pointer hover:shadow-md transition-shadow"
+      >
+        {text}
+      </Tag>
+    </Popover>
+  );
+}
+
+/* ================================================================
+ *  文本中 [Doc n] 替换渲染
+ * ================================================================ */
+
+function renderWithDocRefs(text: string, citations: Citation[]) {
+  const parts = text.split(DOC_REF_RE);
+  return parts.map((part, i) =>
+    DOC_REF_RE.test(part) ? (
+      <DocRefTag key={i} text={part} citations={citations} />
     ) : (
       <span key={i}>{part}</span>
     ),
   );
 }
 
-/** react-markdown 自定义组件映射 */
-const markdownComponents: Components = {
-  // 段落：嵌入 [Doc n] 引用标签
-  p({ children }) {
-    if (typeof children === "string") {
-      return <p className="mb-2 leading-relaxed">{renderWithDocRefs(children)}</p>;
-    }
-    // children 可能是混合节点（包含 strong/em 等）
-    const processed = Array.isArray(children)
-      ? children.map((child, i) =>
-          typeof child === "string" ? <span key={i}>{renderWithDocRefs(child)}</span> : child,
-        )
-      : children;
-    return <p className="mb-2 leading-relaxed">{processed}</p>;
-  },
-  // 列表项：也处理 [Doc n]
-  li({ children }) {
-    if (typeof children === "string") {
-      return <li className="mb-1">{renderWithDocRefs(children)}</li>;
-    }
-    return <li className="mb-1">{children}</li>;
-  },
-  // 标题样式
-  h1({ children }) {
-    return <h1 className="text-lg font-bold mt-4 mb-2 text-gray-800">{children}</h1>;
-  },
-  h2({ children }) {
-    return <h2 className="text-base font-bold mt-3 mb-2 text-gray-800">{children}</h2>;
-  },
-  h3({ children }) {
-    return <h3 className="text-sm font-bold mt-2 mb-1 text-gray-700">{children}</h3>;
-  },
-  // 列表容器
-  ul({ children }) {
-    return <ul className="list-disc pl-5 mb-2 space-y-1">{children}</ul>;
-  },
-  ol({ children }) {
-    return <ol className="list-decimal pl-5 mb-2 space-y-1">{children}</ol>;
-  },
-  // 粗体
-  strong({ children }) {
-    return <strong className="font-semibold text-gray-900">{children}</strong>;
-  },
-  // 代码块
-  code({ className, children }) {
-    const isInline = !className;
-    if (isInline) {
+/* ================================================================
+ *  构建 react-markdown 组件（闭包注入 citations）
+ * ================================================================ */
+
+function buildMarkdownComponents(citations: Citation[]): Components {
+  return {
+    p({ children }) {
+      if (typeof children === "string") {
+        return <p className="mb-2 leading-relaxed">{renderWithDocRefs(children, citations)}</p>;
+      }
+      const processed = Array.isArray(children)
+        ? children.map((child, i) =>
+            typeof child === "string" ? (
+              <span key={i}>{renderWithDocRefs(child, citations)}</span>
+            ) : (
+              child
+            ),
+          )
+        : children;
+      return <p className="mb-2 leading-relaxed">{processed}</p>;
+    },
+    li({ children }) {
+      if (typeof children === "string") {
+        return <li className="mb-1">{renderWithDocRefs(children, citations)}</li>;
+      }
+      return <li className="mb-1">{children}</li>;
+    },
+    h1({ children }) {
+      return <h1 className="text-lg font-bold mt-4 mb-2 text-gray-800">{children}</h1>;
+    },
+    h2({ children }) {
+      return <h2 className="text-base font-bold mt-3 mb-2 text-gray-800">{children}</h2>;
+    },
+    h3({ children }) {
+      return <h3 className="text-sm font-bold mt-2 mb-1 text-gray-700">{children}</h3>;
+    },
+    ul({ children }) {
+      return <ul className="list-disc pl-5 mb-2 space-y-1">{children}</ul>;
+    },
+    ol({ children }) {
+      return <ol className="list-decimal pl-5 mb-2 space-y-1">{children}</ol>;
+    },
+    strong({ children }) {
+      return <strong className="font-semibold text-gray-900">{children}</strong>;
+    },
+    code({ className, children }) {
+      const isInline = !className;
+      if (isInline) {
+        return (
+          <code className="bg-gray-100 text-red-600 rounded px-1 py-0.5 text-xs font-mono">
+            {children}
+          </code>
+        );
+      }
       return (
-        <code className="bg-gray-100 text-red-600 rounded px-1 py-0.5 text-xs font-mono">
-          {children}
-        </code>
+        <pre className="bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto text-sm my-2">
+          <code className="font-mono">{children}</code>
+        </pre>
       );
-    }
-    return (
-      <pre className="bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto text-sm my-2">
-        <code className="font-mono">{children}</code>
-      </pre>
-    );
-  },
-  // 表格
-  table({ children }) {
-    return (
-      <div className="overflow-x-auto my-2">
-        <table className="min-w-full border border-gray-200 text-sm">{children}</table>
-      </div>
-    );
-  },
-  th({ children }) {
-    return (
-      <th className="bg-gray-50 border border-gray-200 px-3 py-2 text-left font-semibold">
-        {children}
-      </th>
-    );
-  },
-  td({ children }) {
-    return <td className="border border-gray-200 px-3 py-2">{children}</td>;
-  },
-  // 引用块
-  blockquote({ children }) {
-    return (
-      <blockquote className="border-l-4 border-blue-300 pl-4 my-2 text-gray-600 italic">
-        {children}
-      </blockquote>
-    );
-  },
-};
+    },
+    table({ children }) {
+      return (
+        <div className="overflow-x-auto my-2">
+          <table className="min-w-full border border-gray-200 text-sm">{children}</table>
+        </div>
+      );
+    },
+    th({ children }) {
+      return (
+        <th className="bg-gray-50 border border-gray-200 px-3 py-2 text-left font-semibold">
+          {children}
+        </th>
+      );
+    },
+    td({ children }) {
+      return <td className="border border-gray-200 px-3 py-2">{children}</td>;
+    },
+    blockquote({ children }) {
+      return (
+        <blockquote className="border-l-4 border-blue-300 pl-4 my-2 text-gray-600 italic">
+          {children}
+        </blockquote>
+      );
+    },
+  };
+}
 
 /* ================================================================
- *  Markdown 消息组件（带 memo 优化）
+ *  Markdown 消息组件
  * ================================================================ */
 
 const MarkdownMessage = memo(function MarkdownMessage({
   content,
+  citations,
   isStreaming,
 }: {
   content: string;
+  citations: Citation[];
   isStreaming: boolean;
 }) {
+  const components = buildMarkdownComponents(citations);
   return (
     <div className="text-sm">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
         {content}
       </ReactMarkdown>
       {isStreaming && !content && <Spin size="small" />}
@@ -218,6 +320,7 @@ export default function AIChatPage() {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let assistantContent = "";
+      let currentCitations: Citation[] = [];
       setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
       let buffer = "";
@@ -235,19 +338,29 @@ export default function AIChatPage() {
           try {
             const payload = JSON.parse(line.slice(6)) as Record<string, unknown>;
 
+            // meta 事件：获取 conversation_id 和 citations
             if ("conversation_id" in payload && typeof payload.conversation_id === "string") {
               setCurrentConvId(payload.conversation_id);
             }
+            if ("citations" in payload && Array.isArray(payload.citations)) {
+              currentCitations = payload.citations as Citation[];
+            }
 
+            // chunk 事件
             if ("text" in payload && typeof payload.text === "string") {
               assistantContent += payload.text;
               setMessages((prev) => {
                 const updated = [...prev];
-                updated[updated.length - 1] = { role: "assistant", content: assistantContent };
+                updated[updated.length - 1] = {
+                  role: "assistant",
+                  content: assistantContent,
+                  citations: currentCitations,
+                };
                 return updated;
               });
             }
 
+            // done 事件
             if ("tokens" in payload) {
               void listConversations()
                 .then(setConversations)
@@ -318,7 +431,10 @@ export default function AIChatPage() {
               onChange={setSelectedKB}
               style={{ width: 180 }}
               size="small"
-              options={kbList.map((kb) => ({ label: kb.name, value: kb.id }))}
+              options={kbList.map((kb) => ({
+                label: kb.name,
+                value: kb.id,
+              }))}
               placeholder="选择知识库"
             />
           </Space>
@@ -355,6 +471,7 @@ export default function AIChatPage() {
                 {msg.role === "assistant" ? (
                   <MarkdownMessage
                     content={msg.content}
+                    citations={msg.citations ?? []}
                     isStreaming={streaming && idx === messages.length - 1}
                   />
                 ) : (
