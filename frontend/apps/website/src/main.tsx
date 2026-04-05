@@ -23,8 +23,16 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         locale={zhCN}
         theme={{
           token: {
-            colorPrimary: "#1677ff",
+            colorPrimary: "#6366f1",
+            colorSuccess: "#10b981",
+            colorWarning: "#f59e0b",
+            colorError: "#ef4444",
+            colorInfo: "#6366f1",
             borderRadius: 8,
+            fontFamily: '"Inter", "Noto Sans SC", system-ui, -apple-system, sans-serif',
+            colorBgContainer: "#ffffff",
+            colorBorder: "#e5e7eb",
+            colorBgLayout: "#f8fafc",
           },
         }}
       >
