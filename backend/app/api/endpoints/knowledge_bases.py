@@ -1,14 +1,14 @@
 from datetime import datetime
-from typing import Any, List
+from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 
 from app.api.deps import (
     get_db, get_current_user, get_current_org_id, get_effective_org_id,
     get_current_tenant_id, inject_rls_context,
 )
-from app.db.models import User, KnowledgeBase
+from app.db.models import User, KnowledgeBase, Document, Chunk
 from pydantic import BaseModel, ConfigDict
 
 router = APIRouter()
@@ -69,25 +69,25 @@ async def list_knowledge_bases(
     effective_org_id: int | None = Depends(get_effective_org_id),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
-    from sqlalchemy import func
-    from app.db.models import Document, Chunk
 
-    # 子查询：每个 KB 的文档数
+    # 子查询：每个 KB 的文档数（排除软删除）
     doc_count_sq = (
         select(
             Document.kb_id,
             func.count(Document.id).label("document_count"),
         )
+        .where(Document.deleted_at.is_(None))
         .group_by(Document.kb_id)
         .subquery()
     )
 
-    # 子查询：每个 KB 的切块数
+    # 子查询：每个 KB 的切块数（排除软删除）
     chunk_count_sq = (
         select(
             Chunk.kb_id,
             func.count(Chunk.id).label("chunk_count"),
         )
+        .where(Chunk.deleted_at.is_(None))
         .group_by(Chunk.kb_id)
         .subquery()
     )
@@ -145,7 +145,7 @@ class KBUpdate(BaseModel):
     description: str | None = None
 
 
-@router.put("/{kb_id}")
+@router.put("/{kb_id}", response_model=KBRead)
 async def update_knowledge_base(
     kb_id: int,
     data: KBUpdate,
@@ -164,7 +164,26 @@ async def update_knowledge_base(
         setattr(kb, field, value)
     await db.commit()
     await db.refresh(kb)
-    return kb
+
+    # 查询统计数据
+    doc_count = (await db.execute(
+        select(func.count(Document.id))
+        .where(Document.kb_id == kb_id, Document.deleted_at.is_(None))
+    )).scalar() or 0
+    chunk_count = (await db.execute(
+        select(func.count(Chunk.id))
+        .where(Chunk.kb_id == kb_id, Chunk.deleted_at.is_(None))
+    )).scalar() or 0
+
+    return KBRead(
+        id=kb.id,
+        name=kb.name,
+        description=kb.description,
+        org_id=kb.org_id,
+        document_count=doc_count,
+        chunk_count=chunk_count,
+        created_at=kb.created_at,
+    )
 
 
 @router.get("/{kb_id}/stats")
@@ -175,8 +194,6 @@ async def get_knowledge_base_stats(
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     """获取知识库统计信息：文档数、chunk 数、总 token 数"""
-    from sqlalchemy import func
-    from app.db.models import Document, Chunk
 
     kb = await db.get(KnowledgeBase, kb_id)
     if not kb or kb.tenant_id != tenant_id:

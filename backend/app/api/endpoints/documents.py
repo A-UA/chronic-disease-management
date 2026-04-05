@@ -1,3 +1,4 @@
+import logging
 from fastapi import (
     APIRouter,
     Depends,
@@ -7,8 +8,7 @@ from fastapi import (
     BackgroundTasks,
     Form,
 )
-import logging
-from sqlalchemy import select, delete
+from sqlalchemy import func, select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import (
@@ -16,7 +16,7 @@ from app.api.deps import (
     get_current_tenant_id, inject_rls_context, get_db,
 )
 from app.core.config import settings
-from app.db.models import User, Document, KnowledgeBase, PatientProfile
+from app.db.models import User, Document, KnowledgeBase, PatientProfile, Chunk
 from app.services.document_parser import DocumentParseError, parse_document
 from app.services.rag_ingestion import process_document
 from app.services.storage import get_storage_service
@@ -122,20 +122,57 @@ async def list_documents(
     effective_org_id: int | None = Depends(get_effective_org_id),
     db: AsyncSession = Depends(get_db),
 ):
-    """查询知识库下的文档列表"""
+    """查询知识库下的文档列表（含切块数）"""
     kb = await db.get(KnowledgeBase, kb_id)
     if kb is None or kb.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Knowledge base not found")
 
-    stmt = select(Document).where(Document.kb_id == kb_id, Document.tenant_id == tenant_id)
+    # 子查询：每个文档的切块数（排除软删除）
+    chunk_count_sq = (
+        select(
+            Chunk.document_id,
+            func.count(Chunk.id).label("chunk_count"),
+        )
+        .where(Chunk.deleted_at.is_(None))
+        .group_by(Chunk.document_id)
+        .subquery()
+    )
+
+    stmt = (
+        select(
+            Document,
+            func.coalesce(chunk_count_sq.c.chunk_count, 0).label("chunk_count"),
+        )
+        .outerjoin(chunk_count_sq, Document.id == chunk_count_sq.c.document_id)
+        .where(Document.kb_id == kb_id, Document.tenant_id == tenant_id)
+    )
     if effective_org_id is not None:
         stmt = stmt.where(Document.org_id == effective_org_id)
     if patient_id is not None:
         stmt = stmt.where(Document.patient_id == patient_id)
-        
+
     stmt = stmt.offset(skip).limit(limit).order_by(Document.created_at.desc())
     result = await db.execute(stmt)
-    return result.scalars().all()
+    rows = result.all()
+    return [
+        DocumentRead(
+            id=doc.id,
+            kb_id=doc.kb_id,
+            org_id=doc.org_id,
+            uploader_id=doc.uploader_id,
+            patient_id=doc.patient_id,
+            file_name=doc.file_name,
+            file_type=doc.file_type,
+            file_size=doc.file_size,
+            minio_url=doc.minio_url,
+            status=doc.status,
+            failed_reason=doc.failed_reason,
+            chunk_count=chunk_cnt,
+            created_at=doc.created_at,
+            updated_at=doc.updated_at,
+        )
+        for doc, chunk_cnt in rows
+    ]
 
 
 @router.get("/{document_id}", response_model=DocumentRead)
@@ -145,11 +182,32 @@ async def get_document(
     tenant_id: int = Depends(inject_rls_context),
     db: AsyncSession = Depends(get_db),
 ):
-    """获取指定文档详情"""
+    """获取指定文档详情（含切块数）"""
     doc = await db.get(Document, document_id)
     if doc is None or doc.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Document not found")
-    return doc
+
+    chunk_count = (await db.execute(
+        select(func.count(Chunk.id))
+        .where(Chunk.document_id == document_id, Chunk.deleted_at.is_(None))
+    )).scalar() or 0
+
+    return DocumentRead(
+        id=doc.id,
+        kb_id=doc.kb_id,
+        org_id=doc.org_id,
+        uploader_id=doc.uploader_id,
+        patient_id=doc.patient_id,
+        file_name=doc.file_name,
+        file_type=doc.file_type,
+        file_size=doc.file_size,
+        minio_url=doc.minio_url,
+        status=doc.status,
+        failed_reason=doc.failed_reason,
+        chunk_count=chunk_count,
+        created_at=doc.created_at,
+        updated_at=doc.updated_at,
+    )
 
 
 @router.delete("/{document_id}", response_model=dict)

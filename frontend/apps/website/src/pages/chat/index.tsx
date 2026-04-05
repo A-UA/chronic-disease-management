@@ -43,7 +43,7 @@ export default function AIChatPage() {
   }, [messages]);
 
   const newConversation = () => {
-    setCurrentConvId(`conv-${Date.now()}`);
+    setCurrentConvId(String(Date.now()));
     setMessages([]);
   };
 
@@ -52,7 +52,7 @@ export default function AIChatPage() {
     const query = input.trim();
     setInput("");
 
-    const convId = currentConvId || `conv-${Date.now()}`;
+    const convId = currentConvId || String(Date.now());
     if (!currentConvId) setCurrentConvId(convId);
 
     setMessages((prev) => [...prev, { role: "user", content: query }]);
