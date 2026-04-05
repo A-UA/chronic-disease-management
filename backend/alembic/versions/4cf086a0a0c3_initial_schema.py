@@ -1,8 +1,8 @@
-"""tenant_organization_split_v2
+"""initial_schema
 
-Revision ID: d08f011b680f
+Revision ID: 4cf086a0a0c3
 Revises: 
-Create Date: 2026-04-04 23:16:58.094951
+Create Date: 2026-04-05 13:41:05.592024
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ from sqlalchemy.dialects import postgresql
 import pgvector.sqlalchemy.vector
 
 # revision identifiers, used by Alembic.
-revision: str = 'd08f011b680f'
+revision: str = '4cf086a0a0c3'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
