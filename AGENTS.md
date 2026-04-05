@@ -33,7 +33,8 @@
 | **数据库迁移** | Alembic |
 | **前端框架** | React 19 + TypeScript 5.x |
 | **前端构建** | Vite+ (Vite 8 / Rolldown) monorepo |
-| **UI 组件库** | Ant Design 5.x + ProComponents |
+| **CSS 框架** | Tailwind CSS 4.x（`@tailwindcss/vite` 插件集成，自定义 design token） |
+| **UI 组件库** | Ant Design 6.x + ProComponents |
 | **状态管理** | zustand |
 | **HTTP 客户端** | ky |
 | **数据请求** | TanStack React Query |
@@ -84,7 +85,7 @@ chronic-disease-management/
 │   │   └── website/                   # 管理后台应用
 │   │       ├── src/
 │   │       │   ├── main.tsx           # React 入口
-│   │       │   ├── global.css         # 全局样式重置
+│   │       │   ├── global.css         # Tailwind 入口 + @theme 自定义 design token + 全局样式
 │   │       │   ├── api/               # HTTP 客户端与接口封装
 │   │       │   │   ├── client.ts      # ky 实例（Token 注入、401 拦截）
 │   │       │   │   ├── auth.ts        # 登录/选部门/切换部门/用户信息/菜单树
@@ -123,7 +124,7 @@ chronic-disease-management/
 │   │       │       ├── audit/index.tsx        # 操作审计日志
 │   │       │       ├── 403.tsx               # 无权限页
 │   │       │       └── 404.tsx               # 未找到页
-│   │       ├── vite.config.ts         # Vite 配置（React 插件 + 代理）
+│   │       ├── vite.config.ts         # Vite 配置（React + Tailwind 插件 + 代理）
 │   │       └── tsconfig.json          # TypeScript 配置
 │   ├── packages/                      # 共享包（预留）
 │   ├── package.json                   # Monorepo 根配置
@@ -242,6 +243,36 @@ staff (基础成员)
 - **认证守卫**：`AuthRoute.tsx` 检查 token，未登录跳转 `/login`，已登录自动拉取用户信息和菜单
 - **权限控制**：`usePermission` Hook 判断按钮级权限（如删除按钮仅 `patient:delete` 可见）
 - **请求拦截**：ky 客户端自动注入 `Authorization` 和 `X-Organization-ID`，401 自动登出
+
+### 样式体系：Tailwind CSS 4.x + 自定义 Design Token
+
+项目使用 **Tailwind CSS 4.x**（通过 `@tailwindcss/vite` Vite 插件集成），采用 utility-first 方案编写样式。
+
+**集成方式**：
+- `vite.config.ts` 中注册 `@tailwindcss/vite` 插件
+- `global.css` 中通过 `@import "tailwindcss"` 引入，并在 `@theme` 块中定义自定义 design token
+- Tailwind v4 不再需要 `tailwind.config.js`，所有配置（包括自定义主题 token）直接写在 CSS 中
+
+**自定义 Design Token 规范**（遵循 shadcn/ui 命名约定）：
+- 在 `global.css` 的 `@theme` 块中定义项目级 token，采用 `{role}` / `{role}-foreground` 配对模式
+- 核心 token 清单：
+  - **基础**：`--background` / `--foreground`
+  - **卡片**：`--card` / `--card-foreground`
+  - **弹层**：`--popover` / `--popover-foreground`
+  - **主色**：`--primary` / `--primary-foreground`
+  - **辅色**：`--secondary` / `--secondary-foreground`
+  - **柔和**：`--muted` / `--muted-foreground`
+  - **强调**：`--accent` / `--accent-foreground`
+  - **危险**：`--destructive` / `--destructive-foreground`
+  - **边框/输入/环**：`--border`、`--input`、`--ring`
+  - **圆角**：`--radius`
+  - **图表**：`--chart-1` ~ `--chart-5`
+  - **侧边栏**：`--sidebar-*` 系列（可选）
+- 定义后可直接在 Tailwind utility class 中使用，如 `bg-primary`、`text-muted-foreground`、`border-border`
+
+**Ant Design 兼容**：
+- `global.css` 中 `@layer base` 做了最小化重置，避免 Tailwind preflight 破坏 antd 组件样式
+- antd 组件内部样式依然由 antd 自身管理，自定义布局和页面样式用 Tailwind utility class
 
 ### 已实现页面
 
@@ -375,6 +406,10 @@ vp build                              # 生产构建
 - **异步规范**：`navigate()` 等返回 Promise 的函数需加 `void` 前缀
 - **新增页面**：在 `pages/` 创建组件 → 在 `router/registry.tsx` 注册 menu code 映射
 - **提交前检查**：pre-commit hook 自动运行 `vp check --fix`
+- **样式编写**：优先使用 Tailwind utility class（如 `className="flex items-center gap-4 rounded-lg bg-primary text-primary-foreground"`），避免手写自定义 CSS
+- **自定义 Token**：新增 design token 统一在 `global.css` 的 `@theme` 块中定义，命名遵循 shadcn `{role}/{role}-foreground` 配对规范，不要在组件内 inline 定义 CSS 变量
+- **Tailwind 配置**：Tailwind v4 无需 `tailwind.config.js`，所有主题扩展写在 `global.css` 的 `@theme` 中
+- **antd 样式兼容**：不要用 Tailwind 覆盖 antd 组件内部样式；antd 组件的定制通过 ConfigProvider theme token 实现
 
 ## 10. 已完成事项
 
