@@ -29,24 +29,21 @@ class Settings(BaseSettings):
     # Upload
     MAX_UPLOAD_SIZE_MB: int = 50
 
-    # Embeddings
-    EMBEDDING_PROVIDER: str = "openai"
-    EMBEDDING_MODEL: str = "text-embedding-3-small"
-    OPENAI_API_KEY: str = ""
-    EMBEDDING_API_KEY: str = ""
-    EMBEDDING_BASE_URL: str = ""
-
-    # Reranker
-    RERANKER_PROVIDER: str = "noop"
-    RERANKER_MODEL: str = ""
-    RERANKER_API_KEY: str = ""
-    RERANKER_BASE_URL: str = ""
-
-    # Chat LLM
-    LLM_PROVIDER: str = "openai_compatible"
+    # ── AI 通用配置（LLM / Embedding / Reranker 共享的回退配置）──
+    LLM_BASE_URL: str = ""      # OpenAI-compatible 服务地址（必填）
+    LLM_API_KEY: str = ""       # 对应厂商的 API Key（必填）
     CHAT_MODEL: str = "gpt-4o-mini"
-    LLM_API_KEY: str = ""
-    LLM_BASE_URL: str = ""
+
+    # ── Embedding（留空则回退到 LLM_* 配置）──
+    EMBEDDING_BASE_URL: str = ""
+    EMBEDDING_API_KEY: str = ""
+    EMBEDDING_MODEL: str = "text-embedding-3-small"
+
+    # ── Reranker（provider 决定实现类：noop / simple / 其他为 OpenAI-compatible）──
+    RERANKER_PROVIDER: str = "noop"
+    RERANKER_BASE_URL: str = ""
+    RERANKER_API_KEY: str = ""
+    RERANKER_MODEL: str = ""
 
     # RAG 检索参数
     RAG_VECTOR_WEIGHT: float = 0.7  # 向量检索在 RRF 融合中的权重

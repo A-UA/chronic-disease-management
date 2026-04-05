@@ -74,18 +74,16 @@ class OpenAICompatibleLLMProvider:
 
 
 def get_llm_provider() -> LLMProvider:
-    provider_name = settings.LLM_PROVIDER.lower().strip()
+    """
+    配置驱动的 LLM Provider 工厂。
 
-    if provider_name in {"openai_compatible", "xiaomi_mimo"}:
-        if not settings.LLM_API_KEY:
-            raise ValueError("LLM_API_KEY is required when LLM_PROVIDER=openai_compatible")
-        if not settings.LLM_BASE_URL:
-            raise ValueError("LLM_BASE_URL is required when LLM_PROVIDER=openai_compatible")
+    所有 OpenAI-compatible 厂商均通过 LLM_BASE_URL + LLM_API_KEY + CHAT_MODEL 接入。
+    """
+    if not settings.LLM_API_KEY:
+        raise ValueError("请设置 LLM_API_KEY")
+    if not settings.LLM_BASE_URL:
+        raise ValueError("请设置 LLM_BASE_URL。常见厂商地址参考 .env.example")
 
-        client = AsyncOpenAI(
-            api_key=settings.LLM_API_KEY,
-            base_url=settings.LLM_BASE_URL,
-        )
-        return OpenAICompatibleLLMProvider(client, model_name=settings.CHAT_MODEL)
-
-    raise ValueError(f"Unsupported LLM provider: {settings.LLM_PROVIDER}")
+    logger.info("LLM Provider: model=%s, base_url=%s", settings.CHAT_MODEL, settings.LLM_BASE_URL)
+    client = AsyncOpenAI(api_key=settings.LLM_API_KEY, base_url=settings.LLM_BASE_URL)
+    return OpenAICompatibleLLMProvider(client, model_name=settings.CHAT_MODEL)

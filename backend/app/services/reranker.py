@@ -111,27 +111,30 @@ class OpenAICompatibleRerankerProvider:
 
 
 def get_reranker_provider() -> RerankerProvider:
+    """
+    Reranker Provider 工厂。
+
+    - noop / none / 空：不重排序，直接截断
+    - simple：基于来源数量的简单加分重排序
+    - 其他值：视为 OpenAI-compatible 重排序服务，需配置 RERANKER_BASE_URL + RERANKER_API_KEY
+    """
     provider_name = settings.RERANKER_PROVIDER.lower().strip()
+
     if provider_name in {"", "noop", "none"}:
         return NoopRerankerProvider()
     if provider_name == "simple":
         return SimpleRerankerProvider()
-    if provider_name == "zhipu":
-        api_key = settings.RERANKER_API_KEY or settings.LLM_API_KEY
-        if not api_key:
-            raise ValueError("RERANKER_API_KEY is required when RERANKER_PROVIDER=zhipu")
-        base_url = settings.RERANKER_BASE_URL or "https://open.bigmodel.cn/api/paas/v4/"
-        model_name = settings.RERANKER_MODEL or "reranker"
-        client = AsyncOpenAI(api_key=api_key, base_url=base_url)
-        return OpenAICompatibleRerankerProvider(client, model_name=model_name)
-    if provider_name in {"openai_compatible", "xiaomi_mimo"}:
-        api_key = settings.RERANKER_API_KEY or settings.LLM_API_KEY
-        base_url = settings.RERANKER_BASE_URL or settings.LLM_BASE_URL
-        model_name = settings.RERANKER_MODEL or settings.CHAT_MODEL
-        if not api_key:
-            raise ValueError("RERANKER_API_KEY is required when RERANKER_PROVIDER=openai_compatible")
-        if not base_url:
-            raise ValueError("RERANKER_BASE_URL is required when RERANKER_PROVIDER=openai_compatible")
-        client = AsyncOpenAI(api_key=api_key, base_url=base_url)
-        return OpenAICompatibleRerankerProvider(client, model_name=model_name)
-    raise ValueError(f"Unsupported reranker provider: {settings.RERANKER_PROVIDER}")
+
+    # 所有其他值均视为 OpenAI-compatible 重排序服务
+    api_key = settings.RERANKER_API_KEY or settings.LLM_API_KEY
+    base_url = settings.RERANKER_BASE_URL or settings.LLM_BASE_URL
+    model_name = settings.RERANKER_MODEL or settings.CHAT_MODEL
+
+    if not api_key:
+        raise ValueError("请设置 RERANKER_API_KEY（或 LLM_API_KEY 作为回退）")
+    if not base_url:
+        raise ValueError("请设置 RERANKER_BASE_URL（或 LLM_BASE_URL 作为回退）")
+
+    client = AsyncOpenAI(api_key=api_key, base_url=base_url)
+    return OpenAICompatibleRerankerProvider(client, model_name=model_name)
+

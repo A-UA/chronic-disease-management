@@ -28,7 +28,7 @@ class EmbeddingProvider:
 
 
 class OpenAIEmbeddingProvider(EmbeddingProvider):
-    """基于 AsyncOpenAI 的异步 Embedding Provider，避免阻塞事件循环"""
+    """基于 AsyncOpenAI 的异步 Embedding Provider，兼容所有 OpenAI-compatible 厂商"""
 
     def __init__(self, client: AsyncOpenAI, model_name: str):
         self.client = client
@@ -78,21 +78,25 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
 
 
 def get_embedding_provider() -> EmbeddingProvider:
-    provider_name = settings.EMBEDDING_PROVIDER.lower().strip()
-    api_key = settings.EMBEDDING_API_KEY or settings.OPENAI_API_KEY or settings.LLM_API_KEY
+    """
+    配置驱动的 Embedding Provider 工厂。
+
+    所有 OpenAI-compatible 厂商（OpenAI / 智谱 / 通义千问 / DeepSeek 等）
+    均通过 BASE_URL + API_KEY + MODEL 三个配置接入，无需修改代码。
+
+    配置回退链：EMBEDDING_* → LLM_*（共享配置）
+    """
+    api_key = settings.EMBEDDING_API_KEY or settings.LLM_API_KEY
     base_url = settings.EMBEDDING_BASE_URL or settings.LLM_BASE_URL
 
-    if provider_name == "openai":
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY is required when EMBEDDING_PROVIDER=openai")
-        client = AsyncOpenAI(api_key=api_key, base_url=base_url or "https://api.openai.com/v1")
-        return OpenAIEmbeddingProvider(client, model_name=settings.EMBEDDING_MODEL)
+    if not api_key:
+        raise ValueError("请设置 EMBEDDING_API_KEY（或 LLM_API_KEY 作为回退）")
+    if not base_url:
+        raise ValueError(
+            "请设置 EMBEDDING_BASE_URL（或 LLM_BASE_URL 作为回退）。"
+            "常见厂商地址参考 .env.example"
+        )
 
-    if provider_name == "zhipu":
-        if not api_key:
-            raise ValueError("EMBEDDING_API_KEY is required when EMBEDDING_PROVIDER=zhipu")
-        # 智谱默认 base_url
-        client = AsyncOpenAI(api_key=api_key, base_url=base_url or "https://open.bigmodel.cn/api/paas/v4/")
-        return OpenAIEmbeddingProvider(client, model_name=settings.EMBEDDING_MODEL)
-
-    raise ValueError(f"Unsupported embedding provider: {settings.EMBEDDING_PROVIDER}")
+    logger.info("Embedding Provider: model=%s, base_url=%s", settings.EMBEDDING_MODEL, base_url)
+    client = AsyncOpenAI(api_key=api_key, base_url=base_url)
+    return OpenAIEmbeddingProvider(client, model_name=settings.EMBEDDING_MODEL)

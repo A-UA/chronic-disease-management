@@ -135,11 +135,10 @@ export default function KBDocumentsPage() {
 
   const uploadProps = {
     name: "file",
-    action: "/api/v1/documents/upload",
+    action: `/api/v1/documents/kb/${selectedKB ?? ""}/documents`,
     headers: {
       Authorization: `Bearer ${localStorage.getItem("cdm_token") ?? ""}`,
     },
-    data: { kb_id: selectedKB ?? "" },
     accept: ".pdf,.txt,.doc,.docx,.md",
     showUploadList: false,
     onChange(info: { file: { status?: string; name?: string } }) {

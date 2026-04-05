@@ -47,14 +47,13 @@ export interface KBDocument {
 }
 
 export async function listDocuments(kbId: string): Promise<KBDocument[]> {
-  return apiClient.get(`documents?kb_id=${kbId}`).json<KBDocument[]>();
+  return apiClient.get(`documents/kb/${kbId}/documents`).json<KBDocument[]>();
 }
 
 export async function uploadDocument(kbId: string, file: File): Promise<KBDocument> {
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("kb_id", kbId);
-  return apiClient.post("documents/upload", { body: formData }).json<KBDocument>();
+  return apiClient.post(`documents/kb/${kbId}/documents`, { body: formData }).json<KBDocument>();
 }
 
 export async function deleteDocument(id: string): Promise<void> {
