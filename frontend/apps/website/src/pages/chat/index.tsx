@@ -42,8 +42,9 @@ export default function AIChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  /** 新建对话：清空消息和当前对话 ID，下次发送时由服务端创建 */
   const newConversation = () => {
-    setCurrentConvId(String(Date.now()));
+    setCurrentConvId(null);
     setMessages([]);
   };
 
@@ -52,17 +53,15 @@ export default function AIChatPage() {
     const query = input.trim();
     setInput("");
 
-    const convId = currentConvId || String(Date.now());
-    if (!currentConvId) setCurrentConvId(convId);
-
     setMessages((prev) => [...prev, { role: "user", content: query }]);
     setStreaming(true);
 
     try {
+      // conversation_id 为 null 时不传，服务端自动创建新对话
       const response = await sendChat({
         kb_id: selectedKB,
-        conversation_id: convId,
         query,
+        ...(currentConvId ? { conversation_id: currentConvId } : {}),
       });
 
       if (!response.ok || !response.body) {
@@ -76,31 +75,48 @@ export default function AIChatPage() {
       let assistantContent = "";
       setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
+      let buffer = "";
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const text = decoder.decode(value, { stream: true });
-        const lines = text.split("\n");
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        // 保留最后一个可能不完整的行
+        buffer = lines.pop() ?? "";
 
         for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            try {
-              const payload = JSON.parse(line.slice(6)) as { text?: string };
-              if (payload.text) {
-                assistantContent += payload.text;
-                setMessages((prev) => {
-                  const updated = [...prev];
-                  updated[updated.length - 1] = {
-                    role: "assistant",
-                    content: assistantContent,
-                  };
-                  return updated;
-                });
-              }
-            } catch {
-              // 非 JSON data 行，忽略
+          if (!line.startsWith("data: ")) continue;
+
+          try {
+            const payload = JSON.parse(line.slice(6)) as Record<string, unknown>;
+
+            // meta 事件：从服务端获取 conversation_id
+            if ("conversation_id" in payload && typeof payload.conversation_id === "string") {
+              setCurrentConvId(payload.conversation_id);
             }
+
+            // chunk 事件：追加流式文本
+            if ("text" in payload && typeof payload.text === "string") {
+              assistantContent += payload.text;
+              setMessages((prev) => {
+                const updated = [...prev];
+                updated[updated.length - 1] = {
+                  role: "assistant",
+                  content: assistantContent,
+                };
+                return updated;
+              });
+            }
+
+            // done 事件：刷新对话列表
+            if ("tokens" in payload) {
+              void listConversations()
+                .then(setConversations)
+                .catch(() => {});
+            }
+          } catch {
+            // 非 JSON data 行，忽略
           }
         }
       }

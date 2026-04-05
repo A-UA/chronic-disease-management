@@ -31,8 +31,8 @@ export async function deleteConversation(id: string): Promise<void> {
 /** 发起 SSE 流式聊天（返回原生 Response，调用方处理 EventSource） */
 export async function sendChat(data: {
   kb_id: string;
-  conversation_id: string;
   query: string;
+  conversation_id?: string;
 }): Promise<Response> {
   const token = localStorage.getItem("cdm_token");
   return fetch("/api/v1/chat", {

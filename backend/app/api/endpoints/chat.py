@@ -27,8 +27,8 @@ router = APIRouter()
 
 class ChatRequest(BaseModel):
     kb_id: int
-    conversation_id: int
     query: str
+    conversation_id: int | None = None
     document_ids: list[int] | None = None
     file_types: list[str] | None = None
     patient_id: int | None = None
@@ -120,16 +120,21 @@ async def chat_endpoint(
     if kb.tenant_id != tenant_id:
         raise HTTPException(status_code=403, detail="Not enough permissions")
 
-    # 2. 获取对话历史用于 Condense Query
-    conversation = await db.get(Conversation, request.conversation_id)
-    if conversation:
+    # 2. 获取或创建对话
+    conversation: Conversation | None = None
+    if request.conversation_id is not None:
+        conversation = await db.get(Conversation, request.conversation_id)
+        if conversation is None:
+            raise HTTPException(status_code=404, detail="Conversation not found")
         if conversation.tenant_id != tenant_id or conversation.user_id != current_user.id:
             raise HTTPException(status_code=403, detail="Conversation does not belong to current user")
         if conversation.kb_id != request.kb_id:
             raise HTTPException(status_code=400, detail="Conversation knowledge base mismatch")
-    else:
+
+    if conversation is None:
+        from app.core.snowflake import get_next_id
         conversation = Conversation(
-            id=request.conversation_id,
+            id=get_next_id(),
             kb_id=request.kb_id,
             tenant_id=tenant_id,
             org_id=org_id,
@@ -141,7 +146,7 @@ async def chat_endpoint(
     # 动态加载历史：基于 Token 预算而非固定条数
     history_stmt = (
         select(Message)
-        .where(Message.conversation_id == request.conversation_id)
+        .where(Message.conversation_id == conversation.id)
         .order_by(Message.created_at.desc())
         .limit(20)  # 取足够多的候选消息
     )
@@ -179,7 +184,7 @@ async def chat_endpoint(
     await db.commit()
 
     async def generate() -> AsyncGenerator[str, None]:
-        yield f"event: meta\ndata: {json.dumps({'citations': citations})}\n\n"
+        yield f"event: meta\ndata: {json.dumps({'conversation_id': str(conversation.id), 'citations': citations})}\n\n"
 
         full_response = ""
         quota_exceeded = False
