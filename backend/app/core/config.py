@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     EMBEDDING_BASE_URL: str = ""
     EMBEDDING_API_KEY: str = ""
     EMBEDDING_MODEL: str = "text-embedding-3-small"
+    EMBEDDING_BATCH_SIZE: int = 10  # 单次 Embedding API 最大文本数（通义千问=10, OpenAI=2048）
 
     # ── Reranker（provider 决定实现类：noop / simple / 其他为 OpenAI-compatible）──
     RERANKER_PROVIDER: str = "noop"

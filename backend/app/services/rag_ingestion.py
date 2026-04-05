@@ -340,7 +340,7 @@ async def process_document(
                 enhanced_contents = [cm.content for cm in chunk_metas]
 
             # 向量化（分批处理，避免超出 API 限制）
-            EMBEDDING_BATCH_SIZE = 64
+            EMBEDDING_BATCH_SIZE = settings.EMBEDDING_BATCH_SIZE
             embeddings: list[list[float]] = []
             for batch_start in range(0, len(enhanced_contents), EMBEDDING_BATCH_SIZE):
                 batch = enhanced_contents[batch_start:batch_start + EMBEDDING_BATCH_SIZE]
@@ -361,6 +361,7 @@ async def process_document(
                 total_tokens += num_tokens
 
                 chunk = Chunk(
+                    tenant_id=document.tenant_id,
                     kb_id=document.kb_id,
                     org_id=document.org_id,
                     document_id=document.id,
@@ -368,7 +369,7 @@ async def process_document(
                     page_number=cm.page_number,
                     chunk_index=i,
                     embedding=emb,
-                    tsv_content=func.to_tsvector("chinese", enhanced_content),
+                    tsv_content=func.to_tsvector("simple", enhanced_content),
                     metadata_={
                         "patient_id": str(document.patient_id)
                         if getattr(document, "patient_id", None)
@@ -387,6 +388,7 @@ async def process_document(
                 db.add(chunk)
 
             usage = UsageLog(
+                tenant_id=document.tenant_id,
                 org_id=document.org_id,
                 user_id=document.uploader_id,
                 model=model_name,

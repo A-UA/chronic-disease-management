@@ -397,10 +397,10 @@ async def retrieve_ranked_chunks(
             .where(
                 Chunk.org_id == org_id,
                 Chunk.kb_id == kb_id,
-                Chunk.tsv_content.op("@@")(func.plainto_tsquery("chinese", rq)),
+                Chunk.tsv_content.op("@@")(func.plainto_tsquery("simple", rq)),
             )
             .order_by(
-                func.ts_rank(Chunk.tsv_content, func.plainto_tsquery("chinese", rq)).desc()
+                func.ts_rank(Chunk.tsv_content, func.plainto_tsquery("simple", rq)).desc()
             )
             .limit(limit * 2)
         )
