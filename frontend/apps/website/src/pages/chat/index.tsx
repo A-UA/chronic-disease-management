@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Card, Input, Button, List, Select, App, Space, Typography, Spin, Tag } from "antd";
 import { SendOutlined, RobotOutlined, UserOutlined, PlusOutlined } from "@ant-design/icons";
-import { listConversations, sendChat, type ChatConversation } from "@/api/chat";
+import { listConversations, getConversation, sendChat, type ChatConversation } from "@/api/chat";
 import { listKBs, type KnowledgeBase } from "@/api/knowledge";
 
 interface Message {
@@ -46,6 +46,18 @@ export default function AIChatPage() {
   const newConversation = () => {
     setCurrentConvId(null);
     setMessages([]);
+  };
+
+  /** 切换到已有对话：加载历史消息 */
+  const loadConversation = async (convId: string) => {
+    setCurrentConvId(convId);
+    setMessages([]);
+    try {
+      const data = await getConversation(convId);
+      setMessages(data.messages.map((m) => ({ role: m.role, content: m.content })));
+    } catch {
+      void appMsg.error("加载对话消息失败");
+    }
   };
 
   const handleSend = useCallback(async () => {
@@ -143,10 +155,7 @@ export default function AIChatPage() {
           renderItem={(conv) => (
             <List.Item
               key={conv.id}
-              onClick={() => {
-                setCurrentConvId(conv.id);
-                setMessages([]);
-              }}
+              onClick={() => void loadConversation(conv.id)}
               style={{
                 padding: "8px 16px",
                 cursor: "pointer",
