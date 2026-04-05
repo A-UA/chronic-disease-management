@@ -81,7 +81,6 @@
   ::after,
   ::before {
     box-sizing: border-box;
-    border-color: var(--border);
   }
 
   body {
