@@ -54,11 +54,30 @@ async def list_organizations(
 @router.post("", response_model=OrganizationReadPublic)
 async def create_organization(
     org_in: OrganizationCreate,
+    tenant_id: int = Depends(get_current_tenant_id),
     _permission=Depends(check_permission("org_member:manage")),
     db: AsyncSession = Depends(get_db)
 ):
-    """[管理视图] 创建新机构"""
-    org = Organization(name=org_in.name, plan_type=org_in.plan_type)
+    """[管理视图] 创建新机构（tenant_id 从 JWT 自动注入）"""
+    # 使用请求体中的 tenant_id，如果未提供则从 JWT 上下文取
+    effective_tenant_id = org_in.tenant_id or tenant_id
+
+    # code 唯一性检查（同 tenant 内唯一）
+    stmt = select(Organization).where(
+        Organization.tenant_id == effective_tenant_id,
+        Organization.code == org_in.code,
+    )
+    if (await db.execute(stmt)).scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Organization code already exists in this tenant")
+
+    org = Organization(
+        tenant_id=effective_tenant_id,
+        name=org_in.name,
+        code=org_in.code,
+        status=org_in.status,
+        description=org_in.description,
+        parent_id=org_in.parent_id,
+    )
     db.add(org)
     await db.commit()
     await db.refresh(org)
@@ -116,31 +135,10 @@ async def delete_organization(
 @router.get("/{org_id}/members", response_model=List[OrganizationMemberRead])
 async def get_organization_members(
     org_id: int,
-    current_user: User = Depends(get_current_user),
+    _permission=Depends(check_permission("org_member:manage")),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     """[管理视图] 获取机构成员列表 (含角色)"""
-    # 校验是否是该机构成员或平台管理员
-    stmt_check = select(OrganizationUser).where(
-        OrganizationUser.org_id == org_id,
-        OrganizationUser.user_id == current_user.id
-    )
-    is_member = (await db.execute(stmt_check)).scalar_one_or_none()
-
-    if not is_member:
-        # 检查是否是平台管理员
-        stmt_platform = (
-            select(OrganizationUserRole)
-            .join(Role, Role.id == OrganizationUserRole.role_id)
-            .where(
-                OrganizationUserRole.user_id == current_user.id,
-                Role.code.in_(["platform_admin", "platform_viewer"]),
-                Role.tenant_id.is_(None),
-            )
-        )
-        if not (await db.execute(stmt_platform)).scalar_one_or_none():
-            raise HTTPException(status_code=403, detail="Not authorized")
-
     stmt = (
         select(OrganizationUser)
         .options(
@@ -165,7 +163,7 @@ async def get_organization_members(
 async def remove_organization_member(
     org_id: int,
     user_id: int,
-    _org_member=Depends(check_permission("org:manage")),
+    _org_member=Depends(check_permission("org_member:manage")),
     db: AsyncSession = Depends(get_db)
 ):
     """[管理视图] 移除机构成员"""
@@ -183,7 +181,7 @@ async def remove_organization_member(
 @router.get("/{org_id}/invitations", response_model=List[OrganizationInvitationRead])
 async def list_invitations(
     org_id: int,
-    _org_member=Depends(check_permission("org:manage")),
+    _org_member=Depends(check_permission("org_member:manage")),
     db: AsyncSession = Depends(get_db)
 ):
     """[管理视图] 列出机构的待处理邀请"""
@@ -200,7 +198,7 @@ async def create_invitation(
     invitation_in: OrganizationInvitationCreate,
     current_user: User = Depends(get_current_user),
     tenant_id: int = Depends(get_current_tenant_id),
-    _org_member=Depends(check_permission("org:manage")),
+    _org_member=Depends(check_permission("org_member:manage")),
     db: AsyncSession = Depends(get_db)
 ):
     """[管理视图] 发起组织邀请"""

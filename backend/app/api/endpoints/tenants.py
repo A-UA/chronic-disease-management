@@ -142,7 +142,7 @@ async def create_tenant(
     _perm: OrganizationUser = Depends(check_permission("tenant:manage")),
     db: AsyncSession = Depends(get_db),
 ):
-    """[管理员] 创建租户"""
+    """[管理员] 创建租户（自动创建默认组织）"""
     # 唯一性检查
     stmt = select(Tenant).where(Tenant.slug == data.slug)
     if (await db.execute(stmt)).scalar_one_or_none():
@@ -152,10 +152,20 @@ async def create_tenant(
     db.add(tenant)
     await db.flush()
 
+    # 自动创建默认组织
+    default_org = Organization(
+        tenant_id=tenant.id,
+        name=f"{tenant.name} - 默认部门",
+        code="DEFAULT",
+        status="active",
+    )
+    db.add(default_org)
+    await db.flush()
+
     fire_audit(
         user_id=_perm.user_id, org_id=org_id,
         action="CREATE_TENANT", resource_type="tenant",
-        resource_id=tenant.id, details=f"Created tenant: {tenant.name}",
+        resource_id=tenant.id, details=f"Created tenant: {tenant.name} (with default org)",
     )
 
     await db.commit()
@@ -168,7 +178,7 @@ async def create_tenant(
         max_members=tenant.max_members, max_patients=tenant.max_patients,
         contact_name=tenant.contact_name, contact_phone=tenant.contact_phone,
         contact_email=tenant.contact_email, org_type=tenant.org_type,
-        address=tenant.address, org_count=0, created_at=tenant.created_at,
+        address=tenant.address, org_count=1, created_at=tenant.created_at,
     )
 
 

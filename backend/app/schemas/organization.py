@@ -3,17 +3,19 @@ from datetime import datetime
 
 class OrganizationBase(BaseModel):
     name: str
-    plan_type: str = "free"
 
 class OrganizationCreate(OrganizationBase):
-    code: str = ""
+    code: str
+    tenant_id: int | None = None  # 可选，后端会从 JWT 自动填充
     description: str | None = None
+    status: str = "active"
+    parent_id: int | None = None
 
 class OrganizationUpdate(BaseModel):
     name: str | None = None
-    plan_type: str | None = None
     description: str | None = None
     status: str | None = None
+    parent_id: int | None = None
 
 class OrganizationReadPublic(BaseModel):
     """组织公开信息"""

@@ -9,6 +9,7 @@ import {
   Modal,
   Form,
   Input,
+  Select,
   Popconfirm,
   Typography,
   Avatar,
@@ -26,8 +27,12 @@ import {
   createUser,
   updateUser,
   deleteUser,
+  listOrgs,
+  listRoles,
   type UserItem,
   type UserCreateReq,
+  type OrgItem,
+  type RoleItem,
 } from "@/api/system";
 
 export default function UsersPage() {
@@ -37,6 +42,11 @@ export default function UsersPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<UserItem | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // 组织和角色列表（用于创建表单的选择器）
+  const [orgs, setOrgs] = useState<OrgItem[]>([]);
+  const [roles, setRoles] = useState<RoleItem[]>([]);
+
   const [form] = Form.useForm();
   const { message } = App.useApp();
 
@@ -55,9 +65,21 @@ export default function UsersPage() {
     void fetchData();
   }, [fetchData]);
 
+  // 加载组织和角色（用于新建用户表单）
+  const loadOptions = useCallback(async () => {
+    try {
+      const [orgList, roleList] = await Promise.all([listOrgs({ limit: 200 }), listRoles()]);
+      setOrgs(orgList);
+      setRoles(roleList);
+    } catch {
+      /* silent */
+    }
+  }, []);
+
   const openCreate = () => {
     setEditing(null);
     form.resetFields();
+    void loadOptions();
     setModalOpen(true);
   };
 
@@ -201,13 +223,37 @@ export default function UsersPage() {
             <Input placeholder="用户姓名" />
           </Form.Item>
           {!editing && (
-            <Form.Item
-              name="password"
-              label="密码"
-              rules={[{ required: true, message: "请输入密码", min: 6 }]}
-            >
-              <Input.Password placeholder="至少 6 位" />
-            </Form.Item>
+            <>
+              <Form.Item
+                name="password"
+                label="密码"
+                rules={[{ required: true, message: "请输入密码", min: 6 }]}
+              >
+                <Input.Password placeholder="至少 6 位" />
+              </Form.Item>
+              <Form.Item name="org_id" label="所属组织">
+                <Select
+                  placeholder="默认绑定当前组织"
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                  options={orgs.map((o) => ({ label: `${o.name} (${o.code})`, value: o.id }))}
+                />
+              </Form.Item>
+              <Form.Item name="role_ids" label="分配角色">
+                <Select
+                  mode="multiple"
+                  placeholder="默认分配 staff 角色"
+                  allowClear
+                  optionFilterProp="label"
+                  options={roles.map((r) => ({
+                    label: `${r.name} (${r.code})`,
+                    value: r.id,
+                    disabled: r.is_system,
+                  }))}
+                />
+              </Form.Item>
+            </>
           )}
         </Form>
       </Modal>

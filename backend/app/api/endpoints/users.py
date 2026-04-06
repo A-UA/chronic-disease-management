@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from typing import List
 
-from app.api.deps import get_db, check_permission
+from app.api.deps import get_db, check_permission, get_current_tenant_id, get_current_org_id
 from app.db.models import User, OrganizationUser
 from app.schemas.admin import UserAdminRead
 
@@ -12,37 +12,88 @@ router = APIRouter()
 
 from app.core import security
 from app.schemas.user import UserCreate
+from pydantic import BaseModel as _PydanticBase
+from typing import Optional
+
+
+class UserCreateAdmin(_PydanticBase):
+    email: str
+    password: str
+    name: Optional[str] = None
+    org_id: Optional[int] = None      # 要绑定的组织 ID（可选，默认绑定当前组织）
+    role_ids: Optional[list[int]] = None  # 要分配的角色 ID 列表
+
 
 @router.post("", response_model=UserAdminRead)
 async def create_user(
-    user_in: UserCreate,
+    user_in: UserCreateAdmin,
+    tenant_id: int = Depends(get_current_tenant_id),
+    current_org_id: int = Depends(get_current_org_id),
     _admin=Depends(check_permission("org_member:manage")),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    [平台管理员] 手动创建一个新用户
+    [平台管理员] 创建用户并绑定到组织+角色
     """
     # Check if exists
     stmt = select(User).where(User.email == user_in.email)
     res = await db.execute(stmt)
     if res.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="User already exists")
-    
+
     user = User(
         email=user_in.email,
         password_hash=security.get_password_hash(user_in.password),
         name=user_in.name
     )
     db.add(user)
+    await db.flush()
+
+    # 绑定到组织（优先使用传入的 org_id，否则绑定到当前操作者的组织）
+    target_org_id = user_in.org_id or current_org_id
+    from app.db.models import OrganizationUserRole, Role
+    org_user = OrganizationUser(
+        tenant_id=tenant_id,
+        org_id=target_org_id,
+        user_id=user.id,
+        user_type="staff",
+    )
+    db.add(org_user)
+    await db.flush()
+
+    # 分配角色（如果传入了 role_ids）
+    if user_in.role_ids:
+        for rid in user_in.role_ids:
+            db.add(OrganizationUserRole(
+                tenant_id=tenant_id,
+                org_id=target_org_id,
+                user_id=user.id,
+                role_id=rid,
+            ))
+    else:
+        # 默认分配 staff 角色
+        stmt_role = select(Role).where(
+            Role.code == "staff",
+            (Role.tenant_id == tenant_id) | (Role.tenant_id.is_(None)),
+        )
+        staff_role = (await db.execute(stmt_role)).scalars().first()
+        if staff_role:
+            db.add(OrganizationUserRole(
+                tenant_id=tenant_id,
+                org_id=target_org_id,
+                user_id=user.id,
+                role_id=staff_role.id,
+            ))
+
     await db.commit()
     await db.refresh(user)
-    
+
     return UserAdminRead(
         id=user.id,
         email=user.email,
         name=user.name,
         created_at=user.created_at,
-        org_count=0
+        org_count=1
     )
 
 

@@ -89,6 +89,7 @@ export interface OrgCreateReq {
   tenant_id?: string;
   status?: string;
   description?: string;
+  parent_id?: string;
 }
 
 export async function listOrgs(params?: {
@@ -149,6 +150,8 @@ export interface UserCreateReq {
   email: string;
   name?: string;
   password: string;
+  org_id?: string;
+  role_ids?: string[];
 }
 
 export async function listUsers(params?: {
