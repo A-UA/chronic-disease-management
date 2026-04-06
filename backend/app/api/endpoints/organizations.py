@@ -11,7 +11,8 @@ from datetime import datetime, timedelta, timezone
 from app.api.deps import get_db, get_current_user, check_permission, get_current_org_id, get_current_tenant_id
 from app.db.models import Organization, OrganizationUser, OrganizationUserRole, User, Role, OrganizationInvitation
 from app.schemas.organization import (
-    OrganizationReadAdmin, 
+    OrganizationReadAdmin,
+    OrganizationReadPublic,
     OrganizationCreate, 
     OrganizationUpdate,
     OrganizationMemberRead,
@@ -35,12 +36,12 @@ async def get_my_organizations(
     result = await db.execute(stmt)
     return result.scalars().all()
 
-@router.get("", response_model=List[OrganizationReadAdmin])
+@router.get("", response_model=List[OrganizationReadPublic])
 async def list_organizations(
     skip: int = 0,
     limit: int = 100,
     search: Optional[str] = None,
-    _permission=Depends(check_permission("platform:manage")), # 仅限平台级角色
+    _permission=Depends(check_permission("org_member:manage")),
     db: AsyncSession = Depends(get_db)
 ):
     """[管理视图] 列出系统所有机构"""
@@ -50,10 +51,10 @@ async def list_organizations(
     result = await db.execute(stmt)
     return result.scalars().all()
 
-@router.post("", response_model=OrganizationReadAdmin)
+@router.post("", response_model=OrganizationReadPublic)
 async def create_organization(
     org_in: OrganizationCreate,
-    _permission=Depends(check_permission("platform:manage")),
+    _permission=Depends(check_permission("org_member:manage")),
     db: AsyncSession = Depends(get_db)
 ):
     """[管理视图] 创建新机构"""
@@ -64,12 +65,12 @@ async def create_organization(
     return org
 
 
-@router.put("/{org_id}", response_model=OrganizationReadAdmin)
+@router.put("/{org_id}", response_model=OrganizationReadPublic)
 async def update_organization(
     org_id: int,
     org_in: OrganizationUpdate,
     org_id_header: int = Depends(get_current_org_id),
-    _permission=Depends(check_permission("org:manage")),
+    _permission=Depends(check_permission("org_member:manage")),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     """[管理视图] 编辑机构信息"""

@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from typing import List
 
-from app.api.deps import get_db, get_platform_admin, get_platform_viewer
+from app.api.deps import get_db, check_permission
 from app.db.models import User, OrganizationUser
 from app.schemas.admin import UserAdminRead
 
@@ -16,7 +16,7 @@ from app.schemas.user import UserCreate
 @router.post("", response_model=UserAdminRead)
 async def create_user(
     user_in: UserCreate,
-    _admin=Depends(get_platform_admin),
+    _admin=Depends(check_permission("org_member:manage")),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -51,7 +51,7 @@ async def list_users(
     skip: int = 0,
     limit: int = 50,
     search: str | None = None,
-    _admin=Depends(get_platform_viewer),
+    _admin=Depends(check_permission("org_member:manage")),
     db: AsyncSession = Depends(get_db),
 ):
     stmt = select(User)
@@ -82,7 +82,7 @@ async def list_users(
 @router.get("/{user_id}", response_model=UserAdminRead)
 async def get_user(
     user_id: int,
-    _admin=Depends(get_platform_viewer),
+    _admin=Depends(check_permission("org_member:manage")),
     db: AsyncSession = Depends(get_db),
 ):
     """[平台管理员] 获取用户详情"""
@@ -110,7 +110,7 @@ class UserUpdate(_BaseModel):
 async def update_user(
     user_id: int,
     data: UserUpdate,
-    _admin=Depends(get_platform_admin),
+    _admin=Depends(check_permission("org_member:manage")),
     db: AsyncSession = Depends(get_db),
 ):
     """[平台管理员] 编辑用户信息"""
@@ -140,7 +140,7 @@ async def update_user(
 async def update_user_status(
     user_id: int,
     is_active: bool,
-    _admin=Depends(get_platform_admin),
+    _admin=Depends(check_permission("org_member:manage")),
     db: AsyncSession = Depends(get_db),
 ):
     user = await db.get(User, user_id)
@@ -158,7 +158,7 @@ async def update_user_status(
 @router.delete("/{user_id}")
 async def delete_user(
     user_id: int,
-    _admin=Depends(get_platform_admin),
+    _admin=Depends(check_permission("org_member:manage")),
     db: AsyncSession = Depends(get_db),
 ):
     """[平台管理员] 删除用户（软删除）"""

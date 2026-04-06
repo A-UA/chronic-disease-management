@@ -1,33 +1,37 @@
 from pydantic import BaseModel, ConfigDict, computed_field
+from datetime import datetime
 
 class OrganizationBase(BaseModel):
     name: str
     plan_type: str = "free"
 
 class OrganizationCreate(OrganizationBase):
-    pass
+    code: str = ""
+    description: str | None = None
 
 class OrganizationUpdate(BaseModel):
     name: str | None = None
     plan_type: str | None = None
-    quota_tokens_limit: int | None = None
+    description: str | None = None
+    status: str | None = None
 
-class OrganizationReadPublic(OrganizationBase):
-    """Viewable by any member or patient."""
+class OrganizationReadPublic(BaseModel):
+    """组织公开信息"""
     id: int
+    name: str
+    code: str = ""
+    status: str = "active"
+    plan_type: str = "free"
+    tenant_id: int | None = None
+    description: str | None = None
+    sort: int = 0
+    created_at: datetime | None = None
     
     model_config = ConfigDict(from_attributes=True)
 
 class OrganizationReadAdmin(OrganizationReadPublic):
-    """Viewable only by organization admins."""
-    quota_tokens_limit: int
-    quota_tokens_used: int
-
-    @computed_field
-    def quota_usage_percent(self) -> float:
-        if self.quota_tokens_limit == 0:
-            return 0.0
-        return round((self.quota_tokens_used / self.quota_tokens_limit) * 100, 2)
+    """管理视图（含额外统计信息，按需填充）"""
+    pass
 
 class OrganizationMemberRead(BaseModel):
     user_id: int
