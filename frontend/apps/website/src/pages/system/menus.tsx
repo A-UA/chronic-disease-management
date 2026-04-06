@@ -22,8 +22,10 @@ import {
   createMenu,
   updateMenu,
   deleteMenu,
+  listPermissions,
   type MenuItemData,
   type MenuCreateReq,
+  type PermissionItem,
 } from "@/api/system";
 
 const TYPE_MAP: Record<string, { color: string; label: string }> = {
@@ -52,11 +54,14 @@ export default function MenusPage() {
   const [submitting, setSubmitting] = useState(false);
   const [form] = Form.useForm();
   const { message } = App.useApp();
+  const [permissions, setPermissions] = useState<PermissionItem[]>([]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      setData(await listMenus());
+      const [menus, perms] = await Promise.all([listMenus(), listPermissions()]);
+      setData(menus);
+      setPermissions(perms);
     } catch {
       void message.error("加载菜单列表失败");
     } finally {
@@ -272,7 +277,13 @@ export default function MenusPage() {
             <Input placeholder="例如：TeamOutlined" />
           </Form.Item>
           <Form.Item name="permission_code" label="权限编码">
-            <Input placeholder="例如：patient:read" />
+            <Select
+              allowClear
+              placeholder="无权限限制"
+              showSearch
+              optionFilterProp="label"
+              options={permissions.map((p) => ({ label: `${p.name} (${p.code})`, value: p.code }))}
+            />
           </Form.Item>
           <Space size="large">
             <Form.Item name="is_visible" label="侧边栏可见" valuePropName="checked">

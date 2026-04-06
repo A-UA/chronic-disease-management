@@ -59,7 +59,8 @@ export default function TenantsPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      setData(await listTenants({ search: search || undefined, limit: 100 }));
+      const res = await listTenants({ search: search || undefined, limit: 100 });
+      setData(res.items);
     } catch {
       void message.error("加载租户列表失败");
     } finally {

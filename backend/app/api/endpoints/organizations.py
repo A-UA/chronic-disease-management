@@ -36,20 +36,29 @@ async def get_my_organizations(
     result = await db.execute(stmt)
     return result.scalars().all()
 
-@router.get("", response_model=List[OrganizationReadPublic])
+@router.get("")
 async def list_organizations(
     skip: int = 0,
     limit: int = 100,
     search: Optional[str] = None,
+    tenant_id: int = Depends(get_current_tenant_id),
     _permission=Depends(check_permission("org_member:manage")),
     db: AsyncSession = Depends(get_db)
 ):
-    """[管理视图] 列出系统所有机构"""
-    stmt = select(Organization).offset(skip).limit(limit)
+    """[管理视图] 列出当前租户的所有组织"""
+    from sqlalchemy import func
+    base = select(Organization).where(Organization.tenant_id == tenant_id)
     if search:
-        stmt = stmt.where(Organization.name.ilike(f"%{search}%"))
+        base = base.where(
+            Organization.name.ilike(f"%{search}%") | Organization.code.ilike(f"%{search}%")
+        )
+
+    count_stmt = select(func.count()).select_from(base.subquery())
+    total = (await db.execute(count_stmt)).scalar() or 0
+
+    stmt = base.order_by(Organization.sort, Organization.created_at.desc()).offset(skip).limit(limit)
     result = await db.execute(stmt)
-    return result.scalars().all()
+    return {"total": total, "items": result.scalars().all()}
 
 @router.post("", response_model=OrganizationReadPublic)
 async def create_organization(
@@ -158,6 +167,61 @@ async def get_organization_members(
             "user_type": org_user.user_type,
         })
     return members
+
+
+from pydantic import BaseModel as _PydanticBase
+
+
+class AddMemberRequest(_PydanticBase):
+    user_id: int
+    role_ids: list[int] = []
+    user_type: str = "staff"
+
+
+@router.post("/{org_id}/members", response_model=dict)
+async def add_organization_member(
+    org_id: int,
+    data: AddMemberRequest,
+    tenant_id: int = Depends(get_current_tenant_id),
+    _permission=Depends(check_permission("org_member:manage")),
+    db: AsyncSession = Depends(get_db),
+):
+    """[管理视图] 添加成员到组织"""
+    # 检查用户是否存在
+    user = await db.get(User, data.user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # 检查是否已是成员
+    stmt = select(OrganizationUser).where(
+        OrganizationUser.org_id == org_id,
+        OrganizationUser.user_id == data.user_id,
+    )
+    if (await db.execute(stmt)).scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="User is already a member of this organization")
+
+    # 添加到组织
+    org_user = OrganizationUser(
+        tenant_id=tenant_id,
+        org_id=org_id,
+        user_id=data.user_id,
+        user_type=data.user_type,
+    )
+    db.add(org_user)
+    await db.flush()
+
+    # 分配角色
+    for rid in data.role_ids:
+        db.add(OrganizationUserRole(
+            tenant_id=tenant_id,
+            org_id=org_id,
+            user_id=data.user_id,
+            role_id=rid,
+        ))
+
+    await db.commit()
+    return {"status": "ok"}
+
 
 @router.delete("/{org_id}/members/{user_id}", response_model=dict)
 async def remove_organization_member(

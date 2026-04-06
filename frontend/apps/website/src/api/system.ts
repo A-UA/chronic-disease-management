@@ -1,5 +1,11 @@
 import { apiClient } from "./client";
 
+// ── 通用分页响应 ──
+export interface PaginatedResult<T> {
+  total: number;
+  items: T[];
+}
+
 // ═══════════════════════════════════════
 //  租户管理
 // ═══════════════════════════════════════
@@ -43,14 +49,14 @@ export async function listTenants(params?: {
   status?: string;
   skip?: number;
   limit?: number;
-}): Promise<TenantItem[]> {
+}): Promise<PaginatedResult<TenantItem>> {
   const sp = new URLSearchParams();
   if (params?.search) sp.set("search", params.search);
   if (params?.status) sp.set("status", params.status);
   if (params?.skip != null) sp.set("skip", String(params.skip));
   if (params?.limit != null) sp.set("limit", String(params.limit));
   const qs = sp.toString();
-  return apiClient.get(`tenants${qs ? `?${qs}` : ""}`).json<TenantItem[]>();
+  return apiClient.get(`tenants${qs ? `?${qs}` : ""}`).json<PaginatedResult<TenantItem>>();
 }
 
 export async function createTenant(data: TenantCreateReq): Promise<TenantItem> {
@@ -96,13 +102,13 @@ export async function listOrgs(params?: {
   search?: string;
   skip?: number;
   limit?: number;
-}): Promise<OrgItem[]> {
+}): Promise<PaginatedResult<OrgItem>> {
   const sp = new URLSearchParams();
   if (params?.search) sp.set("search", params.search);
   if (params?.skip != null) sp.set("skip", String(params.skip));
   if (params?.limit != null) sp.set("limit", String(params.limit));
   const qs = sp.toString();
-  return apiClient.get(`organizations${qs ? `?${qs}` : ""}`).json<OrgItem[]>();
+  return apiClient.get(`organizations${qs ? `?${qs}` : ""}`).json<PaginatedResult<OrgItem>>();
 }
 
 export async function createOrg(data: OrgCreateReq): Promise<OrgItem> {
@@ -134,6 +140,13 @@ export async function removeOrgMember(orgId: string, userId: string): Promise<vo
   await apiClient.delete(`organizations/${orgId}/members/${userId}`);
 }
 
+export async function addOrgMember(
+  orgId: string,
+  data: { user_id: string; role_ids?: string[]; user_type?: string },
+): Promise<void> {
+  await apiClient.post(`organizations/${orgId}/members`, { json: data });
+}
+
 // ═══════════════════════════════════════
 //  用户管理
 // ═══════════════════════════════════════
@@ -158,13 +171,13 @@ export async function listUsers(params?: {
   search?: string;
   skip?: number;
   limit?: number;
-}): Promise<UserItem[]> {
+}): Promise<PaginatedResult<UserItem>> {
   const sp = new URLSearchParams();
   if (params?.search) sp.set("search", params.search);
   if (params?.skip != null) sp.set("skip", String(params.skip));
   if (params?.limit != null) sp.set("limit", String(params.limit));
   const qs = sp.toString();
-  return apiClient.get(`users${qs ? `?${qs}` : ""}`).json<UserItem[]>();
+  return apiClient.get(`users${qs ? `?${qs}` : ""}`).json<PaginatedResult<UserItem>>();
 }
 
 export async function createUser(data: UserCreateReq): Promise<UserItem> {
@@ -198,6 +211,7 @@ export interface RoleItem {
   is_system: boolean;
   parent_role_id: string | null;
   permissions: { id: string; code: string; name: string }[];
+  user_count?: number;
 }
 
 export interface RoleCreateReq {

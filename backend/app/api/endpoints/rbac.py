@@ -43,21 +43,42 @@ async def list_permissions(
     result = await db.execute(stmt)
     return [{"id": p.id, "name": p.name, "code": p.code} for p in result.scalars().all()]
 
-@router.get("/roles", response_model=List[RoleRead])
+@router.get("/roles")
 async def list_roles(
     tenant_id: int = Depends(get_current_tenant_id),
     org_id: int = Depends(get_current_org_id),
     _org_admin=Depends(check_org_admin()),
     db: AsyncSession = Depends(get_db),
 ):
-    """获取本组织可用角色列表"""
+    """获取本组织可用角色列表（含用户计数）"""
+    from sqlalchemy import func
     stmt = (
         select(Role)
         .options(selectinload(Role.permissions))
         .where((Role.tenant_id == tenant_id) | (Role.tenant_id.is_(None)))
     )
     result = await db.execute(stmt)
-    return result.scalars().all()
+    roles = result.scalars().all()
+
+    items = []
+    for role in roles:
+        # 统计该角色绑定的用户数
+        count_stmt = select(func.count()).where(OrganizationUserRole.role_id == role.id)
+        user_count = (await db.execute(count_stmt)).scalar() or 0
+        items.append({
+            "id": role.id,
+            "name": role.name,
+            "code": role.code,
+            "description": role.description,
+            "is_system": role.is_system,
+            "parent_role_id": role.parent_role_id,
+            "permissions": [
+                {"id": p.id, "name": p.name, "code": p.code, "permission_type": p.permission_type, "ui_metadata": p.ui_metadata}
+                for p in role.permissions
+            ],
+            "user_count": user_count,
+        })
+    return items
 
 @router.post("/roles", response_model=RoleRead)
 async def create_custom_role(

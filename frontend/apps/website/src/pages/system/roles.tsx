@@ -20,6 +20,7 @@ import {
   DeleteOutlined,
   SafetyCertificateOutlined,
   LockOutlined,
+  TeamOutlined,
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import {
@@ -72,6 +73,7 @@ export default function RolesPage() {
       name: record.name,
       code: record.code,
       description: record.description,
+      parent_role_id: record.parent_role_id,
       permission_ids: record.permissions.map((p) => p.id),
     });
     setModalOpen(true);
@@ -142,7 +144,7 @@ export default function RolesPage() {
     {
       title: "权限",
       key: "permissions",
-      width: 400,
+      width: 350,
       render: (_, r) => (
         <Space size={[4, 4]} wrap>
           {r.permissions?.map((p) => (
@@ -154,6 +156,17 @@ export default function RolesPage() {
             <Typography.Text type="secondary">继承上级角色</Typography.Text>
           )}
         </Space>
+      ),
+    },
+    {
+      title: "用户数",
+      key: "user_count",
+      width: 90,
+      align: "center",
+      render: (_, r) => (
+        <Tag icon={<TeamOutlined />} color={r.user_count ? "blue" : "default"}>
+          {r.user_count ?? 0}
+        </Tag>
       ),
     },
     {
@@ -191,6 +204,11 @@ export default function RolesPage() {
         ),
     },
   ];
+
+  // 用于父角色选择器（排除当前编辑的角色本身）
+  const parentRoleOptions = data
+    .filter((r) => !editing || r.id !== editing.id)
+    .map((r) => ({ label: `${r.name} (${r.code})`, value: r.id }));
 
   return (
     <Card
@@ -233,6 +251,15 @@ export default function RolesPage() {
               <Input placeholder="例如：auditor" />
             </Form.Item>
           )}
+          <Form.Item name="parent_role_id" label="继承角色">
+            <Select
+              allowClear
+              placeholder="无（不继承）"
+              options={parentRoleOptions}
+              showSearch
+              optionFilterProp="label"
+            />
+          </Form.Item>
           <Form.Item name="description" label="描述">
             <Input.TextArea rows={2} placeholder="角色描述..." />
           </Form.Item>

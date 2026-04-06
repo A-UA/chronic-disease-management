@@ -9,6 +9,7 @@ import {
   Modal,
   Form,
   Input,
+  Select,
   Popconfirm,
   Typography,
   Tabs,
@@ -23,6 +24,7 @@ import {
   ApartmentOutlined,
   UserOutlined,
   TeamOutlined,
+  UserAddOutlined,
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import {
@@ -32,9 +34,14 @@ import {
   deleteOrg,
   listOrgMembers,
   removeOrgMember,
+  addOrgMember,
+  listUsers,
+  listRoles,
   type OrgItem,
   type OrgCreateReq,
   type OrgMemberItem,
+  type UserItem,
+  type RoleItem,
 } from "@/api/system";
 
 const STATUS_MAP: Record<string, { color: string; label: string }> = {
@@ -57,13 +64,20 @@ export default function OrgsPage() {
   const [members, setMembers] = useState<OrgMemberItem[]>([]);
   const [memberLoading, setMemberLoading] = useState(false);
 
+  // 添加成员状态
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [allUsers, setAllUsers] = useState<UserItem[]>([]);
+  const [allRoles, setAllRoles] = useState<RoleItem[]>([]);
+  const [addMemberForm] = Form.useForm();
+
   const [form] = Form.useForm();
   const { message } = App.useApp();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      setData(await listOrgs({ search: search || undefined, limit: 200 }));
+      const res = await listOrgs({ search: search || undefined, limit: 200 });
+      setData(res.items);
     } catch {
       void message.error("加载组织列表失败");
     } finally {
@@ -140,6 +154,36 @@ export default function OrgsPage() {
       setMembers(await listOrgMembers(selectedOrg.id));
     } catch {
       void message.error("移除失败");
+    }
+  };
+
+  // ── 添加成员 ──
+  const openAddMember = async () => {
+    addMemberForm.resetFields();
+    setAddMemberOpen(true);
+    try {
+      const [usersRes, rolesRes] = await Promise.all([listUsers({ limit: 200 }), listRoles()]);
+      setAllUsers(usersRes.items);
+      setAllRoles(rolesRes);
+    } catch {
+      /* silent */
+    }
+  };
+
+  const handleAddMember = async () => {
+    if (!selectedOrg) return;
+    try {
+      const values = await addMemberForm.validateFields();
+      await addOrgMember(selectedOrg.id, {
+        user_id: values.user_id,
+        role_ids: values.role_ids,
+        user_type: values.user_type || "staff",
+      });
+      void message.success("添加成功");
+      setAddMemberOpen(false);
+      setMembers(await listOrgMembers(selectedOrg.id));
+    } catch {
+      void message.error("添加失败");
     }
   };
 
@@ -338,6 +382,16 @@ export default function OrgsPage() {
       >
         <Tabs
           defaultActiveKey="list"
+          tabBarExtraContent={
+            <Button
+              type="primary"
+              size="small"
+              icon={<UserAddOutlined />}
+              onClick={() => void openAddMember()}
+            >
+              添加成员
+            </Button>
+          }
           items={[
             {
               key: "list",
@@ -358,6 +412,52 @@ export default function OrgsPage() {
             },
           ]}
         />
+      </Modal>
+
+      {/* 添加成员 Modal */}
+      <Modal
+        title="添加成员到组织"
+        open={addMemberOpen}
+        onOk={() => void handleAddMember()}
+        onCancel={() => setAddMemberOpen(false)}
+        destroyOnClose
+      >
+        <Form form={addMemberForm} layout="vertical" style={{ marginTop: 16 }}>
+          <Form.Item
+            name="user_id"
+            label="选择用户"
+            rules={[{ required: true, message: "请选择用户" }]}
+          >
+            <Select
+              showSearch
+              placeholder="搜索并选择用户..."
+              optionFilterProp="label"
+              options={allUsers.map((u) => ({
+                label: `${u.name || u.email} (${u.email})`,
+                value: u.id,
+              }))}
+            />
+          </Form.Item>
+          <Form.Item name="role_ids" label="分配角色">
+            <Select
+              mode="multiple"
+              placeholder="选择角色..."
+              optionFilterProp="label"
+              options={allRoles.map((r) => ({
+                label: `${r.name} (${r.code})`,
+                value: r.id,
+              }))}
+            />
+          </Form.Item>
+          <Form.Item name="user_type" label="用户类型" initialValue="staff">
+            <Select
+              options={[
+                { label: "员工", value: "staff" },
+                { label: "患者", value: "patient" },
+              ]}
+            />
+          </Form.Item>
+        </Form>
       </Modal>
     </>
   );

@@ -71,7 +71,7 @@ class TenantRead(BaseModel):
 
 # ── 端点 ──
 
-@router.get("", response_model=List[TenantRead])
+@router.get("")
 async def list_tenants(
     skip: int = 0,
     limit: int = 50,
@@ -81,12 +81,18 @@ async def list_tenants(
     db: AsyncSession = Depends(get_db),
 ):
     """[管理员] 租户列表（分页+搜索）"""
-    stmt = select(Tenant)
+    base = select(Tenant)
     if search:
-        stmt = stmt.where(Tenant.name.ilike(f"%{search}%") | Tenant.slug.ilike(f"%{search}%"))
+        base = base.where(Tenant.name.ilike(f"%{search}%") | Tenant.slug.ilike(f"%{search}%"))
     if status:
-        stmt = stmt.where(Tenant.status == status)
-    stmt = stmt.order_by(Tenant.created_at.desc()).offset(skip).limit(limit)
+        base = base.where(Tenant.status == status)
+
+    # 总数
+    count_stmt = select(func.count()).select_from(base.subquery())
+    total = (await db.execute(count_stmt)).scalar() or 0
+
+    # 分页数据
+    stmt = base.order_by(Tenant.created_at.desc()).offset(skip).limit(limit)
     result = await db.execute(stmt)
     tenants = result.scalars().all()
 
@@ -106,7 +112,7 @@ async def list_tenants(
             address=t.address, org_count=org_count,
             created_at=t.created_at,
         ))
-    return reads
+    return {"total": total, "items": reads}
 
 
 @router.get("/{tenant_id}", response_model=TenantRead)

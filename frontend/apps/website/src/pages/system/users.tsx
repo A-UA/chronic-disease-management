@@ -53,7 +53,8 @@ export default function UsersPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      setData(await listUsers({ search: search || undefined, limit: 100 }));
+      const res = await listUsers({ search: search || undefined, limit: 100 });
+      setData(res.items);
     } catch {
       void message.error("加载用户列表失败");
     } finally {
@@ -68,8 +69,8 @@ export default function UsersPage() {
   // 加载组织和角色（用于新建用户表单）
   const loadOptions = useCallback(async () => {
     try {
-      const [orgList, roleList] = await Promise.all([listOrgs({ limit: 200 }), listRoles()]);
-      setOrgs(orgList);
+      const [orgRes, roleList] = await Promise.all([listOrgs({ limit: 200 }), listRoles()]);
+      setOrgs(orgRes.items);
       setRoles(roleList);
     } catch {
       /* silent */

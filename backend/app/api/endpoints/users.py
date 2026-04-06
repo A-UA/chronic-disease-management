@@ -97,27 +97,39 @@ async def create_user(
     )
 
 
-@router.get("", response_model=List[UserAdminRead])
+@router.get("")
 async def list_users(
     skip: int = 0,
     limit: int = 50,
     search: str | None = None,
+    tenant_id: int = Depends(get_current_tenant_id),
     _admin=Depends(check_permission("org_member:manage")),
     db: AsyncSession = Depends(get_db),
 ):
-    stmt = select(User)
+    """[管理员] 列出当前租户下的所有用户"""
+    # 通过 organization_users 关联找出属于当前租户的用户
+    base = (
+        select(User)
+        .join(OrganizationUser, OrganizationUser.user_id == User.id)
+        .where(OrganizationUser.tenant_id == tenant_id)
+        .distinct()
+    )
     if search:
-        stmt = stmt.where(
+        base = base.where(
             User.email.ilike(f"%{search}%") | User.name.ilike(f"%{search}%")
         )
-    stmt = stmt.offset(skip).limit(limit).order_by(User.created_at.desc())
+
+    count_stmt = select(func.count()).select_from(base.subquery())
+    total = (await db.execute(count_stmt)).scalar() or 0
+
+    stmt = base.order_by(User.created_at.desc()).offset(skip).limit(limit)
     result = await db.execute(stmt)
     users = result.scalars().all()
 
     user_reads = []
     for user in users:
-        count_stmt = select(func.count()).where(OrganizationUser.user_id == user.id)
-        count = (await db.execute(count_stmt)).scalar() or 0
+        count_org = select(func.count()).where(OrganizationUser.user_id == user.id)
+        count = (await db.execute(count_org)).scalar() or 0
         user_reads.append(
             UserAdminRead(
                 id=user.id,
@@ -127,7 +139,7 @@ async def list_users(
                 org_count=count,
             )
         )
-    return user_reads
+    return {"total": total, "items": user_reads}
 
 
 @router.get("/{user_id}", response_model=UserAdminRead)
