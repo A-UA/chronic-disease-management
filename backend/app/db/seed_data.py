@@ -29,6 +29,8 @@ RESOURCES = [
     {"name": "Organization Usage", "code": "org_usage", "description": "机构配额与使用量"},
     {"name": "AI Chat", "code": "chat", "description": "AI 问答服务"},
     {"name": "Audit Log", "code": "audit_log", "description": "审计日志"},
+    {"name": "Tenant", "code": "tenant", "description": "租户管理"},
+    {"name": "Menu", "code": "menu", "description": "菜单管理"},
 ]
 
 ACTIONS = [
@@ -55,6 +57,8 @@ PERMISSION_MAP = [
     ("org_usage", "read", "查看使用量", "api", None),
     ("chat", "use", "使用 AI 对话", "api", None),
     ("audit_log", "read", "查看审计日志", "api", None),
+    ("tenant", "manage", "管理租户", "api", None),
+    ("menu", "manage", "管理菜单", "api", None),
 ]
 
 # 角色只分配 API 权限；菜单可见性通过 menus.permission_code 自动关联
@@ -67,7 +71,7 @@ ROLES = [
      ["patient:create", "patient:update", "suggestion:create"],
      "staff"),
     ("admin", "管理员", "机构系统管理员",
-     ["patient:delete", "kb:manage", "doc:manage", "org_member:manage", "org_usage:read", "audit_log:read"],
+     ["patient:delete", "kb:manage", "doc:manage", "org_member:manage", "org_usage:read", "audit_log:read", "tenant:manage", "menu:manage"],
      "manager"),
     ("owner", "所有者", "机构主账户",
      [],
@@ -92,15 +96,12 @@ SYSTEM_MENUS = [
     {"code": "ai-chat", "name": "AI 问答", "menu_type": "page", "path": "/chat",
      "icon": "MessageOutlined", "sort": 4, "permission_code": "chat:use"},
 
-    {"code": "member-mgmt", "name": "成员管理", "menu_type": "page", "path": "/members",
-     "icon": "UserOutlined", "sort": 5, "permission_code": "org_member:manage"},
-
-    {"code": "role-mgmt", "name": "角色权限", "menu_type": "page", "path": "/roles",
-     "icon": "SafetyCertificateOutlined", "sort": 6, "permission_code": "org_member:manage"},
-
-    {"code": "audit-logs", "name": "操作审计", "menu_type": "page", "path": "/audit-logs",
-     "icon": "FileSearchOutlined", "sort": 7, "permission_code": "audit_log:read"},
+    {"code": "system-mgmt", "name": "系统管理", "menu_type": "directory", "path": "/system",
+     "icon": "SettingOutlined", "sort": 5, "permission_code": None},
 ]
+
+# 被新菜单替代的旧一级菜单 code，种子脚本执行时会自动删除
+DEPRECATED_MENU_CODES = ["member-mgmt", "role-mgmt", "audit-logs"]
 
 CHILD_MENUS = {
     "patient-mgmt": [
@@ -116,6 +117,20 @@ CHILD_MENUS = {
          "sort": 1, "permission_code": "kb:manage"},
         {"code": "kb-documents", "name": "文档管理", "menu_type": "page", "path": "/knowledge/documents",
          "sort": 2, "permission_code": "doc:manage"},
+    ],
+    "system-mgmt": [
+        {"code": "sys-tenants", "name": "租户管理", "menu_type": "page", "path": "/system/tenants",
+         "sort": 1, "permission_code": "tenant:manage"},
+        {"code": "sys-orgs", "name": "组织管理", "menu_type": "page", "path": "/system/orgs",
+         "sort": 2, "permission_code": "org_member:manage"},
+        {"code": "sys-users", "name": "用户管理", "menu_type": "page", "path": "/system/users",
+         "sort": 3, "permission_code": "org_member:manage"},
+        {"code": "sys-roles", "name": "角色管理", "menu_type": "page", "path": "/system/roles",
+         "sort": 4, "permission_code": "org_member:manage"},
+        {"code": "sys-menus", "name": "菜单管理", "menu_type": "page", "path": "/system/menus",
+         "sort": 5, "permission_code": "menu:manage"},
+        {"code": "sys-audit", "name": "操作审计", "menu_type": "page", "path": "/system/audit",
+         "sort": 6, "permission_code": "audit_log:read"},
     ],
 }
 
@@ -231,6 +246,15 @@ async def seed_menus(db):
     """初始化菜单树"""
     print("=== [2/3] 菜单种子数据 ===")
 
+    # 清理已废弃的菜单（含子菜单级联删除）
+    for code in DEPRECATED_MENU_CODES:
+        stmt = select(Menu).where(Menu.code == code)
+        old = (await db.execute(stmt)).scalar_one_or_none()
+        if old:
+            await db.delete(old)
+            await db.flush()
+            print(f"  - Removed deprecated menu: {code}")
+
     parent_map = {}
     for menu_data in SYSTEM_MENUS:
         stmt = select(Menu).where(Menu.code == menu_data["code"])
@@ -242,6 +266,10 @@ async def seed_menus(db):
             parent_map[menu.code] = menu.id
             print(f"  + Menu: {menu.name} ({menu.code})")
         else:
+            # 更新已有菜单的属性（确保 sort/icon/permission 等同步）
+            for k, v in menu_data.items():
+                if k != "code":
+                    setattr(existing, k, v)
             parent_map[existing.code] = existing.id
 
     for parent_code, children in CHILD_MENUS.items():
@@ -256,6 +284,11 @@ async def seed_menus(db):
                 child = Menu(parent_id=parent_id, **child_data)
                 db.add(child)
                 print(f"    + Child: {child.name} ({child.code})")
+            else:
+                for k, v in child_data.items():
+                    if k != "code":
+                        setattr(existing, k, v)
+                existing.parent_id = parent_id
 
     print("  [OK] Menus done")
 

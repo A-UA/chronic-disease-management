@@ -85,6 +85,33 @@ async def update_organization(
     return org
 
 
+@router.delete("/{org_id}")
+async def delete_organization(
+    org_id: int,
+    _permission=Depends(check_permission("org_member:manage")),
+    db: AsyncSession = Depends(get_db),
+):
+    """[管理视图] 删除组织（检查成员关联）"""
+    org = await db.get(Organization, org_id)
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    # 检查组织下是否还有成员
+    from sqlalchemy import func as sqlfunc
+    member_count = (await db.execute(
+        select(sqlfunc.count()).where(OrganizationUser.org_id == org_id)
+    )).scalar() or 0
+    if member_count > 0:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Organization still has {member_count} member(s). Remove them first.",
+        )
+
+    await db.delete(org)
+    await db.commit()
+    return {"status": "ok"}
+
+
 @router.get("/{org_id}/members", response_model=List[OrganizationMemberRead])
 async def get_organization_members(
     org_id: int,

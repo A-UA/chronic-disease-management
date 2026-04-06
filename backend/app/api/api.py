@@ -17,7 +17,9 @@ from app.api.endpoints import (
     organizations,
     users,
     api_keys,
-    health_metrics
+    health_metrics,
+    tenants,
+    menus,
 )
 
 api_router = APIRouter()
@@ -44,3 +46,6 @@ api_router.include_router(usage.router, prefix="/usage", tags=["usage"])
 api_router.include_router(settings.router, prefix="/settings", tags=["settings"])
 api_router.include_router(rbac.router, prefix="/rbac", tags=["rbac"])
 api_router.include_router(api_keys.router, prefix="/api-keys", tags=["api-keys"])
+api_router.include_router(tenants.router, prefix="/tenants", tags=["tenants"])
+api_router.include_router(menus.router, prefix="/menus", tags=["menus"])
+

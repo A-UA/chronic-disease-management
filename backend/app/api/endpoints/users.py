@@ -79,6 +79,63 @@ async def list_users(
     return user_reads
 
 
+@router.get("/{user_id}", response_model=UserAdminRead)
+async def get_user(
+    user_id: int,
+    _admin=Depends(get_platform_viewer),
+    db: AsyncSession = Depends(get_db),
+):
+    """[平台管理员] 获取用户详情"""
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    count_stmt = select(func.count()).where(OrganizationUser.user_id == user.id)
+    count = (await db.execute(count_stmt)).scalar() or 0
+    return UserAdminRead(
+        id=user.id, email=user.email, name=user.name,
+        created_at=user.created_at, org_count=count,
+    )
+
+
+from pydantic import BaseModel as _BaseModel
+from typing import Optional
+
+
+class UserUpdate(_BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+
+
+@router.put("/{user_id}", response_model=UserAdminRead)
+async def update_user(
+    user_id: int,
+    data: UserUpdate,
+    _admin=Depends(get_platform_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """[平台管理员] 编辑用户信息"""
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if data.email and data.email != user.email:
+        dup = select(User).where(User.email == data.email, User.id != user_id)
+        if (await db.execute(dup)).scalar_one_or_none():
+            raise HTTPException(status_code=400, detail="Email already in use")
+        user.email = data.email
+    if data.name is not None:
+        user.name = data.name
+
+    await db.commit()
+    await db.refresh(user)
+    count_stmt = select(func.count()).where(OrganizationUser.user_id == user.id)
+    count = (await db.execute(count_stmt)).scalar() or 0
+    return UserAdminRead(
+        id=user.id, email=user.email, name=user.name,
+        created_at=user.created_at, org_count=count,
+    )
+
+
 @router.put("/{user_id}/status")
 async def update_user_status(
     user_id: int,
@@ -89,12 +146,26 @@ async def update_user_status(
     user = await db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    # Soft delete via deleted_at
     if is_active:
         user.deleted_at = None
     else:
-        from sqlalchemy.sql import func
+        from sqlalchemy.sql import func as sqlfunc
+        user.deleted_at = sqlfunc.now()
+    await db.commit()
+    return {"status": "ok"}
 
-        user.deleted_at = func.now()
+
+@router.delete("/{user_id}")
+async def delete_user(
+    user_id: int,
+    _admin=Depends(get_platform_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """[平台管理员] 删除用户（软删除）"""
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    from sqlalchemy.sql import func as sqlfunc
+    user.deleted_at = sqlfunc.now()
     await db.commit()
     return {"status": "ok"}

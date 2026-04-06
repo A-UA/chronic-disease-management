@@ -33,6 +33,16 @@ async def list_actions(
     result = await db.execute(stmt)
     return [{"id": a.id, "name": a.name, "code": a.code} for a in result.scalars().all()]
 
+@router.get("/permissions", response_model=List[dict])
+async def list_permissions(
+    _org_admin=Depends(check_org_admin()),
+    db: AsyncSession = Depends(get_db),
+):
+    """[管理员] 获取系统所有权限列表"""
+    stmt = select(Permission)
+    result = await db.execute(stmt)
+    return [{"id": p.id, "name": p.name, "code": p.code} for p in result.scalars().all()]
+
 @router.get("/roles", response_model=List[RoleRead])
 async def list_roles(
     tenant_id: int = Depends(get_current_tenant_id),

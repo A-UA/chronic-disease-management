@@ -10,19 +10,20 @@ const DashboardPage = lazy(() => import("@/pages/dashboard/index"));
 const PatientListPage = lazy(() => import("@/pages/patients/index"));
 const PatientDetailPage = lazy(() => import("@/pages/patients/[id]"));
 
-// F6: 知识库管理
+// 知识库管理
 const KBListPage = lazy(() => import("@/pages/knowledge/list"));
 const KBDocumentsPage = lazy(() => import("@/pages/knowledge/documents"));
 
-// F7: 成员管理 + 角色权限
-const MemberListPage = lazy(() => import("@/pages/members/index"));
-const RoleListPage = lazy(() => import("@/pages/roles/index"));
-
-// F8: AI 问答
+// AI 问答
 const AIChatPage = lazy(() => import("@/pages/chat/index"));
 
-// F9: 操作审计
-const AuditLogsPage = lazy(() => import("@/pages/audit/index"));
+// 系统管理
+const SysTenantsPage = lazy(() => import("@/pages/system/tenants"));
+const SysOrgsPage = lazy(() => import("@/pages/system/orgs"));
+const SysUsersPage = lazy(() => import("@/pages/system/users"));
+const SysRolesPage = lazy(() => import("@/pages/system/roles"));
+const SysMenusPage = lazy(() => import("@/pages/system/menus"));
+const SysAuditPage = lazy(() => import("@/pages/system/audit"));
 
 export const routeRegistry: Record<string, RouteModule> = {
   dashboard: {
@@ -48,13 +49,23 @@ export const routeRegistry: Record<string, RouteModule> = {
   "ai-chat": {
     index: <AIChatPage />,
   },
-  "member-mgmt": {
-    index: <MemberListPage />,
+  // ── 系统管理子模块 ──
+  "sys-tenants": {
+    index: <SysTenantsPage />,
   },
-  "role-mgmt": {
-    index: <RoleListPage />,
+  "sys-orgs": {
+    index: <SysOrgsPage />,
   },
-  "audit-logs": {
-    index: <AuditLogsPage />,
+  "sys-users": {
+    index: <SysUsersPage />,
+  },
+  "sys-roles": {
+    index: <SysRolesPage />,
+  },
+  "sys-menus": {
+    index: <SysMenusPage />,
+  },
+  "sys-audit": {
+    index: <SysAuditPage />,
   },
 };
