@@ -32,6 +32,7 @@ class ChatRequest(BaseModel):
     document_ids: list[int] | None = None
     file_types: list[str] | None = None
     patient_id: int | None = None
+    use_agent: bool = False  # 是否启用 Agent 模式
 
 
 # --- 工具函数 ---
@@ -119,6 +120,14 @@ async def chat_endpoint(
         raise HTTPException(status_code=404, detail="Knowledge base not found")
     if kb.tenant_id != tenant_id:
         raise HTTPException(status_code=403, detail="Not enough permissions")
+
+    # --- Agent 模式 ---
+    if request.use_agent:
+        return await _handle_agent_mode(
+            request=request, db=db,
+            tenant_id=tenant_id, org_id=org_id,
+            current_user=current_user,
+        )
 
     # 2. 获取或创建对话
     conversation: Conversation | None = None
@@ -288,3 +297,132 @@ async def chat_endpoint(
                 logger.exception("Failed to save chat audit records")
 
     return StreamingResponse(generate(), media_type="text/event-stream")
+
+
+async def _handle_agent_mode(
+    request: ChatRequest,
+    db: AsyncSession,
+    tenant_id: int,
+    org_id: int,
+    current_user: User,
+) -> StreamingResponse:
+    """Agent 模式处理：构建 SecurityContext → run_agent → SSE 输出"""
+    from app.services.agent import SecurityContext, run_agent
+    from app.services.rbac import RBACService
+
+    # 获取用户有效权限
+    from app.db.models import OrganizationUser, OrganizationUserRole
+    ou_stmt = (
+        select(OrganizationUser)
+        .where(
+            OrganizationUser.user_id == current_user.id,
+            OrganizationUser.org_id == org_id,
+        )
+    )
+    ou_result = await db.execute(ou_stmt)
+    org_user = ou_result.scalar_one_or_none()
+
+    role_ids: list[int] = []
+    current_roles: list[str] = []
+    if org_user:
+        role_stmt = (
+            select(OrganizationUserRole)
+            .where(OrganizationUserRole.org_user_id == org_user.id)
+        )
+        role_result = await db.execute(role_stmt)
+        our_list = role_result.scalars().all()
+        role_ids = [our.role_id for our in our_list]
+
+    effective_perms = await RBACService.get_effective_permissions(db, role_ids) if role_ids else set()
+
+    ctx = SecurityContext(
+        tenant_id=tenant_id,
+        org_id=org_id,
+        user_id=current_user.id,
+        roles=tuple(current_roles),
+        permissions=frozenset(effective_perms),
+        db=db,
+    )
+
+    # 获取或创建对话
+    conversation: Conversation | None = None
+    if request.conversation_id is not None:
+        conversation = await db.get(Conversation, request.conversation_id)
+    if conversation is None:
+        from app.core.snowflake import get_next_id
+        conversation = Conversation(
+            id=get_next_id(),
+            kb_id=request.kb_id,
+            tenant_id=tenant_id,
+            org_id=org_id,
+            user_id=current_user.id,
+            title=_generate_title(request.query),
+        )
+        db.add(conversation)
+
+    # 保存用户消息
+    user_msg = Message(
+        conversation_id=conversation.id,
+        tenant_id=tenant_id,
+        org_id=org_id,
+        role="user",
+        content=request.query,
+        metadata_={"agent_mode": True},
+    )
+    db.add(user_msg)
+    await db.commit()
+
+    # 执行 Agent
+    agent_result = await run_agent(
+        ctx=ctx,
+        query=request.query,
+        kb_id=request.kb_id,
+        conversation_id=conversation.id,
+    )
+
+    answer = agent_result.get("answer", "")
+    citations = agent_result.get("citations", [])
+    skill_results = agent_result.get("skill_results", [])
+
+    # 保存 assistant 回复
+    from app.db.session import AsyncSessionLocal
+    from sqlalchemy import text
+    async with AsyncSessionLocal() as db_save:
+        await db_save.execute(
+            text("SELECT set_config('app.current_tenant_id', :tid, true)"),
+            {"tid": str(tenant_id)},
+        )
+        await db_save.execute(
+            text("SELECT set_config('app.current_user_id', :uid, true)"),
+            {"uid": str(current_user.id)},
+        )
+        assistant_msg = Message(
+            conversation_id=conversation.id,
+            tenant_id=tenant_id,
+            org_id=org_id,
+            role="assistant",
+            content=answer or "[Agent 回答生成中断]",
+            metadata_={
+                "citations": citations,
+                "skill_results": skill_results,
+                "agent_mode": True,
+            },
+        )
+        db_save.add(assistant_msg)
+        await db_save.commit()
+
+    # 封装为 SSE 流式响应（兼容现有前端 SSE 协议）
+    async def generate_agent() -> AsyncGenerator[str, None]:
+        yield f"event: meta\ndata: {json.dumps({'conversation_id': str(conversation.id), 'citations': citations})}\n\n"
+        # Agent 非流式，一次性输出全文
+        if answer:
+            yield f"event: chunk\ndata: {json.dumps({'text': answer})}\n\n"
+        done_data = {
+            "tokens": 0,
+            "statement_citations": [],
+            "skill_results": skill_results,
+        }
+        yield f"event: done\ndata: {json.dumps(done_data)}\n\n"
+
+    return StreamingResponse(generate_agent(), media_type="text/event-stream")
+
