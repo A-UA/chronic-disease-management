@@ -65,6 +65,15 @@ class Settings(BaseSettings):
     # CORS
     CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:5173"]
 
+    # OpenTelemetry
+    OTLP_ENDPOINT: str = ""
+    OTEL_SERVICE_NAME: str = "cdm-backend"
+
+    # arq Worker
+    ARQ_MAX_JOBS: int = 10
+    ARQ_JOB_TIMEOUT: int = 600
+
+
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
     @model_validator(mode="after")
