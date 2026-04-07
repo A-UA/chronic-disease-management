@@ -53,6 +53,15 @@ app = FastAPI(
     default_response_class=SnowflakeJSONResponse
 )
 
+# --- 可观测性初始化 ---
+from app.telemetry.setup import setup_telemetry
+setup_telemetry(app)
+
+# --- 插件注册（触发所有插件的延迟注册） ---
+import importlib as _importlib
+for _plugin in ("llm", "embedding", "reranker", "parser", "chunker"):
+    _importlib.import_module(f"app.plugins.{_plugin}")
+
 # 注册异常处理器以保护大整数精度
 @app.exception_handler(HTTPException)
 async def custom_http_exception_handler(request: Request, exc: HTTPException):
