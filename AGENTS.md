@@ -1,6 +1,6 @@
 # 慢病管理多租户 AI SaaS — 项目指南
 
-更新时间：2026-04-05
+更新时间：2026-04-07
 
 ## 1. 项目概览
 
@@ -47,35 +47,51 @@
 chronic-disease-management/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py                    # 应用入口、SnowflakeJSONResponse、中间件注册
+│   │   ├── main.py                    # 应用入口、SnowflakeJSONResponse、Telemetry + 插件初始化
 │   │   ├── api/
-│   │   │   ├── api.py                 # 路由注册中心（18 个端点模块）
+│   │   │   ├── api.py                 # 路由注册中心（20 个端点模块）
 │   │   │   ├── deps.py                # 依赖注入：认证、组织上下文、RBAC 权限校验、配额
 │   │   │   └── endpoints/             # 业务接口（详见第 3 节）
 │   │   ├── core/
-│   │   │   ├── config.py              # pydantic-settings 配置（含 RAG 参数）
+│   │   │   ├── config.py              # pydantic-settings 配置（含 RAG + OTel + arq 参数）
+│   │   │   ├── exceptions.py          # 统一业务异常（NotFoundError/ForbiddenError/ConflictError/QuotaExceededError）
 │   │   │   ├── security.py            # JWT 签发/验证、Argon2 密码哈希
 │   │   │   ├── middleware.py          # X-Request-ID 请求追踪中间件
 │   │   │   └── snowflake.py           # 雪花 ID 生成器
+│   │   ├── modules/                   # 业务模块垂直切分（渐进式迁移中）
+│   │   │   ├── auth/                  # 认证模块（User、JWT、密码重置）
+│   │   │   ├── system/                # 系统模块（Organization、RBAC、Menu、ApiKey）
+│   │   │   ├── patient/               # 患者模块（PatientProfile、HealthMetric、Manager）
+│   │   │   ├── rag/                   # RAG 模块（检索、入库、引用、评估、上下文压缩）
+│   │   │   │   ├── retrieval.py        # 混合检索管线（向量+关键词+RRF+Rerank）
+│   │   │   │   ├── ingestion.py        # 文档入库管线（Parser→Chunker→Embedding→Store）
+│   │   │   │   ├── citation.py         # 引用构建与声明-引用映射
+│   │   │   │   ├── context.py          # 对话上下文增强
+│   │   │   │   ├── compress.py         # 多轮对话历史压缩
+│   │   │   │   ├── query_rewrite.py    # 查询改写与多查询扩展
+│   │   │   │   ├── evaluation.py       # RAG 评估
+│   │   │   │   └── tasks.py            # arq 异步任务（文档入库 + 审计日志）
+│   │   │   ├── agent/                 # AI Agent 模块
+│   │   │   └── audit/                 # 审计模块（AuditLog、audit_action、fire_audit）
+│   │   ├── plugins/                   # AI 插件体系（配置驱动 + 延迟初始化）
+│   │   │   ├── registry.py            # PluginRegistry 统一注册中心
+│   │   │   ├── llm/                   # LLM 插件（Protocol + OpenAI-compatible 实现）
+│   │   │   ├── embedding/             # Embedding 插件（Protocol + OpenAI-compatible 实现）
+│   │   │   ├── reranker/              # Reranker 插件（noop / simple / openai_compatible）
+│   │   │   ├── parser/                # 文档解析器插件（pdf / text / docx）
+│   │   │   └── chunker/               # 切块策略插件（medical_heading）
+│   │   ├── tasks/                     # arq 异步任务队列
+│   │   │   └── worker.py              # arq Worker 配置（启动：uv run arq app.tasks.worker.WorkerSettings）
+│   │   ├── telemetry/                 # 可观测性基础设施
+│   │   │   ├── setup.py               # OpenTelemetry SDK 初始化
+│   │   │   ├── tracing.py             # trace_span + @traced 装饰器（noop 退化）
+│   │   │   └── logging.py             # 结构化日志
 │   │   ├── db/
-│   │   │   ├── models/                # 14 个 ORM 模型文件
-│   │   │   │   ├── base.py            # Base、IDMixin、TimestampMixin
-│   │   │   │   ├── user.py            # User、PasswordResetToken
-│   │   │   │   ├── organization.py    # Organization、OrganizationUser、OrganizationUserRole、OrganizationInvitation、PatientFamilyLink
-│   │   │   │   ├── rbac.py            # Resource、Action、Permission、Role、RolePermission、RoleConstraint
-│   │   │   │   ├── patient.py         # PatientProfile（JSONB medical_history + GIN 索引）
-│   │   │   │   ├── health_metric.py   # HealthMetric（血压/血糖/体重/心率/BMI/SpO2）
-│   │   │   │   ├── manager.py         # ManagerProfile、PatientManagerAssignment、ManagementSuggestion
-│   │   │   │   ├── menu.py            # Menu（动态菜单树，支持 permission_code 权限过滤）
-│   │   │   │   ├── knowledge.py       # KnowledgeBase、Document、Chunk
-│   │   │   │   ├── chat.py            # Conversation、Message、UsageLog
-│   │   │   │   ├── api_key.py         # ApiKey
-│   │   │   │   ├── audit.py           # AuditLog
-│   │   │   │   └── settings.py        # SystemSetting
+│   │   │   ├── models/                # 14 个 ORM 模型文件（Alembic 迁移源）
 │   │   │   ├── session.py             # AsyncSession 工厂
 │   │   │   └── seed_data.py           # 统一种子数据（RBAC + 菜单 + 超管账号）
 │   │   ├── schemas/                   # Pydantic 请求/响应模型
-│   │   └── services/                  # 业务服务层（19 个文件）
+│   │   └── services/                  # 业务服务层（兼容层，渐进迁移到 modules/）
 │   ├── alembic/                       # 数据库迁移脚本
 │   ├── tests/                         # 自动化测试
 │   ├── scripts/                       # 辅助脚本
@@ -354,14 +370,15 @@ vp build                              # 生产构建
 
 ### LLM / Embedding / Reranker
 
+> **注意**：`LLM_PROVIDER` 和 `EMBEDDING_PROVIDER` 已废弃（插件系统自动选择 `openai_compatible` 实现）。
+
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
-| `LLM_PROVIDER` | `openai_compatible` | LLM 供应商 |
 | `CHAT_MODEL` | `gpt-4o-mini` | 聊天模型 |
 | `LLM_BASE_URL` / `LLM_API_KEY` | — | LLM 接口地址和密钥 |
-| `EMBEDDING_PROVIDER` | `openai` | Embedding 供应商（推荐 `zhipu`） |
 | `EMBEDDING_MODEL` | `text-embedding-3-small` | Embedding 模型 |
-| `RERANKER_PROVIDER` | `noop` | Reranker 供应商（支持 `zhipu`/`openai_compatible`/`simple`） |
+| `EMBEDDING_BASE_URL` / `EMBEDDING_API_KEY` | — | 留空则回退到 LLM_* |
+| `RERANKER_PROVIDER` | `noop` | Reranker 供应商（支持 `noop`/`simple`/`openai_compatible`） |
 
 ### RAG 参数
 
@@ -371,6 +388,20 @@ vp build                              # 生产构建
 | `RAG_KEYWORD_WEIGHT` | `0.3` | 关键词检索权重 |
 | `RAG_RRF_K` | `60` | RRF 融合参数 |
 | `RAG_ENABLE_CONTEXTUAL_INGESTION` | `false` | 入库背景增强 |
+
+### OpenTelemetry（可选）
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `OTLP_ENDPOINT` | （空） | OTLP gRPC 导出地址（不设则 noop） |
+| `OTEL_SERVICE_NAME` | `cdm-backend` | 服务名称 |
+
+### arq Worker
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `ARQ_MAX_JOBS` | `10` | Worker 最大并发任务数 |
+| `ARQ_JOB_TIMEOUT` | `600` | 单任务超时（秒） |
 
 ### 其他
 
@@ -388,12 +419,14 @@ vp build                              # 生产构建
 - **ID 使用**：所有新表必须继承 `IDMixin`，默认生成 64 位雪花 ID
 - **类型提示**：ID 字段在 Python 中一律使用 `int` 类型
 - **接口返回**：直接返回 `int`，`SnowflakeJSONResponse` 自动处理 JS 精度转换
-- **API 设计**：新增功能优先走 Provider / Service 抽象
+- **插件体系**：新增 AI 能力优先通过 `PluginRegistry` 注册插件实现（`app/plugins/`），不再直接修改 services
+- **模块化**：新业务逻辑写入 `app/modules/<module>/`，旧代码通过兼容层（`services/provider_registry.py`）桥接
 - **导入规范**：不要在导入阶段初始化外部服务（延迟初始化模式）
 - **权限控制**：管理类接口使用 `check_permission("resource:action")` 依赖注入
 - **认证架构**：JWT 内嵌 tenant_id/org_id/roles，前端不解析 JWT，权限通过 `/auth/me` 获取
 - **组织隔离**：涉及租户数据的端点必须注入 `inject_rls_context`，RLS 策略在数据库层强制隔离
 - **审计日志**：敏感操作可用 `audit_action()`（事务内同步）或 `fire_audit()`（即发即忘异步）
+- **可观测性**：核心管线使用 `trace_span` / `@traced` 添加 OTel 链路追踪
 - **种子数据**：所有预制数据统一写入 `app/db/seed_data.py`
 - **终端环境**：使用 PowerShell，命令用 `;` 分隔（不是 `&&`），注意 stderr 的 INFO 日志会导致假性 exit code 1
 
@@ -425,10 +458,14 @@ vp build                              # 生产构建
 - [x] 审计日志异步化（`fire_audit` 即发即忘）
 - [x] 健康指标异常告警逻辑（血压/血糖/心率/血氧/BMI）
 - [x] 多轮对话压缩（LLM 摘要 + 最近消息保留）
+- [x] 后端模块化重构：6 个业务模块 + 5 个 AI 插件族 + PluginRegistry
+- [x] OpenTelemetry 可观测性基础设施（trace_span / @traced / setup_telemetry）
+- [x] arq 异步任务队列（Worker 配置 + 文档入库/审计日志任务）
+- [x] 引用逻辑拆分（citation.py 独立模块）
 
 ## 11. 测试覆盖
 
 ```
-后端：191 tests passed（API 层 + 服务层 + RLS）
+后端：232 tests passed（API 层 + 服务层 + RLS + 插件注册 + Telemetry）
 前端：vp check — 39 files, 0 error, 0 warning
 ```

@@ -5,8 +5,13 @@ from app.modules.rag.models import (  # noqa: F401
 from app.modules.rag.retrieval import (  # noqa: F401
     retrieve_ranked_chunks,
     retrieve_chunks,
-    build_rag_prompt,
     RetrievedChunk,
-    Citation,
     RetrievalFilters,
+)
+from app.modules.rag.citation import (  # noqa: F401
+    build_rag_prompt,
+    build_statement_citations,
+    extract_statement_citations_structured,
+    Citation,
+    StatementCitation,
 )
