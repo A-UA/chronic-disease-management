@@ -1,42 +1,36 @@
-from typing import Optional
+"""向后兼容层：将旧 ProviderRegistry 委托到新 PluginRegistry
 
-from app.core.config import settings
-from app.services.embeddings import get_embedding_provider, EmbeddingProvider
-from app.services.llm import get_llm_provider, LLMProvider
-from app.services.reranker import get_reranker_provider, RerankerProvider
+所有使用 `from app.services.provider_registry import registry` 的代码
+无需修改即可正常工作。
+"""
+from app.plugins.registry import PluginRegistry
+import app.plugins.llm  # noqa: F401 — 触发插件注册
+import app.plugins.embedding  # noqa: F401
+import app.plugins.reranker  # noqa: F401
+
 
 class ProviderRegistry:
+    """向后兼容层：所有调用委托到 PluginRegistry"""
     _instance = None
-    
-    def __init__(self):
-        self.llm: Optional[LLMProvider] = None
-        self.embedding: Optional[EmbeddingProvider] = None
-        self.reranker: Optional[RerankerProvider] = None
 
     @classmethod
-    def get_instance(cls) -> "ProviderRegistry":
+    def get_instance(cls):
         if cls._instance is None:
             cls._instance = cls()
         return cls._instance
 
     def initialize(self):
-        self.llm = get_llm_provider()
-        self.embedding = get_embedding_provider()
-        self.reranker = get_reranker_provider()
+        """兼容旧 initialize() 调用，新架构为延迟初始化，此处为 noop"""
+        pass
 
-    def get_llm(self) -> LLMProvider:
-        if self.llm is None:
-            self.llm = get_llm_provider()
-        return self.llm
+    def get_llm(self):
+        return PluginRegistry.get("llm")
 
-    def get_embedding(self) -> EmbeddingProvider:
-        if self.embedding is None:
-            self.embedding = get_embedding_provider()
-        return self.embedding
+    def get_embedding(self):
+        return PluginRegistry.get("embedding")
 
-    def get_reranker(self) -> RerankerProvider:
-        if self.reranker is None:
-            self.reranker = get_reranker_provider()
-        return self.reranker
+    def get_reranker(self):
+        return PluginRegistry.get("reranker")
+
 
 registry = ProviderRegistry.get_instance()
