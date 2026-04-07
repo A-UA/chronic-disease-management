@@ -26,17 +26,17 @@ from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.config import settings
-from app.core.security import ALGORITHM
-from app.db.models import (
+from app.base.config import settings
+from app.base.security import ALGORITHM
+from app.models import (
     ApiKey,
     OrganizationUser,
     Role,
     Tenant,
     User,
 )
-from app.db.session import get_db
-from app.modules.system.rbac import RBACService
+from app.base.database import get_db
+from app.services.system.rbac import RBACService
 
 logger = logging.getLogger(__name__)
 
@@ -271,7 +271,7 @@ async def verify_quota(
     db: AsyncSession = Depends(get_db),
 ) -> Tenant:
     """校验租户级配额"""
-    from app.modules.system.quota import check_tenant_quota
+    from app.services.system.quota import check_tenant_quota
     return await check_tenant_quota(db, tenant_id)
 
 
@@ -303,11 +303,11 @@ async def get_api_key_context(
             raise HTTPException(status_code=401, detail="API Key has expired")
 
     # Rate Limiting
-    from app.modules.system.quota import check_api_key_rate_limit
+    from app.services.system.quota import check_api_key_rate_limit
     await check_api_key_rate_limit(api_key.id, api_key.qps_limit)
 
     # Tenant quota
-    from app.modules.system.quota import check_tenant_quota
+    from app.services.system.quota import check_tenant_quota
     await check_tenant_quota(db, api_key.tenant_id)
 
     # Key level quota
@@ -330,7 +330,7 @@ async def get_platform_admin(
     db: AsyncSession = Depends(get_db),
 ) -> User:
     """验证用户拥有 platform_admin 角色"""
-    from app.db.models import OrganizationUserRole
+    from app.models import OrganizationUserRole
 
     stmt = (
         select(OrganizationUserRole)
@@ -352,7 +352,7 @@ async def get_platform_viewer(
     db: AsyncSession = Depends(get_db),
 ) -> User:
     """验证用户拥有 platform_admin 或 platform_viewer 角色"""
-    from app.db.models import OrganizationUserRole
+    from app.models import OrganizationUserRole
 
     stmt = (
         select(OrganizationUserRole)
