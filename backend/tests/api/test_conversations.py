@@ -11,7 +11,7 @@ from tests.api.conftest import override_deps, MockScalarResult, TENANT_ID, ORG_I
 
 
 def _make_app():
-    from app.api.endpoints.conversations import router
+    from app.modules.rag.router_conversations import router
     app = FastAPI()
     app.include_router(router, prefix="/api/v1/conversations")
     return app

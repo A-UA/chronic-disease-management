@@ -1,51 +1,60 @@
+"""API Router - all routes from modules"""
 from fastapi import APIRouter
-from app.api.endpoints import (
-    auth, 
-    external_api, 
-    documents, 
-    knowledge_bases,
-    patients,
-    family,
-    managers,
-    chat,
-    conversations,
-    dashboard,
-    audit_logs,
-    usage,
-    settings,
-    rbac,
-    organizations,
-    users,
-    api_keys,
-    health_metrics,
-    tenants,
-    menus,
-)
+
+# Auth module
+from app.modules.auth.router import router as auth_router
+# System module
+from app.modules.system.router_organizations import router as organizations_router
+from app.modules.system.router_users import router as users_router
+from app.modules.system.router_rbac import router as rbac_router
+from app.modules.system.router_menus import router as menus_router
+from app.modules.system.router_settings import router as settings_router
+from app.modules.system.router_api_keys import router as api_keys_router
+from app.modules.system.router_dashboard import router as dashboard_router
+from app.modules.system.router_usage import router as usage_router
+from app.modules.system.router_tenants import router as tenants_router
+from app.modules.system.router_external_api import router as external_api_router
+# Patient module
+from app.modules.patient.router_patients import router as patients_router
+from app.modules.patient.router_health_metrics import router as health_metrics_router
+from app.modules.patient.router_family import router as family_router
+from app.modules.patient.router_managers import router as managers_router
+# RAG module
+from app.modules.rag.router_chat import router as chat_router
+from app.modules.rag.router_conversations import router as conversations_router
+from app.modules.rag.router_documents import router as documents_router
+from app.modules.rag.router_knowledge_bases import router as kb_router
+# Audit module
+from app.modules.audit.router import router as audit_logs_router
 
 api_router = APIRouter()
 
-# --- Common/Identity ---
-api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
-api_router.include_router(external_api.router, prefix="/external", tags=["external"])
+# --- Auth ---
+api_router.include_router(auth_router, prefix="/auth", tags=["auth"])
+api_router.include_router(external_api_router, prefix="/external", tags=["external"])
 
-# --- Unified Resource API (No biz/admin prefix) ---
-# Each router implements its own access control via check_permission
-api_router.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
-api_router.include_router(organizations.router, prefix="/organizations", tags=["organizations"])
-api_router.include_router(users.router, prefix="/users", tags=["users"])
-api_router.include_router(patients.router, prefix="/patients", tags=["patients"])
-api_router.include_router(health_metrics.router, prefix="/health-metrics", tags=["health-metrics"])
-api_router.include_router(family.router, prefix="/family", tags=["family"])
-api_router.include_router(managers.router, prefix="/managers", tags=["managers"])
-api_router.include_router(chat.router, prefix="/chat", tags=["chat"])
-api_router.include_router(conversations.router, prefix="/conversations", tags=["conversations"])
-api_router.include_router(documents.router, prefix="/documents", tags=["documents"])
-api_router.include_router(knowledge_bases.router, prefix="/kb", tags=["knowledge-bases"])
-api_router.include_router(audit_logs.router, prefix="/audit-logs", tags=["audit-logs"])
-api_router.include_router(usage.router, prefix="/usage", tags=["usage"])
-api_router.include_router(settings.router, prefix="/settings", tags=["settings"])
-api_router.include_router(rbac.router, prefix="/rbac", tags=["rbac"])
-api_router.include_router(api_keys.router, prefix="/api-keys", tags=["api-keys"])
-api_router.include_router(tenants.router, prefix="/tenants", tags=["tenants"])
-api_router.include_router(menus.router, prefix="/menus", tags=["menus"])
+# --- System ---
+api_router.include_router(dashboard_router, prefix="/dashboard", tags=["dashboard"])
+api_router.include_router(organizations_router, prefix="/organizations", tags=["organizations"])
+api_router.include_router(users_router, prefix="/users", tags=["users"])
+api_router.include_router(rbac_router, prefix="/rbac", tags=["rbac"])
+api_router.include_router(menus_router, prefix="/menus", tags=["menus"])
+api_router.include_router(settings_router, prefix="/settings", tags=["settings"])
+api_router.include_router(api_keys_router, prefix="/api-keys", tags=["api-keys"])
+api_router.include_router(usage_router, prefix="/usage", tags=["usage"])
+api_router.include_router(tenants_router, prefix="/tenants", tags=["tenants"])
 
+# --- Patient ---
+api_router.include_router(patients_router, prefix="/patients", tags=["patients"])
+api_router.include_router(health_metrics_router, prefix="/health-metrics", tags=["health-metrics"])
+api_router.include_router(family_router, prefix="/family", tags=["family"])
+api_router.include_router(managers_router, prefix="/managers", tags=["managers"])
+
+# --- RAG ---
+api_router.include_router(chat_router, prefix="/chat", tags=["chat"])
+api_router.include_router(conversations_router, prefix="/conversations", tags=["conversations"])
+api_router.include_router(documents_router, prefix="/documents", tags=["documents"])
+api_router.include_router(kb_router, prefix="/kb", tags=["knowledge-bases"])
+
+# --- Audit ---
+api_router.include_router(audit_logs_router, prefix="/audit-logs", tags=["audit-logs"])

@@ -1,5 +1,5 @@
 """对话上下文服务测试：追问检测、上下文增强"""
-from app.services.conversation_context import (
+from app.modules.rag.context import (
     is_likely_follow_up,
     build_retrieval_query_from_history,
 )

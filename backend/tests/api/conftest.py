@@ -109,11 +109,11 @@ def patch_rbac(permissions=None):
     _perms = permissions or ALL_PERMISSIONS
 
     patcher_perms = patch(
-        "app.services.rbac.RBACService.get_effective_permissions",
+        "app.modules.system.rbac.RBACService.get_effective_permissions",
         new_callable=AsyncMock, return_value=_perms,
     )
     patcher_roles = patch(
-        "app.services.rbac.RBACService.get_all_role_ids",
+        "app.modules.system.rbac.RBACService.get_all_role_ids",
         new_callable=AsyncMock, return_value={1},
     )
     return patcher_perms, patcher_roles
@@ -127,11 +127,11 @@ class PatchRBAC:
 
     def __enter__(self):
         self._p1 = patch(
-            "app.services.rbac.RBACService.get_effective_permissions",
+            "app.modules.system.rbac.RBACService.get_effective_permissions",
             new_callable=AsyncMock, return_value=self._perms,
         )
         self._p2 = patch(
-            "app.services.rbac.RBACService.get_all_role_ids",
+            "app.modules.system.rbac.RBACService.get_all_role_ids",
             new_callable=AsyncMock, return_value={1},
         )
         self._p1.start()

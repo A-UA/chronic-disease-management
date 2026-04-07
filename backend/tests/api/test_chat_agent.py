@@ -1,7 +1,7 @@
 """Agent 集成测试 — run_agent 高层 API"""
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from app.services.agent.security import SecurityContext
+from app.modules.agent.security import SecurityContext
 
 
 def _make_ctx(perms=frozenset({"chat:use"})):
@@ -13,7 +13,7 @@ def _make_ctx(perms=frozenset({"chat:use"})):
 
 class TestRunAgent:
     @pytest.mark.asyncio
-    @patch("app.services.provider_registry.registry")
+    @patch("app.plugins.provider_compat.registry")
     async def test_direct_answer_when_no_skills_registered(self, mock_registry):
         """无 Skills 注册时，router 直接走 direct_answer（不调 LLM 路由）"""
         mock_llm = MagicMock()
@@ -22,20 +22,20 @@ class TestRunAgent:
         mock_registry.get_llm.return_value = mock_llm
 
         # 用一个空的 registry 保证无 skills
-        with patch("app.services.agent.graph.skill_registry") as empty_reg:
+        with patch("app.modules.agent.graph.skill_registry") as empty_reg:
             empty_reg.get_available.return_value = []
 
-            from app.services.agent import run_agent
+            from app.modules.agent import run_agent
             result = await run_agent(ctx=_make_ctx(), query="你好", kb_id=1)
             assert result["answer"] == "这是一个通用回答"
             assert result["citations"] == []
 
     @pytest.mark.asyncio
-    @patch("app.services.provider_registry.registry")
+    @patch("app.plugins.provider_compat.registry")
     async def test_max_iterations_guard(self, mock_registry):
         """超过 max_iterations 应返回固定提示"""
-        from app.services.agent.graph import router_node
-        from app.services.agent.state import AgentState
+        from app.modules.agent.graph import router_node
+        from app.modules.agent.state import AgentState
 
         state: AgentState = {
             "messages": [], "query": "测试", "kb_id": 1,
@@ -46,7 +46,7 @@ class TestRunAgent:
         assert "最大推理轮次" in result["final_answer"]
 
     @pytest.mark.asyncio
-    @patch("app.services.provider_registry.registry")
+    @patch("app.plugins.provider_compat.registry")
     async def test_skill_call_for_bmi(self, mock_registry):
         """BMI 计算应走 skill_node 路径"""
         mock_llm = MagicMock()
@@ -61,9 +61,9 @@ class TestRunAgent:
         mock_registry.get_llm.return_value = mock_llm
 
         # 确保 calculator_skills 已注册
-        import app.services.agent.skills.calculator_skills  # noqa: F401
+        import app.modules.agent.skills.calculator_skills  # noqa: F401
 
-        from app.services.agent import run_agent
+        from app.modules.agent import run_agent
         result = await run_agent(ctx=_make_ctx(), query="身高170体重65的BMI是多少", kb_id=1)
         assert result["answer"]
         assert len(result["skill_results"]) > 0

@@ -5,9 +5,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.services.agent.security import SecurityContext
-from app.services.agent.skills.base import SkillRegistry
-from app.services.agent.skills.markdown_loader import (
+from app.modules.agent.security import SecurityContext
+from app.modules.agent.skills.base import SkillRegistry
+from app.modules.agent.skills.markdown_loader import (
     parse_skill_md,
     load_skill_from_directory,
     register_skills_from_directory,
@@ -119,7 +119,7 @@ class TestLoadSkillFromDirectory:
             assert tool["function"]["name"] == "test-skill"
 
     @pytest.mark.asyncio
-    @patch("app.services.provider_registry.registry")
+    @patch("app.plugins.provider_compat.registry")
     async def test_handler_calls_llm(self, mock_registry):
         mock_llm = MagicMock()
         mock_llm.complete_text = AsyncMock(return_value="AI 回复")
@@ -141,7 +141,7 @@ class TestLoadSkillFromDirectory:
             assert "测试" in prompt
 
     @pytest.mark.asyncio
-    @patch("app.services.provider_registry.registry")
+    @patch("app.plugins.provider_compat.registry")
     async def test_handler_loads_references(self, mock_registry):
         """Level 3: references/ 目录内容自动附加到 prompt"""
         mock_llm = MagicMock()

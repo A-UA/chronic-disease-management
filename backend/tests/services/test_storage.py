@@ -1,5 +1,5 @@
 """存储服务测试：文件名安全化"""
-from app.services.storage import _sanitize_filename
+from app.core.storage import _sanitize_filename
 
 
 class TestSanitizeFilename:

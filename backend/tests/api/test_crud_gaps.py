@@ -23,7 +23,7 @@ from tests.api.conftest import (
 
 class TestManagerProfileCreate:
     def _make_app(self):
-        from app.api.endpoints.managers import router
+        from app.modules.patient.router_managers import router
         app = FastAPI()
         app.include_router(router, prefix="/api/v1/managers")
         return app
@@ -74,7 +74,7 @@ class TestManagerProfileCreate:
 
 class TestManagerProfileUpdate:
     def _make_app(self):
-        from app.api.endpoints.managers import router
+        from app.modules.patient.router_managers import router
         app = FastAPI()
         app.include_router(router, prefix="/api/v1/managers")
         return app
@@ -116,7 +116,7 @@ class TestManagerProfileUpdate:
 
 class TestManagerProfileDelete:
     def _make_app(self):
-        from app.api.endpoints.managers import router
+        from app.modules.patient.router_managers import router
         app = FastAPI()
         app.include_router(router, prefix="/api/v1/managers")
         return app
@@ -147,7 +147,7 @@ class TestManagerProfileDelete:
 
 class TestPatientProfileCreate:
     def _make_app(self):
-        from app.api.endpoints.patients import router
+        from app.modules.patient.router_patients import router
         app = FastAPI()
         app.include_router(router, prefix="/api/v1/patients")
         return app
@@ -198,7 +198,7 @@ class TestPatientProfileCreate:
 
 class TestPatientProfileDelete:
     def _make_app(self):
-        from app.api.endpoints.patients import router
+        from app.modules.patient.router_patients import router
         app = FastAPI()
         app.include_router(router, prefix="/api/v1/patients")
         return app
@@ -253,7 +253,7 @@ def _suggestion(sid=8001, manager_id=USER_ID, tenant_id=TENANT_ID):
 
 class TestSuggestionUpdate:
     def _make_app(self):
-        from app.api.endpoints.managers import router
+        from app.modules.patient.router_managers import router
         app = FastAPI()
         app.include_router(router, prefix="/api/v1/managers")
         return app
@@ -290,7 +290,7 @@ class TestSuggestionUpdate:
 
 class TestSuggestionDelete:
     def _make_app(self):
-        from app.api.endpoints.managers import router
+        from app.modules.patient.router_managers import router
         app = FastAPI()
         app.include_router(router, prefix="/api/v1/managers")
         return app
@@ -329,7 +329,7 @@ def _role(rid=9001, is_system=False, tenant_id=TENANT_ID):
 
 class TestRoleUpdate:
     def _make_app(self):
-        from app.api.endpoints.rbac import router
+        from app.modules.system.router_rbac import router
         app = FastAPI()
         app.include_router(router, prefix="/api/v1/rbac")
         return app
@@ -367,7 +367,7 @@ class TestRoleUpdate:
 
 class TestRoleDelete:
     def _make_app(self):
-        from app.api.endpoints.rbac import router
+        from app.modules.system.router_rbac import router
         app = FastAPI()
         app.include_router(router, prefix="/api/v1/rbac")
         return app

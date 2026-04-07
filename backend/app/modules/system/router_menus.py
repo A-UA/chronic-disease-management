@@ -9,7 +9,7 @@ from sqlalchemy.orm import selectinload
 
 from app.api.deps import get_db, check_permission, get_current_org_id
 from app.db.models import Menu, OrganizationUser
-from app.services.audit import fire_audit
+from app.modules.audit.service import fire_audit
 
 router = APIRouter()
 

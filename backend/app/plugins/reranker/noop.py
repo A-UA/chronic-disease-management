@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 from app.plugins.registry import PluginRegistry
 
 if TYPE_CHECKING:
-    from app.services.chat import RetrievedChunk
+    from app.modules.rag.chat_service import RetrievedChunk
 
 
 class NoopRerankerPlugin:

@@ -4,7 +4,7 @@ from typing import Any
 
 from app.api.deps import get_db, get_platform_admin
 from app.schemas.admin import DynamicSettings
-from app.services.settings import SettingsService
+from app.modules.system.settings_service import SettingsService
 
 router = APIRouter()
 

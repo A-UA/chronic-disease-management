@@ -85,7 +85,7 @@ def _make_prompt_handler(instructions: str, skill_dir: Path | None = None):
     """
 
     async def handler(ctx: SecurityContext, **params: Any) -> SkillResult:
-        from app.services.provider_registry import registry
+        from app.plugins.provider_compat import registry
 
         # 构建 prompt
         parts = [instructions]

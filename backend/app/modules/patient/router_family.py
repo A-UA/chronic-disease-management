@@ -5,7 +5,7 @@ from sqlalchemy import select, and_
 
 from app.api.deps import get_db, get_current_user, get_current_org_id, get_current_tenant_id
 from app.db.models import User, PatientFamilyLink, PatientProfile, ManagementSuggestion
-from app.services.audit import audit_action
+from app.modules.audit.service import audit_action
 from pydantic import BaseModel, ConfigDict
 from datetime import date
 

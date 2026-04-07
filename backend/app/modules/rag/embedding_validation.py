@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.services.embeddings import EmbeddingProvider
+from app.modules.rag.embeddings import EmbeddingProvider
 
 
 async def validate_embedding_provider(provider: EmbeddingProvider, sample_text: str) -> dict[str, Any]:

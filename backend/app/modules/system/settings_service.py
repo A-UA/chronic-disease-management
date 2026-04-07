@@ -6,7 +6,7 @@ from sqlalchemy import select, update, insert
 
 from app.db.models.settings import SystemSetting
 from app.schemas.admin import DynamicSettings
-from app.services.quota import redis_client
+from app.modules.system.quota import redis_client
 
 logger = logging.getLogger(__name__)
 

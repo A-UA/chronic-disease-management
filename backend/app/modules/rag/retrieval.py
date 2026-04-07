@@ -14,9 +14,9 @@ from sqlalchemy.sql import Select
 
 from app.core.config import settings
 from app.db.models import Chunk, Document
-from app.services.provider_registry import registry
-from app.services.query_rewrite import prepare_retrieval_query
-from app.services.quota import redis_client
+from app.plugins.provider_compat import registry
+from app.modules.rag.query_rewrite import prepare_retrieval_query
+from app.modules.system.quota import redis_client
 from app.telemetry.tracing import trace_span
 
 if TYPE_CHECKING:

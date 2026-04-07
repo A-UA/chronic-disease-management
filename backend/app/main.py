@@ -113,7 +113,7 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 @app.get("/health")
 async def health_check():
     """增强版健康检查：检测 Redis、PostgreSQL 等核心依赖的可达性"""
-    from app.services.quota import get_redis_client
+    from app.modules.system.quota import get_redis_client
     from app.db.session import AsyncSessionLocal
     from sqlalchemy import text
 

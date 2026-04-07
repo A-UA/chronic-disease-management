@@ -32,7 +32,7 @@ from app.db.session import get_db
 from app.db.models import (
     User, Organization, OrganizationUser, ApiKey, Role, Permission, Tenant,
 )
-from app.services.rbac import RBACService
+from app.modules.system.rbac import RBACService
 
 logger = logging.getLogger(__name__)
 
@@ -267,7 +267,7 @@ async def verify_quota(
     db: AsyncSession = Depends(get_db),
 ) -> Tenant:
     """校验租户级配额"""
-    from app.services.quota import check_tenant_quota
+    from app.modules.system.quota import check_tenant_quota
     return await check_tenant_quota(db, tenant_id)
 
 
@@ -299,11 +299,11 @@ async def get_api_key_context(
             raise HTTPException(status_code=401, detail="API Key has expired")
 
     # Rate Limiting
-    from app.services.quota import check_api_key_rate_limit
+    from app.modules.system.quota import check_api_key_rate_limit
     await check_api_key_rate_limit(api_key.id, api_key.qps_limit)
 
     # Tenant quota
-    from app.services.quota import check_tenant_quota
+    from app.modules.system.quota import check_tenant_quota
     await check_tenant_quota(db, api_key.tenant_id)
 
     # Key level quota

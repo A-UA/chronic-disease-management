@@ -1,8 +1,8 @@
 """Agent 对话记忆测试"""
 import pytest
 from unittest.mock import AsyncMock, MagicMock
-from app.services.agent.security import SecurityContext
-from app.services.agent.memory import prepare_query_with_memory
+from app.modules.agent.security import SecurityContext
+from app.modules.agent.memory import prepare_query_with_memory
 
 
 def _ctx():

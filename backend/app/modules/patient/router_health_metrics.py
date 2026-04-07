@@ -88,7 +88,7 @@ async def create_health_metric(
     await db.refresh(metric)
 
     # 告警检测
-    from app.services.health_alert import check_metric_alert
+    from app.modules.patient.health_alert import check_metric_alert
     alerts = check_metric_alert(data.metric_type, data.value, data.value_secondary)
 
     return {

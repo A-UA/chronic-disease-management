@@ -7,7 +7,7 @@ from openai import AsyncOpenAI
 from app.core.config import settings
 
 if TYPE_CHECKING:
-    from app.services.chat import RetrievedChunk
+    from app.modules.rag.chat_service import RetrievedChunk
 
 
 class RerankerProvider(Protocol):

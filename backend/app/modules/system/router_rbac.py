@@ -8,8 +8,8 @@ from pydantic import BaseModel
 from app.api.deps import get_db, get_current_org_id, get_current_tenant_id, check_permission, check_org_admin
 from app.db.models import Role, Permission, Resource, Action, RoleConstraint, OrganizationUserRole, OrganizationUser
 from app.schemas.rbac import RoleRead, PermissionRead, RoleCreate
-from app.services.rbac import RBACService
-from app.services.audit import audit_action
+from app.modules.system.rbac import RBACService
+from app.modules.audit.service import audit_action
 
 router = APIRouter()
 

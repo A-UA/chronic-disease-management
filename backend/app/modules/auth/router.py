@@ -22,7 +22,7 @@ from app.db.models import (
     Role,
     Permission,
 )
-from app.services.rbac import RBACService
+from app.modules.system.rbac import RBACService
 from app.schemas.user import UserCreate, Token, UserRead, UserUpdatePassword
 
 from app.db.models.menu import Menu
@@ -508,7 +508,7 @@ async def forgot_password(
         await db.commit()
 
         # 发送邮件（SMTP 未配置时降级为日志）
-        from app.services.email import send_reset_code_email
+        from app.modules.auth.email import send_reset_code_email
         await send_reset_code_email(data.email, code)
 
     return {"message": "If the email exists, a reset code has been sent."}

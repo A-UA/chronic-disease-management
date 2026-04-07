@@ -16,7 +16,7 @@ from tests.api.conftest import MockScalarResult, TENANT_ID, ORG_ID, USER_ID
 
 
 def _make_app():
-    from app.api.endpoints.auth import router
+    from app.modules.auth.router import router
     app = FastAPI()
     app.include_router(router, prefix="/api/v1/auth")
     return app
@@ -52,7 +52,7 @@ def _org_user(org_id=ORG_ID, tenant_id=TENANT_ID, roles=None):
 
 class TestLoginSingleOrg:
     @pytest.mark.asyncio
-    @patch("app.api.endpoints.auth.security.verify_password", return_value=True)
+    @patch("app.modules.auth.router.security.verify_password", return_value=True)
     async def test_single_org_returns_token(self, mock_verify):
         """单部门用户应直接获得完整 JWT"""
         from app.api.deps import get_db
@@ -81,7 +81,7 @@ class TestLoginSingleOrg:
 
 class TestLoginMultiOrg:
     @pytest.mark.asyncio
-    @patch("app.api.endpoints.auth.security.verify_password", return_value=True)
+    @patch("app.modules.auth.router.security.verify_password", return_value=True)
     async def test_multi_org_requires_selection(self, mock_verify):
         """多部门用户应收到 require_org_selection=True"""
         from app.api.deps import get_db
@@ -112,7 +112,7 @@ class TestLoginMultiOrg:
 
 class TestLoginWrongPassword:
     @pytest.mark.asyncio
-    @patch("app.api.endpoints.auth.security.verify_password", return_value=False)
+    @patch("app.modules.auth.router.security.verify_password", return_value=False)
     async def test_wrong_password_400(self, mock_verify):
         from app.api.deps import get_db
 

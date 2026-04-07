@@ -14,11 +14,11 @@ from app.api.deps import (
 )
 from app.db.models import Conversation, KnowledgeBase, Message, UsageLog, User
 from app.schemas.admin import ConversationRead
-from app.services.chat import RetrievalFilters, build_rag_prompt, extract_statement_citations_structured, retrieve_chunks
-from app.services.conversation_context import build_retrieval_query_from_history
-from app.services.provider_registry import registry
-from app.services.quota import check_quota_during_stream, update_tenant_quota
-from app.services.rag_ingestion import count_tokens
+from app.modules.rag.chat_service import RetrievalFilters, build_rag_prompt, extract_statement_citations_structured, retrieve_chunks
+from app.modules.rag.context import build_retrieval_query_from_history
+from app.plugins.provider_compat import registry
+from app.modules.system.quota import check_quota_during_stream, update_tenant_quota
+from app.modules.rag.ingestion_legacy import count_tokens
 
 logger = logging.getLogger(__name__)
 
@@ -307,8 +307,8 @@ async def _handle_agent_mode(
     current_user: User,
 ) -> StreamingResponse:
     """Agent 模式处理：构建 SecurityContext → run_agent → SSE 输出"""
-    from app.services.agent import SecurityContext, run_agent
-    from app.services.rbac import RBACService
+    from app.modules.agent import SecurityContext, run_agent
+    from app.modules.system.rbac import RBACService
 
     # 获取用户有效权限
     from app.db.models import OrganizationUser, OrganizationUserRole

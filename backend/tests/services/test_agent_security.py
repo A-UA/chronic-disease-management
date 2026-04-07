@@ -1,6 +1,6 @@
 """SecurityContext 单元测试"""
 import pytest
-from app.services.agent.security import SecurityContext
+from app.modules.agent.security import SecurityContext
 
 
 class TestSecurityContext:

@@ -19,7 +19,7 @@ from tests.api.conftest import (
 
 
 def _make_app():
-    from app.api.endpoints.chat import router
+    from app.modules.rag.router_chat import router
     app = FastAPI()
     app.include_router(router, prefix="/api/v1/chat")
     return app
@@ -76,10 +76,10 @@ class TestChatKBWrongTenant:
 
 class TestChatSSEStream:
     @pytest.mark.asyncio
-    @patch("app.api.endpoints.chat.registry")
-    @patch("app.api.endpoints.chat.retrieve_chunks", new_callable=AsyncMock)
-    @patch("app.api.endpoints.chat.build_rag_prompt")
-    @patch("app.api.endpoints.chat.build_retrieval_query_from_history")
+    @patch("app.modules.rag.router_chat.registry")
+    @patch("app.modules.rag.router_chat.retrieve_chunks", new_callable=AsyncMock)
+    @patch("app.modules.rag.router_chat.build_rag_prompt")
+    @patch("app.modules.rag.router_chat.build_retrieval_query_from_history")
     async def test_sse_stream_events(
         self, mock_context, mock_build_prompt, mock_retrieve, mock_registry
     ):
@@ -127,10 +127,10 @@ class TestChatSSEStream:
 
         with PatchRBAC(), \
              patch("app.db.session.AsyncSessionLocal") as mock_session, \
-             patch("app.api.endpoints.chat.count_tokens", return_value=10), \
-             patch("app.api.endpoints.chat.check_quota_during_stream", new_callable=AsyncMock, return_value=True), \
-             patch("app.api.endpoints.chat.update_tenant_quota", new_callable=AsyncMock), \
-             patch("app.api.endpoints.chat.extract_statement_citations_structured", new_callable=AsyncMock, return_value=[]):
+             patch("app.modules.rag.router_chat.count_tokens", return_value=10), \
+             patch("app.modules.rag.router_chat.check_quota_during_stream", new_callable=AsyncMock, return_value=True), \
+             patch("app.modules.rag.router_chat.update_tenant_quota", new_callable=AsyncMock), \
+             patch("app.modules.rag.router_chat.extract_statement_citations_structured", new_callable=AsyncMock, return_value=[]):
             mock_session.return_value.__aenter__ = AsyncMock(return_value=mock_db_gen)
             mock_session.return_value.__aexit__ = AsyncMock(return_value=False)
 

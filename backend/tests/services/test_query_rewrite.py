@@ -1,5 +1,5 @@
 """查询改写服务测试：标准化、精确匹配、模糊匹配、医疗术语扩展"""
-from app.services.query_rewrite import normalize_query, rewrite_query
+from app.modules.rag.query_rewrite import normalize_query, rewrite_query
 
 
 class TestNormalizeQuery:

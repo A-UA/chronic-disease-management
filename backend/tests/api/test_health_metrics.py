@@ -12,7 +12,7 @@ from tests.api.conftest import override_deps, MockScalarResult, TENANT_ID, ORG_I
 
 
 def _make_app():
-    from app.api.endpoints.health_metrics import router
+    from app.modules.patient.router_health_metrics import router
     app = FastAPI()
     app.include_router(router, prefix="/api/v1/health-metrics")
     return app

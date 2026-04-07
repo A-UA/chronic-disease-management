@@ -8,7 +8,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from app.services.audit import audit_action
+from app.modules.audit.service import audit_action
 from app.db.models import AuditLog
 
 

@@ -14,13 +14,13 @@ from sqlalchemy.sql import Select
 
 from app.core.config import settings
 from app.db.models import Chunk, Document
-from app.services.provider_registry import registry
-from app.services.query_rewrite import prepare_retrieval_query
-from app.services.quota import redis_client
-from app.services.reranker import get_reranker_provider
+from app.plugins.provider_compat import registry
+from app.modules.rag.query_rewrite import prepare_retrieval_query
+from app.modules.system.quota import redis_client
+from app.modules.rag.reranker_legacy import get_reranker_provider
 
 if TYPE_CHECKING:
-    from app.services.llm import LLMProvider
+    from app.modules.rag.llm_legacy import LLMProvider
 
 logger = logging.getLogger(__name__)
 _DOC_REF_PATTERN = re.compile(

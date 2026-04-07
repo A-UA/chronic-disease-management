@@ -11,7 +11,7 @@ from tests.api.conftest import override_deps, make_user
 
 
 def _make_app():
-    from app.api.endpoints.auth import router
+    from app.modules.auth.router import router
     app = FastAPI()
     app.include_router(router, prefix="/api/v1/auth")
     return app
@@ -19,8 +19,8 @@ def _make_app():
 
 class TestUpdatePassword:
     @pytest.mark.asyncio
-    @patch("app.api.endpoints.auth.security.verify_password", return_value=True)
-    @patch("app.api.endpoints.auth.security.get_password_hash", return_value="new_hash")
+    @patch("app.modules.auth.router.security.verify_password", return_value=True)
+    @patch("app.modules.auth.router.security.get_password_hash", return_value="new_hash")
     async def test_change_password_ok(self, mock_hash, mock_verify):
         app = _make_app()
         user = make_user()
@@ -35,7 +35,7 @@ class TestUpdatePassword:
         assert r.status_code == 200
 
     @pytest.mark.asyncio
-    @patch("app.api.endpoints.auth.security.verify_password", return_value=False)
+    @patch("app.modules.auth.router.security.verify_password", return_value=False)
     async def test_wrong_current_password(self, mock_verify):
         app = _make_app()
         db = AsyncMock()

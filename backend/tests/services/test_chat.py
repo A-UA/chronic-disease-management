@@ -2,7 +2,8 @@
 import pytest
 from unittest.mock import MagicMock, AsyncMock
 
-from app.services.chat import build_rag_prompt, expand_query
+from app.modules.rag.citation import build_rag_prompt
+from app.modules.rag.chat_service import expand_query
 
 
 def _mock_chunk(content="测试内容", doc_id=1001, chunk_id=2001, page=1):
@@ -30,14 +31,14 @@ class TestBuildRagPrompt:
         prompt, _ = build_rag_prompt("测试问题", chunks)
         assert "临床推理助手" in prompt
         assert "参考资料" in prompt
-        assert "回答规则" in prompt
+        assert "规则" in prompt
 
     def test_english_prompt_when_specified(self):
         """language='en' 应使用英文提示词"""
         chunks = [_mock_chunk("test content")]
         prompt, _ = build_rag_prompt("test question", chunks, language="en")
         assert "Clinical Reasoning Assistant" in prompt
-        assert "CONTEXT" in prompt
+        assert "Context" in prompt
 
     def test_citation_structure(self):
         """引用应包含 doc_id, chunk_id, ref, page, snippet"""

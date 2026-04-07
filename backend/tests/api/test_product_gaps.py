@@ -17,7 +17,7 @@ from tests.api.conftest import (
 
 class TestPatientViewSuggestions:
     def _make_app(self):
-        from app.api.endpoints.patients import router
+        from app.modules.patient.router_patients import router
         app = FastAPI()
         app.include_router(router, prefix="/api/v1/patients")
         return app
@@ -75,7 +75,7 @@ class TestPatientViewSuggestions:
 
 class TestManagerUnassign:
     def _make_app(self):
-        from app.api.endpoints.managers import router
+        from app.modules.patient.router_managers import router
         app = FastAPI()
         app.include_router(router, prefix="/api/v1/managers")
         return app
@@ -109,7 +109,7 @@ class TestManagerUnassign:
 
 class TestFamilyUnlink:
     def _make_app(self):
-        from app.api.endpoints.family import router
+        from app.modules.patient.router_family import router
         app = FastAPI()
         app.include_router(router, prefix="/api/v1/family")
         return app
@@ -135,7 +135,7 @@ class TestFamilyUnlink:
 
 class TestTenantUsage:
     def _make_app(self):
-        from app.api.endpoints.usage import router
+        from app.modules.system.router_usage import router
         app = FastAPI()
         app.include_router(router, prefix="/api/v1/usage")
         return app
@@ -162,7 +162,7 @@ class TestTenantUsage:
 
 class TestOrgUpdate:
     def _make_app(self):
-        from app.api.endpoints.organizations import router
+        from app.modules.system.router_organizations import router
         app = FastAPI()
         app.include_router(router, prefix="/api/v1/organizations")
         return app

@@ -2,7 +2,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from app.services.rag_ingestion import (
+from app.modules.rag.ingestion_legacy import (
     split_document_text,
     count_tokens,
     process_document,
@@ -127,8 +127,8 @@ class TestProcessDocument:
         provider.model_name = "test"
         provider.get_dimension.return_value = 3
 
-        with patch("app.services.rag_ingestion.AsyncSessionLocal") as sf, \
-             patch("app.services.rag_ingestion.registry") as reg:
+        with patch("app.modules.rag.ingestion_legacy.AsyncSessionLocal") as sf, \
+             patch("app.modules.rag.ingestion_legacy.registry") as reg:
             sf.return_value.__aenter__ = AsyncMock(return_value=db)
             sf.return_value.__aexit__ = AsyncMock(return_value=False)
             reg.get_embedding.return_value = provider
@@ -151,8 +151,8 @@ class TestProcessDocument:
         provider.embed_documents = AsyncMock(side_effect=RuntimeError("boom"))
         provider.model_name = "test"
 
-        with patch("app.services.rag_ingestion.AsyncSessionLocal") as sf, \
-             patch("app.services.rag_ingestion.registry") as reg:
+        with patch("app.modules.rag.ingestion_legacy.AsyncSessionLocal") as sf, \
+             patch("app.modules.rag.ingestion_legacy.registry") as reg:
             sf.return_value.__aenter__ = AsyncMock(return_value=db)
             sf.return_value.__aexit__ = AsyncMock(return_value=False)
             reg.get_embedding.return_value = provider
@@ -168,7 +168,7 @@ class TestProcessDocument:
         db = AsyncMock()
         db.get.return_value = None
 
-        with patch("app.services.rag_ingestion.AsyncSessionLocal") as sf:
+        with patch("app.modules.rag.ingestion_legacy.AsyncSessionLocal") as sf:
             sf.return_value.__aenter__ = AsyncMock(return_value=db)
             sf.return_value.__aexit__ = AsyncMock(return_value=False)
             await process_document(99999, "text", org_id=2001)
@@ -189,8 +189,8 @@ class TestProcessDocument:
         provider.model_name = "test"
         provider.get_dimension.return_value = 3
 
-        with patch("app.services.rag_ingestion.AsyncSessionLocal") as sf, \
-             patch("app.services.rag_ingestion.registry") as reg:
+        with patch("app.modules.rag.ingestion_legacy.AsyncSessionLocal") as sf, \
+             patch("app.modules.rag.ingestion_legacy.registry") as reg:
             sf.return_value.__aenter__ = AsyncMock(return_value=db)
             sf.return_value.__aexit__ = AsyncMock(return_value=False)
             reg.get_embedding.return_value = provider
@@ -213,8 +213,8 @@ class TestProcessDocument:
         provider.model_name = "test"
         provider.get_dimension.return_value = 3
 
-        with patch("app.services.rag_ingestion.AsyncSessionLocal") as sf, \
-             patch("app.services.rag_ingestion.registry") as reg:
+        with patch("app.modules.rag.ingestion_legacy.AsyncSessionLocal") as sf, \
+             patch("app.modules.rag.ingestion_legacy.registry") as reg:
             sf.return_value.__aenter__ = AsyncMock(return_value=db)
             sf.return_value.__aexit__ = AsyncMock(return_value=False)
             reg.get_embedding.return_value = provider

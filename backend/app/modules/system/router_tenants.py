@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, check_permission, get_current_org_id
 from app.db.models import Tenant, Organization, OrganizationUser
-from app.services.audit import fire_audit
+from app.modules.audit.service import fire_audit
 
 router = APIRouter()
 

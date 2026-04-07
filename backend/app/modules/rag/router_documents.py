@@ -17,9 +17,9 @@ from app.api.deps import (
 )
 from app.core.config import settings
 from app.db.models import User, Document, KnowledgeBase, PatientProfile, Chunk
-from app.services.document_parser import DocumentParseError, parse_document
-from app.services.rag_ingestion import process_document
-from app.services.storage import get_storage_service
+from app.modules.rag.document_parser import DocumentParseError, parse_document
+from app.modules.rag.ingestion_legacy import process_document
+from app.core.storage import get_storage_service
 from app.schemas.document import DocumentRead
 
 router = APIRouter()

@@ -13,7 +13,7 @@ from sqlalchemy import select
 
 from app.db.models import Message
 from app.modules.agent.security import SecurityContext
-from app.services.conversation_context import (
+from app.modules.rag.context import (
     is_likely_follow_up,
     build_retrieval_query_from_history,
 )
@@ -92,8 +92,8 @@ async def maybe_compress(
     conversation_id: int,
 ) -> None:
     """检查是否需要压缩对话历史（复用现有逻辑）"""
-    from app.services.conversation_compress import maybe_compress_history
-    from app.services.provider_registry import registry
+    from app.modules.rag.compress import maybe_compress_history
+    from app.plugins.provider_compat import registry
 
     llm = registry.get_llm()
     await maybe_compress_history(ctx.db, conversation_id, llm)

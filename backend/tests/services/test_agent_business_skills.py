@@ -1,8 +1,8 @@
 """业务 Skills 测试"""
 import pytest
 from unittest.mock import MagicMock
-from app.services.agent.security import SecurityContext
-from app.services.agent.skills.calculator_skills import bmi_calculator_handler
+from app.modules.agent.security import SecurityContext
+from app.modules.agent.skills.calculator_skills import bmi_calculator_handler
 
 
 def _ctx(perms=frozenset()):

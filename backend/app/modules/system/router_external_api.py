@@ -6,10 +6,10 @@ from pydantic import BaseModel
 
 from app.api.deps import get_api_key_context, get_db
 from app.db.models import ApiKey, UsageLog
-from app.services.provider_registry import registry
-from app.services.chat import retrieve_chunks, build_rag_prompt
-from app.services.rag_ingestion import count_tokens
-from app.services.quota import update_tenant_quota
+from app.plugins.provider_compat import registry
+from app.modules.rag.chat_service import retrieve_chunks, build_rag_prompt
+from app.modules.rag.ingestion_legacy import count_tokens
+from app.modules.system.quota import update_tenant_quota
 
 router = APIRouter()
 

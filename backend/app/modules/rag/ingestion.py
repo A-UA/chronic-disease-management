@@ -11,8 +11,8 @@ from sqlalchemy import func
 from app.core.config import settings
 from app.db.models import Chunk, Document, UsageLog
 from app.db.session import AsyncSessionLocal
-from app.services.provider_registry import registry
-from app.services.quota import update_org_quota
+from app.plugins.provider_compat import registry
+from app.modules.system.quota import update_org_quota
 from app.plugins.registry import PluginRegistry
 from app.plugins.chunker.medical_heading import count_tokens
 from app.telemetry.tracing import trace_span
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 # ── 兼容导出（旧代码可能直接使用这些符号） ──
-from app.services.rag_ingestion import (  # noqa: F401
+from app.modules.rag.ingestion_legacy import (  # noqa: F401
     split_document_text,
     ChunkWithMeta,
     MEDICAL_HEADING_RE,

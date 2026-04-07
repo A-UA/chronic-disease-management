@@ -1,6 +1,6 @@
 """RAG 评测服务测试"""
 import pytest
-from app.services.rag_evaluation import _has_keyword_match, evaluate_rag_cases
+from app.modules.rag.evaluation import _has_keyword_match, evaluate_rag_cases
 
 
 class TestHasKeywordMatch:

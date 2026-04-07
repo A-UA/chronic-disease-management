@@ -11,7 +11,7 @@ from tests.api.conftest import override_deps, TENANT_ID
 
 
 def _make_app():
-    from app.api.endpoints.documents import router
+    from app.modules.rag.router_documents import router
     app = FastAPI()
     app.include_router(router, prefix="/api/v1")
     return app

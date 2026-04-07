@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from app.services.llm import LLMProvider
+    from app.modules.rag.llm_legacy import LLMProvider
 
 logger = logging.getLogger(__name__)
 

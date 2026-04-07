@@ -43,7 +43,7 @@ async def router_node(state: AgentState, ctx: SecurityContext) -> dict[str, Any]
         f"只返回 JSON，不要附加任何说明。"
     )
 
-    from app.services.provider_registry import registry
+    from app.plugins.provider_compat import registry
     llm = registry.get_llm()
     try:
         response = await llm.complete_text(prompt)
@@ -63,8 +63,8 @@ async def router_node(state: AgentState, ctx: SecurityContext) -> dict[str, Any]
 
 async def rag_node(state: AgentState, ctx: SecurityContext) -> dict[str, Any]:
     """RAG 检索节点 — 桥接现有 retrieve_chunks + build_rag_prompt"""
-    from app.services.chat import retrieve_chunks, build_rag_prompt
-    from app.services.provider_registry import registry
+    from app.modules.rag.chat_service import retrieve_chunks, build_rag_prompt
+    from app.plugins.provider_compat import registry
 
     llm = registry.get_llm()
     chunks = await retrieve_chunks(
@@ -90,7 +90,7 @@ async def skill_node(state: AgentState, ctx: SecurityContext) -> dict[str, Any]:
         return await rag_node(state, ctx)
 
     # 用 Skill 结果构建 prompt 让 LLM 合成回答
-    from app.services.provider_registry import registry
+    from app.plugins.provider_compat import registry
     llm = registry.get_llm()
     prompt = (
         f"你是慢病管理 AI 助手。以下是通过数据查询获得的信息：\n\n"
@@ -109,7 +109,7 @@ async def skill_node(state: AgentState, ctx: SecurityContext) -> dict[str, Any]:
 
 async def direct_answer_node(state: AgentState, ctx: SecurityContext) -> dict[str, Any]:
     """直接回答节点 — 无需 Skill，LLM 直接回答"""
-    from app.services.provider_registry import registry
+    from app.plugins.provider_compat import registry
     llm = registry.get_llm()
     prompt = f"你是慢病管理 AI 助手。请用中文 Markdown 回答：\n\n{state['query']}"
     response = await llm.complete_text(prompt)

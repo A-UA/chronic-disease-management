@@ -1,7 +1,7 @@
 """Skills 基础设施测试"""
 import pytest
-from app.services.agent.security import SecurityContext
-from app.services.agent.skills.base import SkillDefinition, SkillRegistry, SkillResult
+from app.modules.agent.security import SecurityContext
+from app.modules.agent.skills.base import SkillDefinition, SkillRegistry, SkillResult
 
 
 async def _echo(ctx, message=""):

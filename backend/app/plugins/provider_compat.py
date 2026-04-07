@@ -1,6 +1,6 @@
 """向后兼容层：将旧 ProviderRegistry 委托到新 PluginRegistry
 
-所有使用 `from app.services.provider_registry import registry` 的代码
+所有使用 `from app.plugins.provider_compat import registry` 的代码
 无需修改即可正常工作。
 """
 from app.plugins.registry import PluginRegistry

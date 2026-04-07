@@ -1,6 +1,6 @@
 """LangGraph Agent 图 + 状态测试"""
 import pytest
-from app.services.agent.state import AgentState
+from app.modules.agent.state import AgentState
 
 
 class TestAgentState:
@@ -34,7 +34,7 @@ class TestAgentState:
 
 class TestBuildAgentGraph:
     def test_graph_builds_without_error(self):
-        from app.services.agent.graph import build_agent_graph
+        from app.modules.agent.graph import build_agent_graph
         graph = build_agent_graph()
         assert graph is not None
         # 验证节点已注册
