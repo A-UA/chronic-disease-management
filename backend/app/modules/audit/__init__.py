@@ -3,4 +3,7 @@
 from app.db.models.audit import AuditLog  # noqa: F401
 
 # 服务
-from app.services.audit import audit_action, fire_audit  # noqa: F401
+from app.modules.audit.service import audit_action, audit_action_async, fire_audit  # noqa: F401
+
+# 路由（按需导入，避免顶层循环依赖）
+# from app.modules.audit.router import router
