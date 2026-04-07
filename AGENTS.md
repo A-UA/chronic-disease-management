@@ -49,19 +49,18 @@ chronic-disease-management/
 │   ├── app/
 │   │   ├── main.py                    # 应用入口、SnowflakeJSONResponse、Telemetry + 插件初始化
 │   │   ├── api/
-│   │   │   ├── api.py                 # 路由注册中心（20 个端点模块）
-│   │   │   ├── deps.py                # 依赖注入：认证、组织上下文、RBAC 权限校验、配额
-│   │   │   └── endpoints/             # 业务接口（详见第 3 节）
+│   │   │   ├── api.py                 # 路由注册中心（从 modules/ 导入所有路由）
+│   │   │   └── deps.py                # 依赖注入：认证、组织上下文、RBAC 权限校验、配额
 │   │   ├── core/
 │   │   │   ├── config.py              # pydantic-settings 配置（含 RAG + OTel + arq 参数）
 │   │   │   ├── exceptions.py          # 统一业务异常（NotFoundError/ForbiddenError/ConflictError/QuotaExceededError）
 │   │   │   ├── security.py            # JWT 签发/验证、Argon2 密码哈希
 │   │   │   ├── middleware.py          # X-Request-ID 请求追踪中间件
 │   │   │   └── snowflake.py           # 雪花 ID 生成器
-│   │   ├── modules/                   # 业务模块垂直切分（渐进式迁移中）
-│   │   │   ├── auth/                  # 认证模块（User、JWT、密码重置）
-│   │   │   ├── system/                # 系统模块（Organization、RBAC、Menu、ApiKey）
-│   │   │   ├── patient/               # 患者模块（PatientProfile、HealthMetric、Manager）
+│   │   ├── modules/                   # 业务模块垂直切分（全部迁移完成）
+│   │   │   ├── auth/                  # 认证模块（router.py + email.py）
+│   │   │   ├── system/                # 系统模块（10 个 router_*.py + rbac/quota/settings 服务）
+│   │   │   ├── patient/               # 患者模块（4 个 router_*.py + health_alert 服务）
 │   │   │   ├── rag/                   # RAG 模块（检索、入库、引用、评估、上下文压缩）
 │   │   │   │   ├── retrieval.py        # 混合检索管线（向量+关键词+RRF+Rerank）
 │   │   │   │   ├── ingestion.py        # 文档入库管线（Parser→Chunker→Embedding→Store）
@@ -90,8 +89,7 @@ chronic-disease-management/
 │   │   │   ├── models/                # 14 个 ORM 模型文件（Alembic 迁移源）
 │   │   │   ├── session.py             # AsyncSession 工厂
 │   │   │   └── seed_data.py           # 统一种子数据（RBAC + 菜单 + 超管账号）
-│   │   ├── schemas/                   # Pydantic 请求/响应模型
-│   │   └── services/                  # 业务服务层（兼容层，渐进迁移到 modules/）
+│   │   └── schemas/                   # Pydantic 请求/响应模型
 │   ├── alembic/                       # 数据库迁移脚本
 │   ├── tests/                         # 自动化测试
 │   ├── scripts/                       # 辅助脚本
@@ -419,8 +417,9 @@ vp build                              # 生产构建
 - **ID 使用**：所有新表必须继承 `IDMixin`，默认生成 64 位雪花 ID
 - **类型提示**：ID 字段在 Python 中一律使用 `int` 类型
 - **接口返回**：直接返回 `int`，`SnowflakeJSONResponse` 自动处理 JS 精度转换
-- **插件体系**：新增 AI 能力优先通过 `PluginRegistry` 注册插件实现（`app/plugins/`），不再直接修改 services
-- **模块化**：新业务逻辑写入 `app/modules/<module>/`，旧代码通过兼容层（`services/provider_registry.py`）桥接
+- **插件体系**：新增 AI 能力优先通过 `PluginRegistry` 注册插件实现（`app/plugins/`）
+- **模块化**：所有业务逻辑均在 `app/modules/<module>/` 中，`services/` 和 `endpoints/` 已删除
+- **路由注册**：`api/api.py` 从各模块的 `router*.py` 导入路由，不再有 `endpoints/` 目录
 - **导入规范**：不要在导入阶段初始化外部服务（延迟初始化模式）
 - **权限控制**：管理类接口使用 `check_permission("resource:action")` 依赖注入
 - **认证架构**：JWT 内嵌 tenant_id/org_id/roles，前端不解析 JWT，权限通过 `/auth/me` 获取
@@ -466,6 +465,6 @@ vp build                              # 生产构建
 ## 11. 测试覆盖
 
 ```
-后端：232 tests passed（API 层 + 服务层 + RLS + 插件注册 + Telemetry）
+后端：234 tests passed（模块层 + API 层 + 服务层 + RLS + 插件注册 + Telemetry）
 前端：vp check — 39 files, 0 error, 0 warning
 ```
