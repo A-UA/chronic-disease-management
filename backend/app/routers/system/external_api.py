@@ -3,11 +3,11 @@ from pydantic import BaseModel
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_api_key_context, get_db
-from app.db.models import ApiKey, UsageLog
-from app.modules.rag.chat_service import build_rag_prompt, retrieve_chunks
-from app.modules.rag.ingestion_legacy import count_tokens
-from app.modules.system.quota import update_tenant_quota
+from app.routers.deps import get_api_key_context, get_db
+from app.models import ApiKey, UsageLog
+from app.ai.rag.chat_service import build_rag_prompt, retrieve_chunks
+from app.ai.rag.ingestion_legacy import count_tokens
+from app.services.system.quota import update_tenant_quota
 from app.plugins.provider_compat import registry
 
 router = APIRouter()

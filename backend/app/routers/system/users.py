@@ -3,13 +3,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import (
+from app.routers.deps import (
     check_permission,
     get_current_org_id,
     get_current_tenant_id,
     get_db,
 )
-from app.db.models import OrganizationUser, User
+from app.models import OrganizationUser, User
 from app.schemas.admin import UserAdminRead
 
 router = APIRouter()
@@ -18,7 +18,7 @@ router = APIRouter()
 
 from pydantic import BaseModel as _PydanticBase
 
-from app.core import security
+from app.base import security
 
 
 class UserCreateAdmin(_PydanticBase):
@@ -56,7 +56,7 @@ async def create_user(
 
     # 绑定到组织（优先使用传入的 org_id，否则绑定到当前操作者的组织）
     target_org_id = user_in.org_id or current_org_id
-    from app.db.models import OrganizationUserRole, Role
+    from app.models import OrganizationUserRole, Role
     org_user = OrganizationUser(
         tenant_id=tenant_id,
         org_id=target_org_id,

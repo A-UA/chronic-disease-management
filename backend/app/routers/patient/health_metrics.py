@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import (
+from app.routers.deps import (
     check_permission,
     get_current_org_id,
     get_current_tenant_id,
@@ -16,7 +16,7 @@ from app.api.deps import (
     get_effective_org_id,
     inject_rls_context,
 )
-from app.db.models import HealthMetric, PatientProfile, User
+from app.models import HealthMetric, PatientProfile, User
 
 router = APIRouter()
 
@@ -93,7 +93,7 @@ async def create_health_metric(
     await db.refresh(metric)
 
     # 告警检测
-    from app.modules.patient.health_alert import check_metric_alert
+    from app.services.patient.health_alert import check_metric_alert
     alerts = check_metric_alert(data.metric_type, data.value, data.value_secondary)
 
     return {

@@ -6,14 +6,14 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import (
+from app.routers.deps import (
     get_current_org_id,
     get_current_tenant_id,
     get_current_user,
     get_db,
 )
-from app.db.models import PatientFamilyLink, PatientProfile, User
-from app.modules.audit.service import audit_action
+from app.models import PatientFamilyLink, PatientProfile, User
+from app.services.audit.service import audit_action
 
 router = APIRouter()
 

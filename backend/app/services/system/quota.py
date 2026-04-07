@@ -4,8 +4,8 @@ import redis.asyncio as redis
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
-from app.db.models import Tenant
+from app.base.config import settings
+from app.models import Tenant
 
 _redis_client = None
 
@@ -51,7 +51,7 @@ async def check_tenant_quota(db: AsyncSession, tenant_id: int) -> Tenant:
 # 保留旧函数名作为兼容别名
 async def check_org_quota(db: AsyncSession, org_id: int) -> Tenant:
     """向后兼容：通过 org_id 查找对应租户的配额"""
-    from app.db.models import Organization
+    from app.models import Organization
     org = await db.get(Organization, org_id)
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
@@ -104,7 +104,7 @@ async def update_tenant_quota(db: AsyncSession, tenant_id: int, tokens_consumed:
 
 # 保留旧函数名作为兼容别名
 async def update_org_quota(db: AsyncSession, org_id: int, tokens_consumed: int):
-    from app.db.models import Organization
+    from app.models import Organization
     org = await db.get(Organization, org_id)
     if org:
         await update_tenant_quota(db, org.tenant_id, tokens_consumed)

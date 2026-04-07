@@ -2,7 +2,7 @@
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models.rbac import Permission, Role, RoleConstraint
+from app.models.rbac import Permission, Role, RoleConstraint
 
 
 class RBACService:

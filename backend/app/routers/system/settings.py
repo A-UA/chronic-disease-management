@@ -3,8 +3,8 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db, get_platform_admin
-from app.modules.system.settings_service import SettingsService
+from app.routers.deps import get_db, get_platform_admin
+from app.services.system.settings import SettingsService
 from app.schemas.admin import DynamicSettings
 
 router = APIRouter()

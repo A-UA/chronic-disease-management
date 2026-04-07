@@ -4,9 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import check_permission, get_current_org_id, get_db
-from app.db.models import Organization, OrganizationUser, Tenant
-from app.modules.audit.service import fire_audit
+from app.routers.deps import check_permission, get_current_org_id, get_db
+from app.models import Organization, OrganizationUser, Tenant
+from app.services.audit.service import fire_audit
 
 router = APIRouter()
 

@@ -26,7 +26,7 @@ class PluginRegistry:
 
     @classmethod
     def _resolve_default(cls, category: str) -> str:
-        from app.core.config import settings
+        from app.base.config import settings
         defaults = {
             "llm": "openai_compatible",
             "embedding": "openai_compatible",

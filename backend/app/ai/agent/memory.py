@@ -11,9 +11,9 @@ from typing import Any
 
 from sqlalchemy import select
 
-from app.db.models import Message
-from app.modules.agent.security import SecurityContext
-from app.modules.rag.context import (
+from app.models import Message
+from app.ai.agent.security import SecurityContext
+from app.ai.rag.context import (
     build_retrieval_query_from_history,
     is_likely_follow_up,
 )
@@ -71,7 +71,7 @@ async def save_message(
     metadata: dict[str, Any] | None = None,
 ) -> Message:
     """保存消息到对话（走 RLS）"""
-    from app.core.snowflake import generate_id
+    from app.base.snowflake import generate_id
 
     msg = Message(
         id=generate_id(),
@@ -92,7 +92,7 @@ async def maybe_compress(
     conversation_id: int,
 ) -> None:
     """检查是否需要压缩对话历史（复用现有逻辑）"""
-    from app.modules.rag.compress import maybe_compress_history
+    from app.ai.rag.compress import maybe_compress_history
     from app.plugins.provider_compat import registry
 
     llm = registry.get_llm()

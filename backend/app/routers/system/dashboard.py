@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import Date, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import (
+from app.routers.deps import (
     get_current_active_user,
     get_current_roles,
     get_db,
@@ -17,7 +17,7 @@ from app.api.deps import (
     get_platform_viewer,
     inject_rls_context,
 )
-from app.db.models import (
+from app.models import (
     Conversation,
     Document,
     Organization,

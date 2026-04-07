@@ -5,13 +5,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import (
+from app.routers.deps import (
     check_org_admin,
     get_current_org_id,
     get_current_tenant_id,
     get_db,
 )
-from app.db.models import (
+from app.models import (
     Action,
     OrganizationUser,
     OrganizationUserRole,
@@ -19,8 +19,8 @@ from app.db.models import (
     Resource,
     Role,
 )
-from app.modules.audit.service import audit_action
-from app.modules.system.rbac import RBACService
+from app.services.audit.service import audit_action
+from app.services.system.rbac import RBACService
 from app.schemas.rbac import RoleCreate, RoleRead
 
 router = APIRouter()
@@ -172,7 +172,7 @@ async def assign_user_roles(
 
     # 3. Update roles
     # Clean old ones first
-    from app.db.models import OrganizationUserRole
+    from app.models import OrganizationUserRole
     stmt_del = select(OrganizationUserRole).where(
         OrganizationUserRole.org_id == org_id,
         OrganizationUserRole.user_id == user_id

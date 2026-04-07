@@ -4,8 +4,8 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models.settings import SystemSetting
-from app.modules.system.quota import redis_client
+from app.models.settings import SystemSetting
+from app.services.system.quota import redis_client
 from app.schemas.admin import DynamicSettings
 
 logger = logging.getLogger(__name__)

@@ -1,6 +1,6 @@
 """纯计算技能 — 无需权限，无需 DB 访问"""
-from app.modules.agent.security import SecurityContext
-from app.modules.agent.skills.base import SkillDefinition, SkillResult, skill_registry
+from app.ai.agent.security import SecurityContext
+from app.ai.agent.skills.base import SkillDefinition, SkillResult, skill_registry
 
 
 async def bmi_calculator_handler(

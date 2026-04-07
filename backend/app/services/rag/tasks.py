@@ -15,7 +15,7 @@ async def process_document_task(ctx: dict, document_id: int, file_content: str, 
         pages: 按页拆分的文本列表（PDF 时可用）
     """
     logger.info("开始异步入库: doc=%s org=%s", document_id, org_id)
-    from app.modules.rag.ingestion import process_document
+    from app.ai.rag.ingestion import process_document
     await process_document(document_id, file_content, org_id, pages=pages)
     logger.info("异步入库完成: doc=%s", document_id)
 
@@ -33,8 +33,8 @@ async def write_audit_log_task(
     """arq 异步任务：写入审计日志"""
     from sqlalchemy import text
 
-    from app.db.models.audit import AuditLog
-    from app.db.session import AsyncSessionLocal
+    from app.models.audit import AuditLog
+    from app.base.database import AsyncSessionLocal
 
     async with AsyncSessionLocal() as db:
         if org_id:

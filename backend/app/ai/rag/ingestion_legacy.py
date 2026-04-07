@@ -6,11 +6,11 @@ from functools import lru_cache
 import tiktoken
 from sqlalchemy import func
 
-from app.core.config import settings
-from app.db.models import Chunk, Document, UsageLog
-from app.db.session import AsyncSessionLocal
-from app.modules.rag.embeddings import EmbeddingProvider
-from app.modules.system.quota import update_org_quota
+from app.base.config import settings
+from app.models import Chunk, Document, UsageLog
+from app.base.database import AsyncSessionLocal
+from app.ai.rag.embeddings import EmbeddingProvider
+from app.services.system.quota import update_org_quota
 from app.plugins.provider_compat import registry
 
 logger = logging.getLogger(__name__)

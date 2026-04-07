@@ -3,13 +3,13 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import (
+from app.routers.deps import (
     get_current_tenant_id,
     get_current_user,
     get_db,
     get_platform_viewer,
 )
-from app.db.models import Organization, Tenant, UsageLog
+from app.models import Organization, Tenant, UsageLog
 from app.schemas.admin import UsageSummaryItem
 
 router = APIRouter()

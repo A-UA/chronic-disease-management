@@ -9,7 +9,7 @@ def setup_telemetry(app):
 
     仅在 OTLP_ENDPOINT 配置后生效，否则跳过。
     """
-    from app.core.config import settings
+    from app.base.config import settings
     if not settings.OTLP_ENDPOINT:
         logger.info("OTLP_ENDPOINT not set, telemetry disabled")
         return

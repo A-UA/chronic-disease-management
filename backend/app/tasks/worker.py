@@ -5,7 +5,7 @@
 import importlib
 import logging
 
-from app.core.config import settings
+from app.base.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ class WorkerSettings:
 
     @classmethod
     def collect_functions(cls):
-        from app.modules.rag.tasks import process_document_task, write_audit_log_task
+        from app.services.rag.tasks import process_document_task, write_audit_log_task
         cls.functions = [process_document_task, write_audit_log_task]
         return cls.functions
 

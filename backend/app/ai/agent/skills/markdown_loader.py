@@ -32,8 +32,8 @@ from typing import Any
 
 import yaml
 
-from app.modules.agent.security import SecurityContext
-from app.modules.agent.skills.base import SkillDefinition, SkillRegistry, SkillResult
+from app.ai.agent.security import SecurityContext
+from app.ai.agent.skills.base import SkillDefinition, SkillRegistry, SkillResult
 
 logger = logging.getLogger(__name__)
 

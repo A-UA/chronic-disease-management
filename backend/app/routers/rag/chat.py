@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import (
+from app.routers.deps import (
     get_current_org_id,
     get_current_tenant_id,
     get_current_user,
@@ -17,16 +17,16 @@ from app.api.deps import (
     inject_rls_context,
     verify_quota,
 )
-from app.db.models import Conversation, KnowledgeBase, Message, UsageLog, User
-from app.modules.rag.chat_service import (
+from app.models import Conversation, KnowledgeBase, Message, UsageLog, User
+from app.ai.rag.chat_service import (
     RetrievalFilters,
     build_rag_prompt,
     extract_statement_citations_structured,
     retrieve_chunks,
 )
-from app.modules.rag.context import build_retrieval_query_from_history
-from app.modules.rag.ingestion_legacy import count_tokens
-from app.modules.system.quota import check_quota_during_stream, update_tenant_quota
+from app.ai.rag.context import build_retrieval_query_from_history
+from app.ai.rag.ingestion_legacy import count_tokens
+from app.services.system.quota import check_quota_during_stream, update_tenant_quota
 from app.plugins.provider_compat import registry
 from app.schemas.admin import ConversationRead
 
@@ -151,7 +151,7 @@ async def chat_endpoint(
             raise HTTPException(status_code=400, detail="Conversation knowledge base mismatch")
 
     if conversation is None:
-        from app.core.snowflake import get_next_id
+        from app.base.snowflake import get_next_id
         conversation = Conversation(
             id=get_next_id(),
             kb_id=request.kb_id,
@@ -211,7 +211,7 @@ async def chat_endpoint(
         # 在生成器内部开启独立会话，并手动管理 RLS 上下文
         from sqlalchemy import text
 
-        from app.db.session import AsyncSessionLocal
+        from app.base.database import AsyncSessionLocal
         async with AsyncSessionLocal() as db_gen:
             await db_gen.execute(
                 text("SELECT set_config('app.current_tenant_id', :tid, true)"),
@@ -319,9 +319,9 @@ async def _handle_agent_mode(
 ) -> StreamingResponse:
     """Agent 模式处理：构建 SecurityContext → run_agent → SSE 输出"""
     # 获取用户有效权限
-    from app.db.models import OrganizationUser, OrganizationUserRole
-    from app.modules.agent import SecurityContext, run_agent
-    from app.modules.system.rbac import RBACService
+    from app.models import OrganizationUser, OrganizationUserRole
+    from app.ai.agent import SecurityContext, run_agent
+    from app.services.system.rbac import RBACService
     ou_stmt = (
         select(OrganizationUser)
         .where(
@@ -359,7 +359,7 @@ async def _handle_agent_mode(
     if request.conversation_id is not None:
         conversation = await db.get(Conversation, request.conversation_id)
     if conversation is None:
-        from app.core.snowflake import get_next_id
+        from app.base.snowflake import get_next_id
         conversation = Conversation(
             id=get_next_id(),
             kb_id=request.kb_id,
@@ -397,7 +397,7 @@ async def _handle_agent_mode(
     # 保存 assistant 回复
     from sqlalchemy import text
 
-    from app.db.session import AsyncSessionLocal
+    from app.base.database import AsyncSessionLocal
     async with AsyncSessionLocal() as db_save:
         await db_save.execute(
             text("SELECT set_config('app.current_tenant_id', :tid, true)"),

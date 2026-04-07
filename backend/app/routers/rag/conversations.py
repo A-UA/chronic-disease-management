@@ -11,12 +11,12 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import (
+from app.routers.deps import (
     get_current_user,
     get_db,
     inject_rls_context,
 )
-from app.db.models import Conversation, Message, User
+from app.models import Conversation, Message, User
 
 router = APIRouter()
 

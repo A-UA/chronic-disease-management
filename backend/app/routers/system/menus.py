@@ -6,9 +6,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import check_permission, get_current_org_id, get_db
-from app.db.models import Menu, OrganizationUser
-from app.modules.audit.service import fire_audit
+from app.routers.deps import check_permission, get_current_org_id, get_db
+from app.models import Menu, OrganizationUser
+from app.services.audit.service import fire_audit
 
 router = APIRouter()
 

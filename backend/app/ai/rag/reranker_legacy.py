@@ -4,10 +4,10 @@ from typing import TYPE_CHECKING, Protocol
 
 from openai import AsyncOpenAI
 
-from app.core.config import settings
+from app.base.config import settings
 
 if TYPE_CHECKING:
-    from app.modules.rag.chat_service import RetrievedChunk
+    from app.ai.rag.chat_service import RetrievedChunk
 
 
 class RerankerProvider(Protocol):

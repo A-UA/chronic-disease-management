@@ -7,7 +7,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any
 
-from app.modules.agent.security import SecurityContext
+from app.ai.agent.security import SecurityContext
 
 logger = logging.getLogger(__name__)
 

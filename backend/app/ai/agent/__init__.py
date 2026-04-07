@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.modules.agent.security import SecurityContext
-from app.modules.agent.skills.base import skill_registry
+from app.ai.agent.security import SecurityContext
+from app.ai.agent.skills.base import skill_registry
 
 __all__ = ["SecurityContext", "skill_registry", "run_agent"]
 
@@ -16,14 +16,14 @@ async def run_agent(
     conversation_id: int | None = None,
 ) -> dict[str, Any]:
     """Agent entry point"""
-    from app.modules.agent.graph import (
+    from app.ai.agent.graph import (
         direct_answer_node,
         rag_node,
         router_node,
         skill_node,
     )
-    from app.modules.agent.memory import prepare_query_with_memory
-    from app.modules.agent.state import AgentState
+    from app.ai.agent.memory import prepare_query_with_memory
+    from app.ai.agent.state import AgentState
 
     enhanced_query, history = await prepare_query_with_memory(
         ctx, query, conversation_id,

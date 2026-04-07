@@ -6,7 +6,7 @@ from typing import Any
 
 from openai import AsyncOpenAI
 
-from app.core.config import settings
+from app.base.config import settings
 from app.plugins.registry import PluginRegistry
 
 logger = logging.getLogger(__name__)

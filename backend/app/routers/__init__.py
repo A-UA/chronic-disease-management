@@ -6,30 +6,30 @@ from app.routers.audit.router import router as audit_logs_router
 
 # Auth module
 from app.routers.auth.router import router as auth_router
-from app.modules.patient.router_family import router as family_router
-from app.modules.patient.router_health_metrics import router as health_metrics_router
-from app.modules.patient.router_managers import router as managers_router
+from app.routers.patient.family import router as family_router
+from app.routers.patient.health_metrics import router as health_metrics_router
+from app.routers.patient.managers import router as managers_router
 
 # Patient module
-from app.modules.patient.router_patients import router as patients_router
+from app.routers.patient.patients import router as patients_router
 
 # RAG module
-from app.modules.rag.router_chat import router as chat_router
-from app.modules.rag.router_conversations import router as conversations_router
-from app.modules.rag.router_documents import router as documents_router
-from app.modules.rag.router_knowledge_bases import router as kb_router
-from app.modules.system.router_api_keys import router as api_keys_router
-from app.modules.system.router_dashboard import router as dashboard_router
-from app.modules.system.router_external_api import router as external_api_router
-from app.modules.system.router_menus import router as menus_router
+from app.routers.rag.chat import router as chat_router
+from app.routers.rag.conversations import router as conversations_router
+from app.routers.rag.documents import router as documents_router
+from app.routers.rag.knowledge_bases import router as kb_router
+from app.routers.system.api_keys import router as api_keys_router
+from app.routers.system.dashboard import router as dashboard_router
+from app.routers.system.external_api import router as external_api_router
+from app.routers.system.menus import router as menus_router
 
 # System module
-from app.modules.system.router_organizations import router as organizations_router
-from app.modules.system.router_rbac import router as rbac_router
-from app.modules.system.router_settings import router as settings_router
-from app.modules.system.router_tenants import router as tenants_router
-from app.modules.system.router_usage import router as usage_router
-from app.modules.system.router_users import router as users_router
+from app.routers.system.organizations import router as organizations_router
+from app.routers.system.rbac import router as rbac_router
+from app.routers.system.settings import router as settings_router
+from app.routers.system.tenants import router as tenants_router
+from app.routers.system.usage import router as usage_router
+from app.routers.system.users import router as users_router
 
 api_router = APIRouter()
 

@@ -12,10 +12,10 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Select
 
-from app.core.config import settings
-from app.db.models import Chunk, Document
-from app.modules.rag.query_rewrite import prepare_retrieval_query
-from app.modules.system.quota import redis_client
+from app.base.config import settings
+from app.models import Chunk, Document
+from app.ai.rag.query_rewrite import prepare_retrieval_query
+from app.services.system.quota import redis_client
 from app.plugins.provider_compat import registry
 from app.telemetry.tracing import trace_span
 

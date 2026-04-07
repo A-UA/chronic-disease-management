@@ -12,7 +12,7 @@ import logging
 import re
 from typing import TYPE_CHECKING, TypedDict
 
-from app.db.models import Chunk
+from app.models import Chunk
 
 if TYPE_CHECKING:
     from app.plugins.llm.base import LLMPlugin as LLMProvider

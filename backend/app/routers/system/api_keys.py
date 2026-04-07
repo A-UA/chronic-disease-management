@@ -6,15 +6,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import (
+from app.routers.deps import (
     check_permission,
     get_current_active_user,
     get_current_org_id,
     get_current_tenant_id,
     get_db,
 )
-from app.core.config import settings
-from app.db.models import ApiKey, User
+from app.base.config import settings
+from app.models import ApiKey, User
 from app.schemas.api_key import (
     ApiKeyCreate,
     ApiKeyCreateResponse,

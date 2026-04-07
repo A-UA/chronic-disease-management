@@ -5,8 +5,8 @@ import logging
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import Message
-from app.modules.rag.query_rewrite import normalize_query
+from app.models import Message
+from app.ai.rag.query_rewrite import normalize_query
 
 logger = logging.getLogger(__name__)
 

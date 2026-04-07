@@ -6,7 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import (
+from app.routers.deps import (
     check_permission,
     get_current_org_id,
     get_current_tenant_id,
@@ -15,7 +15,7 @@ from app.api.deps import (
     get_effective_org_id,
     inject_rls_context,
 )
-from app.db.models import (
+from app.models import (
     ManagementSuggestion,
     ManagerProfile,
     PatientManagerAssignment,

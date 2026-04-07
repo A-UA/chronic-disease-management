@@ -7,14 +7,14 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import (
+from app.routers.deps import (
     check_permission,
     get_current_org_id,
     get_current_tenant_id,
     get_current_user,
     get_db,
 )
-from app.db.models import (
+from app.models import (
     Organization,
     OrganizationInvitation,
     OrganizationUser,

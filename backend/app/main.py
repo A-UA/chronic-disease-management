@@ -12,8 +12,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.api import api_router
-from app.core.config import settings
+from app.routers import api_router
+from app.base.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +96,7 @@ app.add_middleware(
 )
 
 # 请求追踪中间件
-from app.core.middleware import RequestIDMiddleware
+from app.base.middleware import RequestIDMiddleware
 
 app.add_middleware(RequestIDMiddleware)
 
@@ -119,8 +119,8 @@ async def health_check():
     """增强版健康检查：检测 Redis、PostgreSQL 等核心依赖的可达性"""
     from sqlalchemy import text
 
-    from app.db.session import AsyncSessionLocal
-    from app.modules.system.quota import get_redis_client
+    from app.base.database import AsyncSessionLocal
+    from app.services.system.quota import get_redis_client
 
     checks = {"status": "ok", "redis": "ok", "database": "ok"}
 

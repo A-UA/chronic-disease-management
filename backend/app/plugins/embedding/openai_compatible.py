@@ -9,7 +9,7 @@ from tenacity import (
     wait_exponential,
 )
 
-from app.core.config import settings
+from app.base.config import settings
 from app.plugins.registry import PluginRegistry
 
 logger = logging.getLogger(__name__)

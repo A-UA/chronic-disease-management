@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import (
+from app.routers.deps import (
     check_permission,
     get_current_org_id,
     get_current_tenant_id,
@@ -13,7 +13,7 @@ from app.api.deps import (
     get_effective_org_id,
     inject_rls_context,
 )
-from app.db.models import PatientProfile, User
+from app.models import PatientProfile, User
 from app.schemas.patient import PatientProfileRead, PatientProfileUpdate
 
 router = APIRouter()
@@ -134,7 +134,7 @@ async def get_my_suggestions(
     db: AsyncSession = Depends(get_db),
 ):
     """[患者视图] 查看管理师给自己的管理建议"""
-    from app.db.models import ManagementSuggestion
+    from app.models import ManagementSuggestion
 
     profile = await _load_patient_profile(db, current_user.id, org_id)
     if not profile:
@@ -174,7 +174,7 @@ async def admin_create_patient_profile(
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     """[管理视图] 为用户创建患者档案（创建到当前部门）"""
-    from app.db.models import User as UserModel
+    from app.models import User as UserModel
 
     stmt = select(UserModel).where(UserModel.id == data.user_id)
     result = await db.execute(stmt)

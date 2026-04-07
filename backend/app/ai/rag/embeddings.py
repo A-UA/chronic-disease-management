@@ -8,7 +8,7 @@ from tenacity import (
     wait_exponential,
 )
 
-from app.core.config import settings
+from app.base.config import settings
 
 logger = logging.getLogger(__name__)
 

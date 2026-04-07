@@ -12,7 +12,7 @@ from fastapi import (
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import (
+from app.routers.deps import (
     get_current_org_id,
     get_current_tenant_id,
     get_current_user,
@@ -20,11 +20,11 @@ from app.api.deps import (
     get_effective_org_id,
     inject_rls_context,
 )
-from app.core.config import settings
-from app.core.storage import get_storage_service
-from app.db.models import Chunk, Document, KnowledgeBase, PatientProfile, User
-from app.modules.rag.document_parser import DocumentParseError, parse_document
-from app.modules.rag.ingestion_legacy import process_document
+from app.base.config import settings
+from app.base.storage import get_storage_service
+from app.models import Chunk, Document, KnowledgeBase, PatientProfile, User
+from app.ai.rag.document_parser import DocumentParseError, parse_document
+from app.ai.rag.ingestion_legacy import process_document
 from app.schemas.document import DocumentRead
 
 router = APIRouter()
