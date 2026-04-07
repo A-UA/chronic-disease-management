@@ -8,7 +8,7 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-from app.core.config import settings
+from app.base.config import settings
 
 logger = logging.getLogger(__name__)
 

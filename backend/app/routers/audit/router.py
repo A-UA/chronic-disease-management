@@ -7,14 +7,14 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import (
+from app.routers.deps import (
     check_permission,
     get_db,
     get_effective_org_id,
     get_platform_viewer,
     inject_rls_context,
 )
-from app.db.models import AuditLog
+from app.models import AuditLog
 from app.schemas.admin import AuditLogRead
 
 router = APIRouter()

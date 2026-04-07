@@ -8,7 +8,7 @@ import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import AuditLog
+from app.models import AuditLog
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ async def audit_action_async(
 ) -> None:
     """异步审计记录（后台任务，独立会话，不阻塞请求）"""
     try:
-        from app.db.session import AsyncSessionLocal
+        from app.base.database import AsyncSessionLocal
         async with AsyncSessionLocal() as db:
             if tenant_id:
                 from sqlalchemy import text

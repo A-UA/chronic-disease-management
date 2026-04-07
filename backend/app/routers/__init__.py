@@ -2,10 +2,10 @@
 from fastapi import APIRouter
 
 # Audit module
-from app.modules.audit.router import router as audit_logs_router
+from app.routers.audit.router import router as audit_logs_router
 
 # Auth module
-from app.modules.auth.router import router as auth_router
+from app.routers.auth.router import router as auth_router
 from app.modules.patient.router_family import router as family_router
 from app.modules.patient.router_health_metrics import router as health_metrics_router
 from app.modules.patient.router_managers import router as managers_router

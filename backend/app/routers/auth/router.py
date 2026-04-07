@@ -9,7 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import (
+from app.routers.deps import (
     get_current_org_id,
     get_current_org_user,
     get_current_roles,
@@ -17,9 +17,9 @@ from app.api.deps import (
     get_current_user,
     get_db,
 )
-from app.core import security
-from app.core.config import settings
-from app.db.models import (
+from app.base import security
+from app.base.config import settings
+from app.models import (
     Organization,
     OrganizationUser,
     OrganizationUserRole,
@@ -28,8 +28,8 @@ from app.db.models import (
     Tenant,
     User,
 )
-from app.db.models.menu import Menu
-from app.modules.system.rbac import RBACService
+from app.models.menu import Menu
+from app.services.system.rbac import RBACService
 from app.schemas.user import UserCreate, UserRead, UserUpdatePassword
 
 router = APIRouter()
@@ -500,7 +500,7 @@ async def forgot_password(
         code = f"{secrets.randbelow(1000000):06d}"
         expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
 
-        from app.db.models import PasswordResetToken
+        from app.models import PasswordResetToken
 
         token = PasswordResetToken(
             user_id=user.id,
@@ -511,7 +511,7 @@ async def forgot_password(
         await db.commit()
 
         # 发送邮件（SMTP 未配置时降级为日志）
-        from app.modules.auth.email import send_reset_code_email
+        from app.services.auth.email import send_reset_code_email
         await send_reset_code_email(data.email, code)
 
     return {"message": "If the email exists, a reset code has been sent."}
@@ -523,7 +523,7 @@ async def reset_password(
     db: AsyncSession = Depends(get_db),
 ):
     """使用验证码重置密码"""
-    from app.db.models import PasswordResetToken
+    from app.models import PasswordResetToken
 
     stmt = (
         select(PasswordResetToken)
