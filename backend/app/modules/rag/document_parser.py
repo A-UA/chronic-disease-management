@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
@@ -7,8 +8,6 @@ from zipfile import BadZipFile, ZipFile
 import fitz  # PyMuPDF
 import pdfplumber
 import pytesseract
-from PIL import Image
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -89,16 +88,16 @@ def _parse_pdf_document(file_bytes: bytes) -> ParsedDocument:
     try:
         pages: list[str] = []
         total_text_length = 0
-        
+
         with fitz.open(stream=file_bytes, filetype="pdf") as doc:
             if doc.is_encrypted:
                 raise DocumentParseError("PDF document is encrypted")
-                
+
             for page in doc:
                 text = page.get_text("text").strip()
                 pages.append(text)
                 total_text_length += len(text)
-                
+
         # If very little text was extracted, it might be a scanned PDF. Fallback to OCR.
         if total_text_length < 50 and len(pages) > 0:
             logger.info("PDF has very little text, falling back to OCR")
@@ -107,12 +106,12 @@ def _parse_pdf_document(file_bytes: bytes) -> ParsedDocument:
                 for page in pdf.pages:
                     # Try layout-aware text extraction first
                     text = page.extract_text()
-                    
+
                     if not text or len(text.strip()) < 50:
                         # Fallback to image OCR
                         pil_image = page.to_image(resolution=300).original
                         text = pytesseract.image_to_string(pil_image, lang="chi_sim+eng")
-                        
+
                     pages.append(text.strip() if text else "")
 
         # Remove completely empty pages
@@ -120,7 +119,7 @@ def _parse_pdf_document(file_bytes: bytes) -> ParsedDocument:
 
         if not pages:
             raise DocumentParseError("PDF document contains no extractable text")
-            
+
         combined = _normalize_text("\n\n".join(pages))
         return ParsedDocument(text=combined, pages=pages)
     except Exception as e:

@@ -3,8 +3,8 @@
 从 services/rag_ingestion.py 提取的核心切块逻辑，
 保留医疗标题识别、句子边界切块、token 计数控制、页码追踪等全部功能。
 """
-import re
 import logging
+import re
 from functools import lru_cache
 
 import tiktoken

@@ -2,9 +2,9 @@ import logging
 import re
 import uuid
 from pathlib import PurePosixPath
-from typing import Optional
 
 import aioboto3
+
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -74,7 +74,7 @@ class StorageService:
             return False
 
 
-_storage_service: Optional[StorageService] = None
+_storage_service: StorageService | None = None
 
 def get_storage_service() -> StorageService:
     global _storage_service

@@ -1,15 +1,14 @@
-import json
 from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import update
 from pydantic import BaseModel
+from sqlalchemy import update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_api_key_context, get_db
 from app.db.models import ApiKey, UsageLog
-from app.plugins.provider_compat import registry
-from app.modules.rag.chat_service import retrieve_chunks, build_rag_prompt
+from app.modules.rag.chat_service import build_rag_prompt, retrieve_chunks
 from app.modules.rag.ingestion_legacy import count_tokens
 from app.modules.system.quota import update_tenant_quota
+from app.plugins.provider_compat import registry
 
 router = APIRouter()
 

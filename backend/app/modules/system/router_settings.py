@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Any
 
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.api.deps import get_db, get_platform_admin
-from app.schemas.admin import DynamicSettings
 from app.modules.system.settings_service import SettingsService
+from app.schemas.admin import DynamicSettings
 
 router = APIRouter()
 
@@ -29,10 +30,10 @@ async def update_settings(
         # 获取当前所有设置
         current = await SettingsService.get_all(db)
         current_dict = current.model_dump()
-        
+
         # 合并新旧值
         current_dict.update(data)
-        
+
         # 使用服务进行校验并保存
         updated = await SettingsService.update(db, current_dict)
         return updated

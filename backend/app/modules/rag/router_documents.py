@@ -1,25 +1,30 @@
 import logging
+
 from fastapi import (
     APIRouter,
-    Depends,
-    UploadFile,
-    File,
-    HTTPException,
     BackgroundTasks,
+    Depends,
+    File,
     Form,
+    HTTPException,
+    UploadFile,
 )
-from sqlalchemy import func, select, delete
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import (
-    get_current_user, get_current_org_id, get_effective_org_id,
-    get_current_tenant_id, inject_rls_context, get_db,
+    get_current_org_id,
+    get_current_tenant_id,
+    get_current_user,
+    get_db,
+    get_effective_org_id,
+    inject_rls_context,
 )
 from app.core.config import settings
-from app.db.models import User, Document, KnowledgeBase, PatientProfile, Chunk
+from app.core.storage import get_storage_service
+from app.db.models import Chunk, Document, KnowledgeBase, PatientProfile, User
 from app.modules.rag.document_parser import DocumentParseError, parse_document
 from app.modules.rag.ingestion_legacy import process_document
-from app.core.storage import get_storage_service
 from app.schemas.document import DocumentRead
 
 router = APIRouter()
@@ -107,7 +112,7 @@ async def upload_document(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except HTTPException:
         raise
-    except Exception as exc:
+    except Exception:
         logger.exception("文档上传处理失败")
         raise HTTPException(status_code=500, detail="文档上传处理失败，请稍后重试")
 

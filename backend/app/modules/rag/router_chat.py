@@ -9,16 +9,26 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import (
-    get_current_org_id, get_effective_org_id, get_current_user,
-    get_current_tenant_id, inject_rls_context, get_db, verify_quota,
+    get_current_org_id,
+    get_current_tenant_id,
+    get_current_user,
+    get_db,
+    get_effective_org_id,
+    inject_rls_context,
+    verify_quota,
 )
 from app.db.models import Conversation, KnowledgeBase, Message, UsageLog, User
-from app.schemas.admin import ConversationRead
-from app.modules.rag.chat_service import RetrievalFilters, build_rag_prompt, extract_statement_citations_structured, retrieve_chunks
+from app.modules.rag.chat_service import (
+    RetrievalFilters,
+    build_rag_prompt,
+    extract_statement_citations_structured,
+    retrieve_chunks,
+)
 from app.modules.rag.context import build_retrieval_query_from_history
-from app.plugins.provider_compat import registry
-from app.modules.system.quota import check_quota_during_stream, update_tenant_quota
 from app.modules.rag.ingestion_legacy import count_tokens
+from app.modules.system.quota import check_quota_during_stream, update_tenant_quota
+from app.plugins.provider_compat import registry
+from app.schemas.admin import ConversationRead
 
 logger = logging.getLogger(__name__)
 
@@ -197,10 +207,11 @@ async def chat_endpoint(
 
         full_response = ""
         quota_exceeded = False
-        
+
         # 在生成器内部开启独立会话，并手动管理 RLS 上下文
-        from app.db.session import AsyncSessionLocal
         from sqlalchemy import text
+
+        from app.db.session import AsyncSessionLocal
         async with AsyncSessionLocal() as db_gen:
             await db_gen.execute(
                 text("SELECT set_config('app.current_tenant_id', :tid, true)"),
@@ -215,13 +226,13 @@ async def chat_endpoint(
                 # 预计算 prompt tokens
                 prompt_tokens = count_tokens(prompt, llm_provider.model_name)
                 completion_tokens = 0
-                
+
                 async for chunk_text in llm_provider.stream_text(prompt):
                     full_response += chunk_text
-                    
+
                     # 优化：使用字符数粗略估算而非每个 chunk 都调 tiktoken
                     completion_tokens += _estimate_tokens_chinese(chunk_text)
-                    
+
                     if not await check_quota_during_stream(tenant_id, prompt_tokens + completion_tokens, db=db_gen):
                         quota_exceeded = True
                         yield f"event: error\ndata: {json.dumps({'detail': 'Quota exceeded. Response cut short.'})}\n\n"
@@ -307,11 +318,10 @@ async def _handle_agent_mode(
     current_user: User,
 ) -> StreamingResponse:
     """Agent 模式处理：构建 SecurityContext → run_agent → SSE 输出"""
-    from app.modules.agent import SecurityContext, run_agent
-    from app.modules.system.rbac import RBACService
-
     # 获取用户有效权限
     from app.db.models import OrganizationUser, OrganizationUserRole
+    from app.modules.agent import SecurityContext, run_agent
+    from app.modules.system.rbac import RBACService
     ou_stmt = (
         select(OrganizationUser)
         .where(
@@ -385,8 +395,9 @@ async def _handle_agent_mode(
     skill_results = agent_result.get("skill_results", [])
 
     # 保存 assistant 回复
-    from app.db.session import AsyncSessionLocal
     from sqlalchemy import text
+
+    from app.db.session import AsyncSessionLocal
     async with AsyncSessionLocal() as db_save:
         await db_save.execute(
             text("SELECT set_config('app.current_tenant_id', :tid, true)"),

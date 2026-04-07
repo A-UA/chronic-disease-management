@@ -1,19 +1,31 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from typing import List, Optional
-from sqlalchemy.orm import selectinload
-from pydantic import BaseModel
 
-from app.api.deps import get_db, get_current_org_id, get_current_tenant_id, check_permission, check_org_admin
-from app.db.models import Role, Permission, Resource, Action, RoleConstraint, OrganizationUserRole, OrganizationUser
-from app.schemas.rbac import RoleRead, PermissionRead, RoleCreate
-from app.modules.system.rbac import RBACService
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
+from app.api.deps import (
+    check_org_admin,
+    get_current_org_id,
+    get_current_tenant_id,
+    get_db,
+)
+from app.db.models import (
+    Action,
+    OrganizationUser,
+    OrganizationUserRole,
+    Permission,
+    Resource,
+    Role,
+)
 from app.modules.audit.service import audit_action
+from app.modules.system.rbac import RBACService
+from app.schemas.rbac import RoleCreate, RoleRead
 
 router = APIRouter()
 
-@router.get("/resources", response_model=List[dict])
+@router.get("/resources", response_model=list[dict])
 async def list_resources(
     _org_admin=Depends(check_org_admin()),
     db: AsyncSession = Depends(get_db),
@@ -23,7 +35,7 @@ async def list_resources(
     result = await db.execute(stmt)
     return [{"id": r.id, "name": r.name, "code": r.code} for r in result.scalars().all()]
 
-@router.get("/actions", response_model=List[dict])
+@router.get("/actions", response_model=list[dict])
 async def list_actions(
     _org_admin=Depends(check_org_admin()),
     db: AsyncSession = Depends(get_db),
@@ -33,7 +45,7 @@ async def list_actions(
     result = await db.execute(stmt)
     return [{"id": a.id, "name": a.name, "code": a.code} for a in result.scalars().all()]
 
-@router.get("/permissions", response_model=List[dict])
+@router.get("/permissions", response_model=list[dict])
 async def list_permissions(
     _org_admin=Depends(check_org_admin()),
     db: AsyncSession = Depends(get_db),
@@ -109,7 +121,7 @@ async def create_custom_role(
         parent_role_id=role_in.parent_role_id,
         is_system=False
     )
-    
+
     # 4. Attach Direct Permissions
     if role_in.permission_ids:
         stmt_p = select(Permission).where(Permission.id.in_(role_in.permission_ids))
@@ -118,7 +130,7 @@ async def create_custom_role(
 
     db.add(role)
     await db.flush() # Get role.id
-    
+
     # Audit log
     await audit_action(
         db,
@@ -137,7 +149,7 @@ async def create_custom_role(
 @router.post("/members/{user_id}/roles")
 async def assign_user_roles(
     user_id: int,
-    role_ids: List[int],
+    role_ids: list[int],
     tenant_id: int = Depends(get_current_tenant_id),
     org_id: int = Depends(get_current_org_id),
     org_admin: OrganizationUser = Depends(check_org_admin()),
@@ -168,11 +180,11 @@ async def assign_user_roles(
     old_links = (await db.execute(stmt_del)).scalars().all()
     for link in old_links:
         await db.delete(link)
-    
+
     # Add new ones
     for rid in role_ids:
         db.add(OrganizationUserRole(tenant_id=tenant_id, org_id=org_id, user_id=user_id, role_id=rid))
-    
+
     # Audit log
     await audit_action(
         db,
@@ -183,7 +195,7 @@ async def assign_user_roles(
         resource_id=user_id,
         details=f"Assigned roles {role_ids} to user {user_id}"
     )
-    
+
     await db.commit()
     return {"status": "ok", "assigned_roles": [r.code for r in valid_roles]}
 
@@ -191,9 +203,9 @@ async def assign_user_roles(
 # ── Role 更新/删除 ──
 
 class RoleUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    permission_ids: Optional[List[int]] = None
+    name: str | None = None
+    description: str | None = None
+    permission_ids: list[int] | None = None
 
 
 @router.put("/roles/{role_id}")

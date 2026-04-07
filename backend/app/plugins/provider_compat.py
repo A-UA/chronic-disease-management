@@ -3,10 +3,10 @@
 所有使用 `from app.plugins.provider_compat import registry` 的代码
 无需修改即可正常工作。
 """
-from app.plugins.registry import PluginRegistry
-import app.plugins.llm  # noqa: F401 — 触发插件注册
 import app.plugins.embedding  # noqa: F401
+import app.plugins.llm  # noqa: F401 — 触发插件注册
 import app.plugins.reranker  # noqa: F401
+from app.plugins.registry import PluginRegistry
 
 
 class ProviderRegistry:

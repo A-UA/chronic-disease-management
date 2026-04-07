@@ -3,7 +3,7 @@ from io import BytesIO
 from xml.etree import ElementTree
 from zipfile import BadZipFile, ZipFile
 
-from app.plugins.parser.base import ParseResult, DocumentParseError, normalize_text
+from app.plugins.parser.base import DocumentParseError, ParseResult, normalize_text
 from app.plugins.registry import PluginRegistry
 
 

@@ -1,8 +1,10 @@
-from sqlalchemy import BigInteger, String, ForeignKey, Text, UniqueConstraint, Boolean
+from typing import Optional
+
+from sqlalchemy import BigInteger, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from .base import Base, IDMixin, TimestampMixin
-from typing import List, Optional
 
 
 class Resource(Base, IDMixin):
@@ -11,9 +13,9 @@ class Resource(Base, IDMixin):
 
     name: Mapped[str] = mapped_column(String(100), unique=True, index=True)
     code: Mapped[str] = mapped_column(String(100), unique=True, index=True)
-    description: Mapped[Optional[str]] = mapped_column(Text)
+    description: Mapped[str | None] = mapped_column(Text)
 
-    permissions: Mapped[List["Permission"]] = relationship(
+    permissions: Mapped[list["Permission"]] = relationship(
         back_populates="resource", cascade="all, delete-orphan",
     )
 
@@ -24,7 +26,7 @@ class Action(Base, IDMixin):
 
     name: Mapped[str] = mapped_column(String(100), unique=True, index=True)
     code: Mapped[str] = mapped_column(String(100), unique=True, index=True)
-    description: Mapped[Optional[str]] = mapped_column(Text)
+    description: Mapped[str | None] = mapped_column(Text)
 
 
 class Permission(Base, IDMixin):
@@ -44,12 +46,12 @@ class Permission(Base, IDMixin):
     name: Mapped[str] = mapped_column(String(100), index=True)
     code: Mapped[str] = mapped_column(String(100), unique=True, index=True)
 
-    ui_metadata: Mapped[Optional[dict]] = mapped_column(JSONB)
+    ui_metadata: Mapped[dict | None] = mapped_column(JSONB)
 
     # Relationships
     resource: Mapped["Resource"] = relationship(back_populates="permissions")
     action: Mapped["Action"] = relationship()
-    roles: Mapped[List["Role"]] = relationship(
+    roles: Mapped[list["Role"]] = relationship(
         secondary="role_permissions", back_populates="permissions",
     )
 
@@ -62,20 +64,20 @@ class Role(Base, IDMixin, TimestampMixin):
     """角色：支持继承与多租户隔离"""
     __tablename__ = "roles"
 
-    tenant_id: Mapped[Optional[int]] = mapped_column(
+    tenant_id: Mapped[int | None] = mapped_column(
         ForeignKey("tenants.id", ondelete="CASCADE"), index=True, nullable=True,
     )
-    parent_role_id: Mapped[Optional[int]] = mapped_column(
+    parent_role_id: Mapped[int | None] = mapped_column(
         ForeignKey("roles.id", ondelete="SET NULL"), index=True,
     )
 
     name: Mapped[str] = mapped_column(String(100), index=True)
     code: Mapped[str] = mapped_column(String(100), index=True)
-    description: Mapped[Optional[str]] = mapped_column(Text)
+    description: Mapped[str | None] = mapped_column(Text)
     is_system: Mapped[bool] = mapped_column(default=False)
 
     # Relationships
-    permissions: Mapped[List["Permission"]] = relationship(
+    permissions: Mapped[list["Permission"]] = relationship(
         secondary="role_permissions", back_populates="roles",
     )
     parent_role: Mapped[Optional["Role"]] = relationship(
@@ -102,7 +104,7 @@ class RoleConstraint(Base, IDMixin, TimestampMixin):
     """责任分离约束 (SoD)"""
     __tablename__ = "rbac_role_constraints"
 
-    tenant_id: Mapped[Optional[int]] = mapped_column(
+    tenant_id: Mapped[int | None] = mapped_column(
         ForeignKey("tenants.id", ondelete="CASCADE"), index=True, nullable=True,
     )
     name: Mapped[str] = mapped_column(String(100))
@@ -111,7 +113,7 @@ class RoleConstraint(Base, IDMixin, TimestampMixin):
     role_id_1: Mapped[int] = mapped_column(ForeignKey("roles.id", ondelete="CASCADE"))
     role_id_2: Mapped[int] = mapped_column(ForeignKey("roles.id", ondelete="CASCADE"))
 
-    description: Mapped[Optional[str]] = mapped_column(Text)
+    description: Mapped[str | None] = mapped_column(Text)
 
     __table_args__ = (
         UniqueConstraint(

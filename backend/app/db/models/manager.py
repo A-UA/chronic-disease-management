@@ -1,12 +1,14 @@
-from sqlalchemy import BigInteger, String, ForeignKey, Boolean, Text, Index, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import TYPE_CHECKING
+
+from sqlalchemy import Boolean, ForeignKey, Index, String, Text, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from .base import Base, IDMixin, TimestampMixin
 
 if TYPE_CHECKING:
-    from .user import User
     from .organization import Organization
     from .patient import PatientProfile
+    from .user import User
 
 
 class ManagerProfile(Base, IDMixin, TimestampMixin):

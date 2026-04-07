@@ -1,13 +1,19 @@
-from typing import Any, List, Optional
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import (
-    get_current_org_id, get_effective_org_id, get_current_user,
-    get_current_tenant_id, get_db, check_permission, inject_rls_context,
+    check_permission,
+    get_current_org_id,
+    get_current_tenant_id,
+    get_current_user,
+    get_db,
+    get_effective_org_id,
+    inject_rls_context,
 )
-from app.db.models import User, PatientProfile
+from app.db.models import PatientProfile, User
 from app.schemas.patient import PatientProfileRead, PatientProfileUpdate
 
 router = APIRouter()
@@ -23,11 +29,11 @@ async def _load_patient_profile(db: AsyncSession, user_id: int, org_id: int) -> 
 
 # --- Unified Endpoints ---
 
-@router.get("", response_model=List[PatientProfileRead])
+@router.get("", response_model=list[PatientProfileRead])
 async def list_patients(
     skip: int = 0,
     limit: int = 50,
-    search: Optional[str] = None,
+    search: str | None = None,
     tenant_id: int = Depends(inject_rls_context),
     effective_org_id: int | None = Depends(get_effective_org_id),
     _permission=Depends(check_permission("patient:read")),
@@ -149,6 +155,7 @@ async def get_my_suggestions(
 # ── PatientProfile 管理员创建/删除 ──
 
 from pydantic import BaseModel as _BaseModel
+
 
 class PatientProfileAdminCreate(_BaseModel):
     user_id: int

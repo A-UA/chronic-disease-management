@@ -2,14 +2,17 @@
 
 从 api/endpoints/audit_logs.py 迁移，保持 API 路径完全兼容。
 """
+
 from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from typing import List
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import (
-    get_db, inject_rls_context, get_effective_org_id,
-    check_permission, get_platform_viewer,
+    check_permission,
+    get_db,
+    get_effective_org_id,
+    get_platform_viewer,
+    inject_rls_context,
 )
 from app.db.models import AuditLog
 from app.schemas.admin import AuditLogRead
@@ -17,7 +20,7 @@ from app.schemas.admin import AuditLogRead
 router = APIRouter()
 
 
-@router.get("", response_model=List[AuditLogRead])
+@router.get("", response_model=list[AuditLogRead])
 async def list_audit_logs(
     skip: int = 0,
     limit: int = 50,
@@ -40,7 +43,7 @@ async def list_audit_logs(
     return result.scalars().all()
 
 
-@router.get("/global", response_model=List[AuditLogRead])
+@router.get("/global", response_model=list[AuditLogRead])
 async def list_global_audit_logs(
     skip: int = 0,
     limit: int = 50,

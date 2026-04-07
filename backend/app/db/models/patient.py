@@ -1,12 +1,14 @@
-from sqlalchemy import BigInteger, String, ForeignKey, Date, Index, UniqueConstraint
+from typing import TYPE_CHECKING
+
+from sqlalchemy import Date, ForeignKey, Index, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from typing import TYPE_CHECKING
+
 from .base import Base, IDMixin, TimestampMixin
 
 if TYPE_CHECKING:
-    from .user import User
     from .organization import Organization
+    from .user import User
 
 
 class PatientProfile(Base, IDMixin, TimestampMixin):

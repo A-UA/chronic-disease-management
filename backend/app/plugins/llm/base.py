@@ -1,6 +1,6 @@
 """LLM 插件接口定义"""
-from typing import Protocol
 from collections.abc import AsyncGenerator
+from typing import Protocol
 
 
 class LLMPlugin(Protocol):

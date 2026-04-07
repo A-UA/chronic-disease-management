@@ -10,7 +10,7 @@ async def rag_search_handler(
     if not query or not kb_id:
         return SkillResult(success=False, error="需要 query 和 kb_id 参数")
     try:
-        from app.modules.rag.chat_service import retrieve_chunks, build_rag_prompt
+        from app.modules.rag.chat_service import build_rag_prompt, retrieve_chunks
         from app.plugins.provider_compat import registry
 
         llm = registry.get_llm()

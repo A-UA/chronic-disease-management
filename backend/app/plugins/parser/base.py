@@ -1,6 +1,6 @@
 """文档解析器插件接口定义"""
-from typing import Protocol
 from dataclasses import dataclass
+from typing import Protocol
 
 
 @dataclass(slots=True)

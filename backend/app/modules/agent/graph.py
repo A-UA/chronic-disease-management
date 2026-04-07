@@ -10,7 +10,7 @@ import json
 import logging
 from typing import Any
 
-from langgraph.graph import StateGraph, END
+from langgraph.graph import END, StateGraph
 
 from app.modules.agent.security import SecurityContext
 from app.modules.agent.skills.base import skill_registry
@@ -63,7 +63,7 @@ async def router_node(state: AgentState, ctx: SecurityContext) -> dict[str, Any]
 
 async def rag_node(state: AgentState, ctx: SecurityContext) -> dict[str, Any]:
     """RAG 检索节点 — 桥接现有 retrieve_chunks + build_rag_prompt"""
-    from app.modules.rag.chat_service import retrieve_chunks, build_rag_prompt
+    from app.modules.rag.chat_service import build_rag_prompt, retrieve_chunks
     from app.plugins.provider_compat import registry
 
     llm = registry.get_llm()

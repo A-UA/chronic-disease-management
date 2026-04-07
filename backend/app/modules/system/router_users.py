@@ -1,27 +1,32 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from typing import List
 
-from app.api.deps import get_db, check_permission, get_current_tenant_id, get_current_org_id
-from app.db.models import User, OrganizationUser
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.api.deps import (
+    check_permission,
+    get_current_org_id,
+    get_current_tenant_id,
+    get_db,
+)
+from app.db.models import OrganizationUser, User
 from app.schemas.admin import UserAdminRead
 
 router = APIRouter()
 
 
-from app.core import security
-from app.schemas.user import UserCreate
+
 from pydantic import BaseModel as _PydanticBase
-from typing import Optional
+
+from app.core import security
 
 
 class UserCreateAdmin(_PydanticBase):
     email: str
     password: str
-    name: Optional[str] = None
-    org_id: Optional[int] = None      # 要绑定的组织 ID（可选，默认绑定当前组织）
-    role_ids: Optional[list[int]] = None  # 要分配的角色 ID 列表
+    name: str | None = None
+    org_id: int | None = None      # 要绑定的组织 ID（可选，默认绑定当前组织）
+    role_ids: list[int] | None = None  # 要分配的角色 ID 列表
 
 
 @router.post("", response_model=UserAdminRead)
@@ -160,13 +165,13 @@ async def get_user(
     )
 
 
+
 from pydantic import BaseModel as _BaseModel
-from typing import Optional
 
 
 class UserUpdate(_BaseModel):
-    name: Optional[str] = None
-    email: Optional[str] = None
+    name: str | None = None
+    email: str | None = None
 
 
 @router.put("/{user_id}", response_model=UserAdminRead)

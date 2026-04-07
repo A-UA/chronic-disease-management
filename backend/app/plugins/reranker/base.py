@@ -1,6 +1,6 @@
 """Reranker 插件接口定义"""
-from typing import Protocol, Any
 from collections.abc import Sequence
+from typing import Any, Protocol
 
 
 class RerankerPlugin(Protocol):

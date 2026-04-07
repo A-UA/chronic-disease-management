@@ -16,10 +16,13 @@ async def run_agent(
     conversation_id: int | None = None,
 ) -> dict[str, Any]:
     """Agent entry point"""
-    from app.modules.agent.memory import prepare_query_with_memory
     from app.modules.agent.graph import (
-        router_node, rag_node, skill_node, direct_answer_node,
+        direct_answer_node,
+        rag_node,
+        router_node,
+        skill_node,
     )
+    from app.modules.agent.memory import prepare_query_with_memory
     from app.modules.agent.state import AgentState
 
     enhanced_query, history = await prepare_query_with_memory(

@@ -1,6 +1,7 @@
-from sqlalchemy import BigInteger, String, ForeignKey, Integer, Text, Index
+from sqlalchemy import ForeignKey, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
+
 from .base import Base, IDMixin, TimestampMixin
 
 

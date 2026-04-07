@@ -1,10 +1,11 @@
-from pydantic import BaseModel, EmailStr, ConfigDict
 from datetime import datetime
-from typing import List, Optional
+
+from pydantic import BaseModel, ConfigDict, EmailStr
+
 
 class UserBase(BaseModel):
     email: EmailStr
-    name: Optional[str] = None
+    name: str | None = None
 
 class UserCreate(UserBase):
     password: str
@@ -12,11 +13,11 @@ class UserCreate(UserBase):
 class UserRead(BaseModel):
     id: int
     email: str
-    name: Optional[str] = None
+    name: str | None = None
     created_at: datetime
-    tenant_id: Optional[int] = None
-    org_id: Optional[int] = None
-    permissions: List[str] = []
+    tenant_id: int | None = None
+    org_id: int | None = None
+    permissions: list[str] = []
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -25,7 +26,7 @@ class Token(BaseModel):
     token_type: str
 
 class TokenPayload(BaseModel):
-    sub: Optional[str] = None
+    sub: str | None = None
 
 class UserUpdatePassword(BaseModel):
     current_password: str

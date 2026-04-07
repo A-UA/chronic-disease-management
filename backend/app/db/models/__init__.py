@@ -1,17 +1,23 @@
-from .base import Base
-from .tenant import Tenant
-from .user import User, PasswordResetToken
-from .organization import Organization, OrganizationUser, OrganizationInvitation, PatientFamilyLink, OrganizationUserRole
-from .rbac import Role, Permission, RolePermission, Resource, Action, RoleConstraint
-from .knowledge import KnowledgeBase, Document, Chunk
-from .chat import Conversation, Message, UsageLog
 from .api_key import ApiKey
-from .patient import PatientProfile
-from .manager import ManagerProfile, PatientManagerAssignment, ManagementSuggestion
 from .audit import AuditLog
-from .settings import SystemSetting
+from .base import Base
+from .chat import Conversation, Message, UsageLog
 from .health_metric import HealthMetric
+from .knowledge import Chunk, Document, KnowledgeBase
+from .manager import ManagementSuggestion, ManagerProfile, PatientManagerAssignment
 from .menu import Menu
+from .organization import (
+    Organization,
+    OrganizationInvitation,
+    OrganizationUser,
+    OrganizationUserRole,
+    PatientFamilyLink,
+)
+from .patient import PatientProfile
+from .rbac import Action, Permission, Resource, Role, RoleConstraint, RolePermission
+from .settings import SystemSetting
+from .tenant import Tenant
+from .user import PasswordResetToken, User
 
 # Ensure all models are in metadata for migrations
 __all__ = [

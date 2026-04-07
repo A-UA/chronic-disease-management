@@ -1,6 +1,8 @@
-from sqlalchemy import String, ForeignKey, Integer, BigInteger, DateTime
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
+
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column
+
 from .base import Base, IDMixin, TimestampMixin
 
 

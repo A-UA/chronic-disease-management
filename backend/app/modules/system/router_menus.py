@@ -1,5 +1,4 @@
 """菜单管理 CRUD 端点"""
-from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
@@ -7,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import get_db, check_permission, get_current_org_id
+from app.api.deps import check_permission, get_current_org_id, get_db
 from app.db.models import Menu, OrganizationUser
 from app.modules.audit.service import fire_audit
 
@@ -17,50 +16,50 @@ router = APIRouter()
 # ── Schemas ──
 
 class MenuCreate(BaseModel):
-    parent_id: Optional[int] = None
+    parent_id: int | None = None
     name: str
     code: str
     menu_type: str = "page"
-    path: Optional[str] = None
-    icon: Optional[str] = None
-    permission_code: Optional[str] = None
+    path: str | None = None
+    icon: str | None = None
+    permission_code: str | None = None
     sort: int = 0
     is_visible: bool = True
     is_enabled: bool = True
 
 
 class MenuUpdate(BaseModel):
-    parent_id: Optional[int] = None
-    name: Optional[str] = None
-    menu_type: Optional[str] = None
-    path: Optional[str] = None
-    icon: Optional[str] = None
-    permission_code: Optional[str] = None
-    sort: Optional[int] = None
-    is_visible: Optional[bool] = None
-    is_enabled: Optional[bool] = None
+    parent_id: int | None = None
+    name: str | None = None
+    menu_type: str | None = None
+    path: str | None = None
+    icon: str | None = None
+    permission_code: str | None = None
+    sort: int | None = None
+    is_visible: bool | None = None
+    is_enabled: bool | None = None
 
 
 class MenuRead(BaseModel):
     id: int
-    parent_id: Optional[int] = None
+    parent_id: int | None = None
     name: str
     code: str
     menu_type: str
-    path: Optional[str] = None
-    icon: Optional[str] = None
-    permission_code: Optional[str] = None
+    path: str | None = None
+    icon: str | None = None
+    permission_code: str | None = None
     sort: int = 0
     is_visible: bool = True
     is_enabled: bool = True
-    children: List["MenuRead"] = []
+    children: list["MenuRead"] = []
 
     model_config = ConfigDict(from_attributes=True)
 
 
 # ── 端点 ──
 
-@router.get("", response_model=List[MenuRead])
+@router.get("", response_model=list[MenuRead])
 async def list_menus(
     _perm=Depends(check_permission("menu:manage")),
     db: AsyncSession = Depends(get_db),

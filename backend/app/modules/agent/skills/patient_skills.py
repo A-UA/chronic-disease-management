@@ -1,7 +1,7 @@
 """患者相关 Skills — 所有数据访问通过 ctx.db（带 RLS）"""
 from sqlalchemy import select
 
-from app.db.models import PatientProfile, HealthMetric
+from app.db.models import HealthMetric, PatientProfile
 from app.modules.agent.security import SecurityContext
 from app.modules.agent.skills.base import SkillDefinition, SkillResult, skill_registry
 

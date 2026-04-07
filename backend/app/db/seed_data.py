@@ -11,10 +11,9 @@ import asyncio
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from app.db.session import AsyncSessionLocal as SessionLocal
-from app.db.models.rbac import Permission, Role, Resource, Action
 from app.db.models.menu import Menu
-
+from app.db.models.rbac import Action, Permission, Resource, Role
+from app.db.session import AsyncSessionLocal as SessionLocal
 
 # ═══════════════════════════════════════════════════════════
 #  1. RBAC 数据定义
@@ -296,11 +295,13 @@ async def seed_menus(db):
 async def seed_super_admin(db, role_objs: dict):
     """预制超管账号：默认租户 → 默认部门 → 超管用户 → owner 角色"""
     from app.core.security import get_password_hash
-    from app.db.models.user import User
-    from app.db.models.tenant import Tenant
     from app.db.models.organization import (
-        Organization, OrganizationUser, OrganizationUserRole,
+        Organization,
+        OrganizationUser,
+        OrganizationUserRole,
     )
+    from app.db.models.tenant import Tenant
+    from app.db.models.user import User
 
     print("=== [3/3] 超管账号 ===")
 

@@ -1,17 +1,25 @@
-from sqlalchemy import (
-    String, ForeignKey, BigInteger, ForeignKeyConstraint,
-    Integer, Text, Index, UniqueConstraint,
-)
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 from typing import TYPE_CHECKING
+
+from sqlalchemy import (
+    BigInteger,
+    ForeignKey,
+    ForeignKeyConstraint,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from .base import Base, IDMixin, TimestampMixin
 
 if TYPE_CHECKING:
-    from .user import User
     from .patient import PatientProfile
     from .rbac import Role
     from .tenant import Tenant
+    from .user import User
 
 
 class Organization(Base, IDMixin, TimestampMixin):

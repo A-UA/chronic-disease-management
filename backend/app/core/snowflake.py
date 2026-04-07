@@ -1,4 +1,5 @@
 import os
+
 from snowflake_id_toolkit import TwitterSnowflakeIDGenerator
 
 # Default epoch: 2024-01-01 00:00:00 UTC
@@ -9,7 +10,7 @@ worker_id = int(os.environ.get("WORKER_ID", 0)) % 1024
 
 # Global instance from third-party library
 generator = TwitterSnowflakeIDGenerator(
-    node_id=worker_id, 
+    node_id=worker_id,
     epoch=DEFAULT_EPOCH
 )
 

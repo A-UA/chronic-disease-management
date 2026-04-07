@@ -1,28 +1,40 @@
-from typing import Any, List, Optional
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
-
-from sqlalchemy import delete
 import secrets
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
-from app.api.deps import get_db, get_current_user, check_permission, get_current_org_id, get_current_tenant_id
-from app.db.models import Organization, OrganizationUser, OrganizationUserRole, User, Role, OrganizationInvitation
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import delete, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
+from app.api.deps import (
+    check_permission,
+    get_current_org_id,
+    get_current_tenant_id,
+    get_current_user,
+    get_db,
+)
+from app.db.models import (
+    Organization,
+    OrganizationInvitation,
+    OrganizationUser,
+    OrganizationUserRole,
+    Role,
+    User,
+)
 from app.schemas.organization import (
+    OrganizationCreate,
+    OrganizationInvitationCreate,
+    OrganizationInvitationRead,
+    OrganizationMemberRead,
     OrganizationReadAdmin,
     OrganizationReadPublic,
-    OrganizationCreate, 
     OrganizationUpdate,
-    OrganizationMemberRead,
-    OrganizationInvitationCreate,
-    OrganizationInvitationRead
 )
 
 router = APIRouter()
 
-@router.get("/me", response_model=List[OrganizationReadAdmin])
+@router.get("/me", response_model=list[OrganizationReadAdmin])
 async def get_my_organizations(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
@@ -40,7 +52,7 @@ async def get_my_organizations(
 async def list_organizations(
     skip: int = 0,
     limit: int = 100,
-    search: Optional[str] = None,
+    search: str | None = None,
     tenant_id: int = Depends(get_current_tenant_id),
     _permission=Depends(check_permission("org_member:manage")),
     db: AsyncSession = Depends(get_db)
@@ -141,7 +153,7 @@ async def delete_organization(
     return {"status": "ok"}
 
 
-@router.get("/{org_id}/members", response_model=List[OrganizationMemberRead])
+@router.get("/{org_id}/members", response_model=list[OrganizationMemberRead])
 async def get_organization_members(
     org_id: int,
     _permission=Depends(check_permission("org_member:manage")),
@@ -242,7 +254,7 @@ async def remove_organization_member(
     await db.commit()
     return {"message": "Member removed successfully"}
 
-@router.get("/{org_id}/invitations", response_model=List[OrganizationInvitationRead])
+@router.get("/{org_id}/invitations", response_model=list[OrganizationInvitationRead])
 async def list_invitations(
     org_id: int,
     _org_member=Depends(check_permission("org_member:manage")),
@@ -269,7 +281,7 @@ async def create_invitation(
     # 检查目标用户是否已经是组织成员
     user_stmt = select(User).where(User.email == invitation_in.email)
     target_user = (await db.execute(user_stmt)).scalar_one_or_none()
-    
+
     if target_user:
         member_stmt = select(OrganizationUser).where(
             OrganizationUser.org_id == org_id,
@@ -280,7 +292,7 @@ async def create_invitation(
 
     token = secrets.token_urlsafe(32)
     expires_at = datetime.now(timezone.utc) + timedelta(days=7)
-    
+
     invitation = OrganizationInvitation(
         tenant_id=tenant_id,
         org_id=org_id,
@@ -308,21 +320,21 @@ async def accept_invitation(
         OrganizationInvitation.status == "pending"
     )
     invitation = (await db.execute(stmt)).scalar_one_or_none()
-    
+
     if not invitation:
         raise HTTPException(status_code=404, detail="Invalid or expired invitation token")
-        
+
     # Python 的 naive datetime 和 current_user 兼容处理
     if invitation.expires_at.tzinfo is None:
         now = datetime.utcnow()
     else:
         now = datetime.now(timezone.utc)
-        
+
     if invitation.expires_at < now:
         invitation.status = "expired"
         await db.commit()
         raise HTTPException(status_code=400, detail="Invitation has expired")
-        
+
     if current_user.email != invitation.email:
         raise HTTPException(status_code=403, detail="Invitation is for another email address")
 
@@ -338,14 +350,14 @@ async def accept_invitation(
         user_type="staff"
     )
     db.add(org_user)
-    
+
     # 查找邀请指定的角色
     role_stmt = select(Role).where(
         Role.code == invitation.role,
         Role.tenant_id == t_id
     )
     role = (await db.execute(role_stmt)).scalar_one_or_none()
-    
+
     # 回退到找系统级角色
     if not role:
         sys_role_stmt = select(Role).where(

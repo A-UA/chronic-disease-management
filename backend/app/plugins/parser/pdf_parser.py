@@ -6,7 +6,7 @@ import fitz  # PyMuPDF
 import pdfplumber
 import pytesseract
 
-from app.plugins.parser.base import ParseResult, DocumentParseError, normalize_text
+from app.plugins.parser.base import DocumentParseError, ParseResult, normalize_text
 from app.plugins.registry import PluginRegistry
 
 logger = logging.getLogger(__name__)

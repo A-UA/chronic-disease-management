@@ -5,9 +5,9 @@
 """
 import asyncio
 import logging
-from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.db.models import AuditLog
 
 logger = logging.getLogger(__name__)

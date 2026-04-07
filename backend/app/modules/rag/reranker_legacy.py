@@ -87,7 +87,7 @@ class OpenAICompatibleRerankerProvider:
         ranked_payload = parsed.get("ranked_results", [])
 
         result_by_id = {str(result.chunk.id): result for result in results}
-        ranked_results: list["RetrievedChunk"] = []
+        ranked_results: list[RetrievedChunk] = []
         for item in ranked_payload:
             chunk_id = item.get("chunk_id")
             score = item.get("score")

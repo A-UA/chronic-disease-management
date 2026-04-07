@@ -1,18 +1,19 @@
 import logging
 import traceback
-import orjson
 from typing import Any
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.exceptions import RequestValidationError
+
+import orjson
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.exception_handlers import (
     http_exception_handler,
     request_validation_exception_handler,
 )
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
-from app.core.config import settings
 from app.api.api import api_router
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -55,10 +56,12 @@ app = FastAPI(
 
 # --- 可观测性初始化 ---
 from app.telemetry.setup import setup_telemetry
+
 setup_telemetry(app)
 
 # --- 插件注册（触发所有插件的延迟注册） ---
 import importlib as _importlib
+
 for _plugin in ("llm", "embedding", "reranker", "parser", "chunker"):
     _importlib.import_module(f"app.plugins.{_plugin}")
 
@@ -94,6 +97,7 @@ app.add_middleware(
 
 # 请求追踪中间件
 from app.core.middleware import RequestIDMiddleware
+
 app.add_middleware(RequestIDMiddleware)
 
 @app.middleware("http")
@@ -113,9 +117,10 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 @app.get("/health")
 async def health_check():
     """增强版健康检查：检测 Redis、PostgreSQL 等核心依赖的可达性"""
-    from app.modules.system.quota import get_redis_client
-    from app.db.session import AsyncSessionLocal
     from sqlalchemy import text
+
+    from app.db.session import AsyncSessionLocal
+    from app.modules.system.quota import get_redis_client
 
     checks = {"status": "ok", "redis": "ok", "database": "ok"}
 

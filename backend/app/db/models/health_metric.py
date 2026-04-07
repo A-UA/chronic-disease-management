@@ -1,7 +1,7 @@
 """健康指标数据模型：支持血压/血糖/体重/心率/BMI 等结构化指标录入"""
 from datetime import datetime
 
-from sqlalchemy import BigInteger, String, ForeignKey, Float, Text, Index
+from sqlalchemy import Float, ForeignKey, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base, IDMixin, TimestampMixin

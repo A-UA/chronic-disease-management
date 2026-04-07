@@ -4,18 +4,27 @@
 - 平台管理员：全平台统计
 """
 from datetime import datetime, timedelta
+
 from fastapi import APIRouter, Depends
+from sqlalchemy import Date, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, cast, Date, text
 
 from app.api.deps import (
-    get_db, get_current_active_user, inject_rls_context,
-    get_effective_org_id, get_current_roles,
+    get_current_active_user,
+    get_current_roles,
+    get_db,
+    get_effective_org_id,
     get_platform_viewer,
+    inject_rls_context,
 )
 from app.db.models import (
-    Organization, User, PatientProfile, Conversation,
-    UsageLog, Document, OrganizationUser,
+    Conversation,
+    Document,
+    Organization,
+    OrganizationUser,
+    PatientProfile,
+    UsageLog,
+    User,
 )
 from app.schemas.admin import DashboardStats, TokenTrendItem
 

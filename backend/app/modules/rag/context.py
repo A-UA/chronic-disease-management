@@ -37,15 +37,15 @@ def is_likely_follow_up(query: str) -> bool:
     normalized = normalize_query(query)
     if not normalized:
         return False
-    
+
     # 包含明确追问标记词 → 大概率是追问
     if any(marker in normalized for marker in _FOLLOW_UP_MARKERS):
         return True
-    
+
     # 非常短的查询大概率是追问（但增加排除条件：如果包含问号且超过一定长度则不算）
     if len(normalized) <= 8 and "?" not in normalized:
         return True
-    
+
     return False
 
 

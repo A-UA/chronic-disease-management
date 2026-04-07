@@ -1,6 +1,6 @@
 """健康指标管理端点：录入/查询/趋势/删除"""
 from datetime import datetime
-from typing import Any, List, Literal
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
@@ -8,10 +8,15 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import (
-    get_current_user, get_current_org_id, get_effective_org_id,
-    get_current_tenant_id, inject_rls_context, get_db, check_permission,
+    check_permission,
+    get_current_org_id,
+    get_current_tenant_id,
+    get_current_user,
+    get_db,
+    get_effective_org_id,
+    inject_rls_context,
 )
-from app.db.models import User, PatientProfile, HealthMetric
+from app.db.models import HealthMetric, PatientProfile, User
 
 router = APIRouter()
 

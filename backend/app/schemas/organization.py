@@ -1,5 +1,7 @@
-from pydantic import BaseModel, ConfigDict, computed_field
 from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict
+
 
 class OrganizationBase(BaseModel):
     name: str
@@ -28,7 +30,7 @@ class OrganizationReadPublic(BaseModel):
     description: str | None = None
     sort: int = 0
     created_at: datetime | None = None
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 class OrganizationReadAdmin(OrganizationReadPublic):
@@ -52,6 +54,7 @@ class OrganizationInvitationCreate(BaseModel):
     role: str
 
 from datetime import datetime
+
 
 class OrganizationInvitationRead(BaseModel):
     id: int

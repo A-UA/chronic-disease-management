@@ -14,24 +14,28 @@ JWT payload 结构：
 - staff / manager 角色 → department 级（强制 org_id 过滤）
 """
 
+import hashlib
+import hmac
 import logging
 from datetime import datetime, timezone
 
-from fastapi import Depends, HTTPException, Header, Request, status
+import jwt
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-import jwt
-import hashlib
-import hmac
 
 from app.core.config import settings
 from app.core.security import ALGORITHM
-from app.db.session import get_db
 from app.db.models import (
-    User, Organization, OrganizationUser, ApiKey, Role, Permission, Tenant,
+    ApiKey,
+    OrganizationUser,
+    Role,
+    Tenant,
+    User,
 )
+from app.db.session import get_db
 from app.modules.system.rbac import RBACService
 
 logger = logging.getLogger(__name__)

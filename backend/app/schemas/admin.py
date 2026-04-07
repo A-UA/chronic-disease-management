@@ -1,5 +1,6 @@
-from pydantic import BaseModel, ConfigDict
 from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict
 
 
 class UserAdminRead(BaseModel):
@@ -52,11 +53,11 @@ class DynamicSettings(BaseModel):
     llm_default_model: str = "gpt-4o-mini"
     rag_max_chunks: int = 5
     rag_min_score: float = 0.0
-    
+
     # System Status
     system_maintenance_mode: bool = False
     allow_new_registrations: bool = True
-    
+
     # Quota
     default_org_token_quota: int = 1000000
 

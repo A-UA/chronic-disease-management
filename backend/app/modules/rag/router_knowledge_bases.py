@@ -1,15 +1,20 @@
 from datetime import datetime
 from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import (
-    get_db, get_current_user, get_current_org_id, get_effective_org_id,
-    get_current_tenant_id, inject_rls_context,
+    get_current_org_id,
+    get_current_tenant_id,
+    get_current_user,
+    get_db,
+    get_effective_org_id,
+    inject_rls_context,
 )
-from app.db.models import User, KnowledgeBase, Document, Chunk
-from pydantic import BaseModel, ConfigDict
+from app.db.models import Chunk, Document, KnowledgeBase, User
 
 router = APIRouter()
 

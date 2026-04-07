@@ -1,16 +1,21 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from typing import List
 
-from app.api.deps import get_db, get_platform_viewer, get_current_user, get_current_tenant_id
-from app.db.models import Organization, UsageLog, Tenant
+from fastapi import APIRouter, Depends
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.api.deps import (
+    get_current_tenant_id,
+    get_current_user,
+    get_db,
+    get_platform_viewer,
+)
+from app.db.models import Organization, Tenant, UsageLog
 from app.schemas.admin import UsageSummaryItem
 
 router = APIRouter()
 
 
-@router.get("/summary", response_model=List[UsageSummaryItem])
+@router.get("/summary", response_model=list[UsageSummaryItem])
 async def get_usage_summary(
     _admin=Depends(get_platform_viewer),
     db: AsyncSession = Depends(get_db),

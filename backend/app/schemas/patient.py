@@ -1,5 +1,7 @@
-from pydantic import BaseModel, ConfigDict
 from datetime import date
+
+from pydantic import BaseModel, ConfigDict
+
 
 class PatientProfileBase(BaseModel):
     real_name: str
@@ -20,5 +22,5 @@ class PatientProfileRead(PatientProfileBase):
     id: int
     user_id: int
     org_id: int
-    
+
     model_config = ConfigDict(from_attributes=True)

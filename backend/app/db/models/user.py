@@ -1,7 +1,9 @@
-from sqlalchemy import String, ForeignKey, Boolean
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 from typing import TYPE_CHECKING
+
+from sqlalchemy import Boolean, ForeignKey, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from .base import Base, IDMixin, TimestampMixin
 
 if TYPE_CHECKING:

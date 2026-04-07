@@ -1,7 +1,9 @@
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import BigInteger
-from sqlalchemy.sql import func
 from datetime import datetime
+
+from sqlalchemy import BigInteger
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.sql import func
+
 from app.core.snowflake import get_next_id
 
 

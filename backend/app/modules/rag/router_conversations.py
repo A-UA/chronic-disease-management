@@ -4,7 +4,7 @@
 tenant_id 通过 RLS 保证隔离。
 """
 from datetime import datetime
-from typing import Any, List
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
@@ -12,9 +12,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import (
-    get_current_user, get_current_tenant_id, inject_rls_context, get_db,
+    get_current_user,
+    get_db,
+    inject_rls_context,
 )
-from app.db.models import User, Conversation, Message
+from app.db.models import Conversation, Message, User
 
 router = APIRouter()
 
@@ -44,7 +46,7 @@ class ConversationDetailRead(BaseModel):
     kb_id: int
     title: str | None
     created_at: datetime
-    messages: List[MessageRead]
+    messages: list[MessageRead]
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -55,7 +57,7 @@ class ConversationUpdate(BaseModel):
 
 # ── Endpoints ──
 
-@router.get("", response_model=List[ConversationRead])
+@router.get("", response_model=list[ConversationRead])
 async def list_conversations(
     skip: int = 0,
     limit: int = 50,

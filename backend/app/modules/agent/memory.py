@@ -14,8 +14,8 @@ from sqlalchemy import select
 from app.db.models import Message
 from app.modules.agent.security import SecurityContext
 from app.modules.rag.context import (
-    is_likely_follow_up,
     build_retrieval_query_from_history,
+    is_likely_follow_up,
 )
 
 logger = logging.getLogger(__name__)

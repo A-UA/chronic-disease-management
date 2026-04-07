@@ -1,33 +1,36 @@
-from datetime import timedelta, datetime, timezone
-from typing import Any, List
-from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import datetime, timedelta, timezone
+from typing import Any
+
+import jwt as pyjwt
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import BaseModel, EmailStr
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import (
-    get_db, get_current_user, get_current_org_user,
-    get_current_tenant_id, get_current_org_id, get_current_roles,
-    inject_rls_context,
+    get_current_org_id,
+    get_current_org_user,
+    get_current_roles,
+    get_current_tenant_id,
+    get_current_user,
+    get_db,
 )
 from app.core import security
 from app.core.config import settings
 from app.db.models import (
-    User,
-    Tenant,
     Organization,
     OrganizationUser,
     OrganizationUserRole,
-    Role,
     Permission,
+    Role,
+    Tenant,
+    User,
 )
-from app.modules.system.rbac import RBACService
-from app.schemas.user import UserCreate, Token, UserRead, UserUpdatePassword
-
 from app.db.models.menu import Menu
-from pydantic import BaseModel, EmailStr
-import jwt as pyjwt
+from app.modules.system.rbac import RBACService
+from app.schemas.user import UserCreate, UserRead, UserUpdatePassword
 
 router = APIRouter()
 
@@ -484,8 +487,8 @@ async def forgot_password(
     db: AsyncSession = Depends(get_db),
 ):
     """请求密码重置（无论邮箱是否存在都返回200，防信息泄露）"""
-    import secrets
     import logging
+    import secrets
 
     logger = logging.getLogger(__name__)
 

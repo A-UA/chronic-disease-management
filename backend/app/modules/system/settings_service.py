@@ -1,12 +1,12 @@
-import json
 import logging
-from typing import Any, Optional
+from typing import Any
+
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, insert
 
 from app.db.models.settings import SystemSetting
-from app.schemas.admin import DynamicSettings
 from app.modules.system.quota import redis_client
+from app.schemas.admin import DynamicSettings
 
 logger = logging.getLogger(__name__)
 
@@ -29,9 +29,9 @@ class SettingsService:
         stmt = select(SystemSetting)
         res = await db.execute(stmt)
         rows = res.scalars().all()
-        
+
         db_data = {row.key: row.value for row in rows}
-        
+
         # 3. Merge with Code Defaults
         # We parse the DB string values into their proper types via Pydantic
         # Handle cases where DB might have strings for bool/int
@@ -53,10 +53,10 @@ class SettingsService:
 
         # Create instance (missing fields will use default values from Pydantic class)
         settings_obj = DynamicSettings(**typed_data)
-        
+
         # 4. Save to Cache
         await redis_client.setex(CACHE_KEY, CACHE_TTL, settings_obj.model_dump_json())
-        
+
         return settings_obj
 
     @staticmethod
@@ -69,22 +69,22 @@ class SettingsService:
         for key, value in data_to_save.items():
             # Standard string storage
             str_value = str(value).lower() if isinstance(value, bool) else str(value)
-            
+
             # Upsert logic (SQLAlchemy 2.0 style)
             # Since key is primary key, we check existence
             stmt = select(SystemSetting).where(SystemSetting.key == key)
             existing = (await db.execute(stmt)).scalar_one_or_none()
-            
+
             if existing:
                 existing.value = str_value
             else:
                 db.add(SystemSetting(key=key, value=str_value))
 
         await db.commit()
-        
+
         # Invalidate Cache
         await redis_client.delete(CACHE_KEY)
-        
+
         return validated
 
 async def get_system_settings(db: AsyncSession) -> DynamicSettings:

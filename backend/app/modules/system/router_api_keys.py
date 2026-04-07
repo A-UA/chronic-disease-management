@@ -1,19 +1,26 @@
 import hashlib
 import hmac
 import secrets
-from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import (
-    get_current_org_id, get_current_active_user, get_current_tenant_id,
-    inject_rls_context, get_effective_org_id, get_db, check_permission,
+    check_permission,
+    get_current_active_user,
+    get_current_org_id,
+    get_current_tenant_id,
+    get_db,
 )
 from app.core.config import settings
 from app.db.models import ApiKey, User
-from app.schemas.api_key import ApiKeyCreate, ApiKeyUpdate, ApiKeyRead, ApiKeyCreateResponse
+from app.schemas.api_key import (
+    ApiKeyCreate,
+    ApiKeyCreateResponse,
+    ApiKeyRead,
+    ApiKeyUpdate,
+)
 
 router = APIRouter()
 
@@ -68,7 +75,7 @@ async def create_api_key(
     return response_dict
 
 
-@router.get("", response_model=List[ApiKeyRead])
+@router.get("", response_model=list[ApiKeyRead])
 async def list_api_keys(
     skip: int = 0,
     limit: int = 50,

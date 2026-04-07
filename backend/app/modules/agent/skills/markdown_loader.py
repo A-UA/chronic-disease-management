@@ -70,7 +70,7 @@ def parse_skill_md(content: str) -> tuple[dict[str, Any], str]:
 
     desc = str(meta["description"])
     if len(desc) < 1 or len(desc) > 1024:
-        raise ValueError(f"description 长度必须在 1-1024 之间")
+        raise ValueError("description 长度必须在 1-1024 之间")
 
     body = content[match.end():].strip()
     return meta, body

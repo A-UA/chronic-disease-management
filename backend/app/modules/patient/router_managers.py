@@ -1,20 +1,26 @@
-from typing import Any, List, Optional
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from sqlalchemy.orm import selectinload
 from pydantic import BaseModel, ConfigDict
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.api.deps import (
-    get_db, get_current_user, get_current_org_id, get_effective_org_id,
-    get_current_tenant_id, inject_rls_context, check_permission,
+    check_permission,
+    get_current_org_id,
+    get_current_tenant_id,
+    get_current_user,
+    get_db,
+    get_effective_org_id,
+    inject_rls_context,
 )
 from app.db.models import (
-    User,
-    PatientProfile,
-    PatientManagerAssignment,
     ManagementSuggestion,
-    ManagerProfile
+    ManagerProfile,
+    PatientManagerAssignment,
+    PatientProfile,
+    User,
 )
 
 router = APIRouter()
@@ -23,9 +29,9 @@ router = APIRouter()
 class ManagerDetailRead(BaseModel):
     id: int
     user_id: int
-    name: Optional[str] = None
-    email: Optional[str] = None
-    title: Optional[str] = None
+    name: str | None = None
+    email: str | None = None
+    title: str | None = None
     is_active: bool
     assigned_patient_count: int = 0
     model_config = ConfigDict(from_attributes=True)
@@ -34,7 +40,7 @@ class PatientBriefRead(BaseModel):
     id: int
     user_id: int
     real_name: str
-    gender: Optional[str] = None
+    gender: str | None = None
     model_config = ConfigDict(from_attributes=True)
 
 class SuggestionCreate(BaseModel):
@@ -57,7 +63,7 @@ class AssignmentCreate(BaseModel):
 
 # --- 查询类端点（admin 跨部门） ---
 
-@router.get("", response_model=List[ManagerDetailRead])
+@router.get("", response_model=list[ManagerDetailRead])
 async def list_org_managers(
     tenant_id: int = Depends(inject_rls_context),
     effective_org_id: int | None = Depends(get_effective_org_id),
@@ -92,7 +98,7 @@ async def list_org_managers(
 
 # --- 个人视图端点 ---
 
-@router.get("/my-patients", response_model=List[PatientBriefRead])
+@router.get("/my-patients", response_model=list[PatientBriefRead])
 async def get_my_assigned_patients(
     current_user: User = Depends(get_current_user),
     org_id: int = Depends(get_current_org_id),
@@ -168,7 +174,7 @@ async def create_patient_suggestion(
 
 # --- 查询类端点（admin 跨部门） ---
 
-@router.get("/patients/{patient_id}/suggestions", response_model=List[SuggestionRead])
+@router.get("/patients/{patient_id}/suggestions", response_model=list[SuggestionRead])
 async def get_patient_suggestions(
     patient_id: int,
     tenant_id: int = Depends(inject_rls_context),

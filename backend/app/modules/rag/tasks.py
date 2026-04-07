@@ -31,9 +31,10 @@ async def write_audit_log_task(
     details: str | None = None,
 ):
     """arq 异步任务：写入审计日志"""
-    from app.db.session import AsyncSessionLocal
     from sqlalchemy import text
+
     from app.db.models.audit import AuditLog
+    from app.db.session import AsyncSessionLocal
 
     async with AsyncSessionLocal() as db:
         if org_id:

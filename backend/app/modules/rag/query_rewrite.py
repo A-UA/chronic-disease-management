@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import re
 import logging
+import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -72,7 +72,7 @@ def _expand_medical_terms(query: str) -> str:
     """如果查询中包含医疗术语别名，在查询末尾追加规范术语以提升召回"""
     expansions: list[str] = []
     query_lower = query.lower()
-    
+
     for canonical, aliases in _MEDICAL_SYNONYMS.items():
         # 如果查询中包含别名，追加规范词
         for alias in aliases:
@@ -85,7 +85,7 @@ def _expand_medical_terms(query: str) -> str:
                 if alias.lower() not in query_lower:
                     expansions.append(alias)
                     break
-    
+
     if expansions:
         return f"{query} {' '.join(expansions)}"
     return query
@@ -135,7 +135,7 @@ async def rewrite_query_with_llm(query: str, llm_provider: LLMProvider) -> str:
             return rewritten
     except Exception:
         logger.warning("LLM query rewrite failed; using rule-based rewrite", exc_info=True)
-    
+
     return query
 
 

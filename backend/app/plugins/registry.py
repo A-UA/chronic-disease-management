@@ -1,5 +1,6 @@
 """统一插件注册中心 — 配置驱动，延迟初始化"""
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 
 class PluginRegistry:

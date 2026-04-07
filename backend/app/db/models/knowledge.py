@@ -1,11 +1,11 @@
-from sqlalchemy import BigInteger, String, ForeignKey, Integer, Text, Index
-from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from pgvector.sqlalchemy import Vector
 from typing import Any
+
+from pgvector.sqlalchemy import Vector
+from sqlalchemy import ForeignKey, Index, Integer, String, Text
+from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
+from sqlalchemy.orm import Mapped, mapped_column
+
 from .base import Base, IDMixin, TimestampMixin
-from .user import User
-from .organization import Organization
 
 
 class KnowledgeBase(Base, IDMixin, TimestampMixin):

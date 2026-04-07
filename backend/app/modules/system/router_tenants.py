@@ -1,12 +1,11 @@
 """租户管理 CRUD 端点"""
-from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db, check_permission, get_current_org_id
-from app.db.models import Tenant, Organization, OrganizationUser
+from app.api.deps import check_permission, get_current_org_id, get_db
+from app.db.models import Organization, OrganizationUser, Tenant
 from app.modules.audit.service import fire_audit
 
 router = APIRouter()
@@ -14,8 +13,9 @@ router = APIRouter()
 
 # ── Schemas（内联，避免循环导入） ──
 
-from pydantic import BaseModel, ConfigDict
 from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict
 
 
 class TenantCreate(BaseModel):
@@ -24,28 +24,28 @@ class TenantCreate(BaseModel):
     plan_type: str = "free"
     status: str = "active"
     quota_tokens_limit: int = 1_000_000
-    max_members: Optional[int] = None
-    max_patients: Optional[int] = None
-    contact_name: Optional[str] = None
-    contact_phone: Optional[str] = None
-    contact_email: Optional[str] = None
-    org_type: Optional[str] = None
-    address: Optional[str] = None
+    max_members: int | None = None
+    max_patients: int | None = None
+    contact_name: str | None = None
+    contact_phone: str | None = None
+    contact_email: str | None = None
+    org_type: str | None = None
+    address: str | None = None
 
 
 class TenantUpdate(BaseModel):
-    name: Optional[str] = None
-    slug: Optional[str] = None
-    plan_type: Optional[str] = None
-    status: Optional[str] = None
-    quota_tokens_limit: Optional[int] = None
-    max_members: Optional[int] = None
-    max_patients: Optional[int] = None
-    contact_name: Optional[str] = None
-    contact_phone: Optional[str] = None
-    contact_email: Optional[str] = None
-    org_type: Optional[str] = None
-    address: Optional[str] = None
+    name: str | None = None
+    slug: str | None = None
+    plan_type: str | None = None
+    status: str | None = None
+    quota_tokens_limit: int | None = None
+    max_members: int | None = None
+    max_patients: int | None = None
+    contact_name: str | None = None
+    contact_phone: str | None = None
+    contact_email: str | None = None
+    org_type: str | None = None
+    address: str | None = None
 
 
 class TenantRead(BaseModel):
@@ -56,13 +56,13 @@ class TenantRead(BaseModel):
     plan_type: str
     quota_tokens_limit: int
     quota_tokens_used: int
-    max_members: Optional[int] = None
-    max_patients: Optional[int] = None
-    contact_name: Optional[str] = None
-    contact_phone: Optional[str] = None
-    contact_email: Optional[str] = None
-    org_type: Optional[str] = None
-    address: Optional[str] = None
+    max_members: int | None = None
+    max_patients: int | None = None
+    contact_name: str | None = None
+    contact_phone: str | None = None
+    contact_email: str | None = None
+    org_type: str | None = None
+    address: str | None = None
     org_count: int = 0
     created_at: datetime
 
@@ -75,8 +75,8 @@ class TenantRead(BaseModel):
 async def list_tenants(
     skip: int = 0,
     limit: int = 50,
-    search: Optional[str] = None,
-    status: Optional[str] = None,
+    search: str | None = None,
+    status: str | None = None,
     _perm=Depends(check_permission("tenant:manage")),
     db: AsyncSession = Depends(get_db),
 ):
