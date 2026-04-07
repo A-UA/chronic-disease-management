@@ -48,105 +48,80 @@ chronic-disease-management/
 ├── backend/
 │   ├── app/
 │   │   ├── main.py                    # 应用入口、SnowflakeJSONResponse、Telemetry + 插件初始化
-│   │   ├── api/
-│   │   │   ├── api.py                 # 路由注册中心（从 modules/ 导入所有路由）
-│   │   │   └── deps.py                # 依赖注入：认证、组织上下文、RBAC 权限校验、配额
-│   │   ├── core/
+│   │   ├── seed.py                    # 统一种子数据（RBAC + 菜单 + 超管账号）
+│   │   ├── base/                      # 基础设施层（原 core/ + db/session）
 │   │   │   ├── config.py              # pydantic-settings 配置（含 RAG + OTel + arq 参数）
-│   │   │   ├── exceptions.py          # 统一业务异常（NotFoundError/ForbiddenError/ConflictError/QuotaExceededError）
+│   │   │   ├── exceptions.py          # 统一业务异常
 │   │   │   ├── security.py            # JWT 签发/验证、Argon2 密码哈希
 │   │   │   ├── middleware.py          # X-Request-ID 请求追踪中间件
-│   │   │   └── snowflake.py           # 雪花 ID 生成器
-│   │   ├── modules/                   # 业务模块垂直切分（全部迁移完成）
-│   │   │   ├── auth/                  # 认证模块（router.py + email.py）
-│   │   │   ├── system/                # 系统模块（10 个 router_*.py + rbac/quota/settings 服务）
-│   │   │   ├── patient/               # 患者模块（4 个 router_*.py + health_alert 服务）
-│   │   │   ├── rag/                   # RAG 模块（检索、入库、引用、评估、上下文压缩）
+│   │   │   ├── snowflake.py           # 雪花 ID 生成器
+│   │   │   ├── storage.py             # MinIO 对象存储
+│   │   │   └── database.py            # AsyncSession 工厂（原 db/session.py）
+│   │   ├── models/                    # ORM 模型层（原 db/models/）
+│   │   │   ├── base.py                # Base + IDMixin + TimestampMixin
+│   │   │   ├── user.py, tenant.py, organization.py, rbac.py, menu.py
+│   │   │   ├── patient.py, health_metric.py, manager.py
+│   │   │   ├── knowledge.py, chat.py, audit.py, settings.py, api_key.py
+│   │   │   └── __init__.py            # 统一 re-export 所有模型
+│   │   ├── routers/                   # HTTP 路由层（薄适配器）
+│   │   │   ├── __init__.py            # 路由注册中心 api_router
+│   │   │   ├── deps.py                # 依赖注入：认证、RLS、RBAC、配额
+│   │   │   ├── auth/router.py         # 认证路由
+│   │   │   ├── audit/router.py        # 审计日志路由
+│   │   │   ├── patient/               # 患者路由（patients/health_metrics/family/managers）
+│   │   │   ├── system/                # 系统路由（10 个：dashboard/organizations/users/rbac/...）
+│   │   │   └── rag/                   # RAG 路由（chat/conversations/documents/knowledge_bases）
+│   │   ├── services/                  # 业务编排层
+│   │   │   ├── auth/email.py          # 邮件服务
+│   │   │   ├── audit/service.py       # 审计日志服务（audit_action / fire_audit）
+│   │   │   ├── patient/health_alert.py # 健康指标告警
+│   │   │   ├── system/                # 系统服务（quota.py / rbac.py / settings.py）
+│   │   │   └── rag/                   # RAG 服务（schemas.py / tasks.py）
+│   │   ├── ai/                        # AI 领域层
+│   │   │   ├── rag/                   # RAG 计算引擎
 │   │   │   │   ├── retrieval.py        # 混合检索管线（向量+关键词+RRF+Rerank）
-│   │   │   │   ├── ingestion.py        # 文档入库管线（Parser→Chunker→Embedding→Store）
-│   │   │   │   ├── citation.py         # 引用构建与声明-引用映射
+│   │   │   │   ├── ingestion.py        # 文档入库管线
+│   │   │   │   ├── citation.py         # 引用构建
 │   │   │   │   ├── context.py          # 对话上下文增强
 │   │   │   │   ├── compress.py         # 多轮对话历史压缩
-│   │   │   │   ├── query_rewrite.py    # 查询改写与多查询扩展
-│   │   │   │   ├── evaluation.py       # RAG 评估
-│   │   │   │   └── tasks.py            # arq 异步任务（文档入库 + 审计日志）
-│   │   │   ├── agent/                 # AI Agent 模块
-│   │   │   └── audit/                 # 审计模块（AuditLog、audit_action、fire_audit）
+│   │   │   │   ├── query_rewrite.py    # 查询改写
+│   │   │   │   └── evaluation.py       # RAG 评估
+│   │   │   └── agent/                 # AI Agent（LangGraph 状态机 + Skills）
+│   │   │       ├── graph.py, state.py, memory.py, security.py
+│   │   │       └── skills/            # 工具技能（patient/rag/calculator/markdown）
 │   │   ├── plugins/                   # AI 插件体系（配置驱动 + 延迟初始化）
 │   │   │   ├── registry.py            # PluginRegistry 统一注册中心
-│   │   │   ├── llm/                   # LLM 插件（Protocol + OpenAI-compatible 实现）
-│   │   │   ├── embedding/             # Embedding 插件（Protocol + OpenAI-compatible 实现）
-│   │   │   ├── reranker/              # Reranker 插件（noop / simple / openai_compatible）
-│   │   │   ├── parser/                # 文档解析器插件（pdf / text / docx）
-│   │   │   └── chunker/               # 切块策略插件（medical_heading）
+│   │   │   ├── llm/                   # LLM 插件
+│   │   │   ├── embedding/             # Embedding 插件
+│   │   │   ├── reranker/              # Reranker 插件
+│   │   │   ├── parser/                # 文档解析器插件
+│   │   │   └── chunker/               # 切块策略插件
 │   │   ├── tasks/                     # arq 异步任务队列
-│   │   │   └── worker.py              # arq Worker 配置（启动：uv run arq app.tasks.worker.WorkerSettings）
+│   │   │   └── worker.py              # arq Worker 配置
 │   │   ├── telemetry/                 # 可观测性基础设施
-│   │   │   ├── setup.py               # OpenTelemetry SDK 初始化
-│   │   │   ├── tracing.py             # trace_span + @traced 装饰器（noop 退化）
-│   │   │   └── logging.py             # 结构化日志
-│   │   ├── db/
-│   │   │   ├── models/                # 14 个 ORM 模型文件（Alembic 迁移源）
-│   │   │   ├── session.py             # AsyncSession 工厂
-│   │   │   └── seed_data.py           # 统一种子数据（RBAC + 菜单 + 超管账号）
+│   │   │   ├── setup.py, tracing.py, logging.py
 │   │   └── schemas/                   # Pydantic 请求/响应模型
 │   ├── alembic/                       # 数据库迁移脚本
 │   ├── tests/                         # 自动化测试
 │   ├── scripts/                       # 辅助脚本
 │   └── pyproject.toml                 # uv 依赖管理
-├── frontend/                          # Vite+ Monorepo
-│   ├── apps/
-│   │   └── website/                   # 管理后台应用
-│   │       ├── src/
-│   │       │   ├── main.tsx           # React 入口
-│   │       │   ├── global.css         # Tailwind 入口 + @theme 自定义 design token + 全局样式
-│   │       │   ├── api/               # HTTP 客户端与接口封装
-│   │       │   │   ├── client.ts      # ky 实例（Token 注入、401 拦截）
-│   │       │   │   ├── auth.ts        # 登录/选部门/切换部门/用户信息/菜单树
-│   │       │   │   ├── dashboard.ts   # 仪表盘统计
-│   │       │   │   ├── patients.ts    # 患者 CRUD
-│   │       │   │   ├── health-metrics.ts  # 健康指标趋势
-│   │       │   │   ├── knowledge.ts   # 知识库 + 文档管理
-│   │       │   │   ├── chat.ts        # AI 对话（SSE 流式）
-│   │       │   │   ├── members.ts     # 成员 + 角色权限
-│   │       │   │   └── audit.ts       # 审计日志
-│   │       │   ├── types/             # TypeScript 类型定义
-│   │       │   ├── stores/            # zustand 状态管理
-│   │       │   │   └── auth.ts        # 认证状态（token/user/menus/permissions/currentOrg/pendingOrgs）
-│   │       │   ├── hooks/             # 自定义 Hooks
-│   │       │   │   └── usePermission.ts   # 权限判断
-│   │       │   ├── router/            # 路由系统
-│   │       │   │   ├── index.tsx      # 路由入口
-│   │       │   │   ├── AuthRoute.tsx  # 登录态守卫
-│   │       │   │   ├── generateRoutes.ts  # 菜单 → 路由动态生成
-│   │       │   │   └── registry.tsx   # menu code → React 组件注册表
-│   │       │   ├── layouts/
-│   │       │   │   └── AdminLayout.tsx    # ProLayout 主布局
-│   │       │   ├── components/
-│   │       │   │   └── PageLoading.tsx    # 全局加载
-│   │       │   └── pages/
-│   │       │       ├── login/index.tsx        # 登录页（含多部门选择）
-│   │       │       ├── dashboard/index.tsx    # 仪表盘（统计卡片+趋势图）
-│   │       │       ├── patients/index.tsx     # 患者列表（ProTable）
-│   │       │       ├── patients/[id].tsx      # 患者详情
-│   │       │       ├── patients/components/HealthTrendChart.tsx  # 健康趋势图
-│   │       │       ├── knowledge/list.tsx     # 知识库列表
-│   │       │       ├── knowledge/documents.tsx # 文档管理
-│   │       │       ├── chat/index.tsx         # AI 问答（SSE 流式渲染）
-│   │       │       ├── members/index.tsx      # 成员管理
-│   │       │       ├── roles/index.tsx        # 角色权限
-│   │       │       ├── audit/index.tsx        # 操作审计日志
-│   │       │       ├── 403.tsx               # 无权限页
-│   │       │       └── 404.tsx               # 未找到页
-│   │       ├── vite.config.ts         # Vite 配置（React + Tailwind 插件 + 代理）
-│   │       └── tsconfig.json          # TypeScript 配置
+├── frontend/                          # Vite+ Monorepo（结构不变）
+│   ├── apps/website/src/              # 管理后台应用
 │   ├── packages/                      # 共享包（预留）
-│   ├── package.json                   # Monorepo 根配置
-│   ├── pnpm-workspace.yaml            # pnpm workspace
 │   └── vite.config.ts                 # Vite+ 全局配置
 ├── docker-compose.yml                 # PostgreSQL + Redis + MinIO
-└── GEMINI.md                          # 本文件
+└── AGENTS.md                          # 本文件
 ```
+
+### 架构分层（依赖方向：routers → services → ai → models → base）
+
+| 层级 | 目录 | 职责 | 禁止 |
+|------|------|------|------|
+| **路由层** | `routers/` | HTTP 适配、参数校验、依赖注入 | 禁止写 DB 查询 |
+| **服务层** | `services/` | 业务编排、事务管理、配额、审计 | 禁止直接调 LLM |
+| **AI 层** | `ai/` | 检索、Prompt、Agent 状态机 | 禁止自建 session |
+| **模型层** | `models/` | ORM 定义 | 禁止业务逻辑 |
+| **基础层** | `base/` | 配置、安全、数据库连接 | 禁止反向依赖 |
 
 ## 3. API 端点总览
 
@@ -318,7 +293,7 @@ docker compose up -d
 cd backend
 uv sync                              # 安装依赖
 uv run alembic upgrade head           # 数据库迁移
-uv run python -m app.db.seed_data     # 初始化种子数据（RBAC + 菜单 + 超管）
+uv run python -m app.seed             # 初始化种子数据（RBAC + 菜单 + 超管）
 uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
@@ -345,7 +320,7 @@ vp build                              # 生产构建
 
 ## 7. 种子数据
 
-统一入口：`app/db/seed_data.py`，运行命令 `uv run python -m app.db.seed_data`。
+统一入口：`app/seed.py`，运行命令 `uv run python -m app.seed`。
 
 在同一个事务中依次完成：
 
@@ -414,19 +389,24 @@ vp build                              # 生产构建
 
 ### 后端
 
+- **三层架构**：`routers/`（HTTP 适配）→ `services/`（业务编排）→ `ai/`（AI 计算），依赖严格单向
 - **ID 使用**：所有新表必须继承 `IDMixin`，默认生成 64 位雪花 ID
 - **类型提示**：ID 字段在 Python 中一律使用 `int` 类型
 - **接口返回**：直接返回 `int`，`SnowflakeJSONResponse` 自动处理 JS 精度转换
 - **插件体系**：新增 AI 能力优先通过 `PluginRegistry` 注册插件实现（`app/plugins/`）
-- **模块化**：所有业务逻辑均在 `app/modules/<module>/` 中，`services/` 和 `endpoints/` 已删除
-- **路由注册**：`api/api.py` 从各模块的 `router*.py` 导入路由，不再有 `endpoints/` 目录
+- **路由注册**：`routers/__init__.py` 为路由注册中心，新增路由在对应子目录创建后在此注册
+- **依赖注入**：`routers/deps.py` 提供认证、RLS、RBAC 等依赖，从 `app.routers.deps` 导入
+- **基础设施**：配置从 `app.base.config` 导入，安全从 `app.base.security`，数据库从 `app.base.database`
+- **模型导入**：从 `app.models` 导入（如 `from app.models import User, Patient`）
+- **服务调用**：审计用 `app.services.audit.service`，配额用 `app.services.system.quota`
+- **AI 调用**：检索用 `app.ai.rag.retrieval`，Agent 用 `app.ai.agent`
 - **导入规范**：不要在导入阶段初始化外部服务（延迟初始化模式）
 - **权限控制**：管理类接口使用 `check_permission("resource:action")` 依赖注入
 - **认证架构**：JWT 内嵌 tenant_id/org_id/roles，前端不解析 JWT，权限通过 `/auth/me` 获取
 - **组织隔离**：涉及租户数据的端点必须注入 `inject_rls_context`，RLS 策略在数据库层强制隔离
 - **审计日志**：敏感操作可用 `audit_action()`（事务内同步）或 `fire_audit()`（即发即忘异步）
 - **可观测性**：核心管线使用 `trace_span` / `@traced` 添加 OTel 链路追踪
-- **种子数据**：所有预制数据统一写入 `app/db/seed_data.py`
+- **种子数据**：所有预制数据统一写入 `app/seed.py`
 - **终端环境**：使用 PowerShell，命令用 `;` 分隔（不是 `&&`），注意 stderr 的 INFO 日志会导致假性 exit code 1
 
 ### 前端
@@ -458,6 +438,7 @@ vp build                              # 生产构建
 - [x] 健康指标异常告警逻辑（血压/血糖/心率/血氧/BMI）
 - [x] 多轮对话压缩（LLM 摘要 + 最近消息保留）
 - [x] 后端模块化重构：6 个业务模块 + 5 个 AI 插件族 + PluginRegistry
+- [x] 三层架构重构：routers/services/ai 分离，modules/ → 三层目录，core/ → base/，db/ → models/ + base/database
 - [x] OpenTelemetry 可观测性基础设施（trace_span / @traced / setup_telemetry）
 - [x] arq 异步任务队列（Worker 配置 + 文档入库/审计日志任务）
 - [x] 引用逻辑拆分（citation.py 独立模块）
