@@ -1,6 +1,7 @@
-"""Agent module public interface"""
+"""Agent module public interface."""
 from __future__ import annotations
 
+from functools import lru_cache
 from typing import Any
 
 from app.ai.agent.security import SecurityContext
@@ -9,24 +10,27 @@ from app.ai.agent.skills.base import skill_registry
 __all__ = ["SecurityContext", "skill_registry", "run_agent"]
 
 
+@lru_cache(maxsize=1)
+def _get_compiled_agent_graph():
+    from app.ai.agent.graph import build_agent_graph
+
+    return build_agent_graph().compile()
+
+
 async def run_agent(
     ctx: SecurityContext,
     query: str,
     kb_id: int,
     conversation_id: int | None = None,
 ) -> dict[str, Any]:
-    """Agent entry point"""
-    from app.ai.agent.graph import (
-        direct_answer_node,
-        rag_node,
-        router_node,
-        skill_node,
-    )
+    """Agent entry point."""
     from app.ai.agent.memory import prepare_query_with_memory
     from app.ai.agent.state import AgentState
 
     enhanced_query, history = await prepare_query_with_memory(
-        ctx, query, conversation_id,
+        ctx,
+        query,
+        conversation_id,
     )
 
     state: AgentState = {
@@ -39,26 +43,11 @@ async def run_agent(
         "iteration": 0,
         "max_iterations": 3,
     }
-
-    router_result = await router_node(state, ctx)
-    state.update(router_result)
-
-    next_node = state.pop("_next", "rag_node")
-
-    if "final_answer" in router_result and router_result["final_answer"]:
-        pass
-    elif next_node == "skill_node":
-        node_result = await skill_node(state, ctx)
-        state.update(node_result)
-    elif next_node == "direct_answer":
-        node_result = await direct_answer_node(state, ctx)
-        state.update(node_result)
-    else:
-        node_result = await rag_node(state, ctx)
-        state.update(node_result)
+    compiled_graph = _get_compiled_agent_graph()
+    final_state = await compiled_graph.ainvoke(state, config={"context": ctx})
 
     return {
-        "answer": state.get("final_answer", ""),
-        "citations": state.get("citations", []),
-        "skill_results": state.get("skill_results", []),
+        "answer": final_state.get("final_answer", ""),
+        "citations": final_state.get("citations", []),
+        "skill_results": final_state.get("skill_results", []),
     }

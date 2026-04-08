@@ -52,8 +52,13 @@ class WorkerSettings:
 
     @classmethod
     def collect_functions(cls):
-        from app.services.rag.tasks import process_document_task, write_audit_log_task
-        cls.functions = [process_document_task, write_audit_log_task]
+        from app.services.rag.tasks import (
+            delete_file_task,
+            process_document_task,
+            write_audit_log_task,
+        )
+
+        cls.functions = [process_document_task, write_audit_log_task, delete_file_task]
         return cls.functions
 
 

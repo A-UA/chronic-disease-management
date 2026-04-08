@@ -1,10 +1,9 @@
 import logging
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-from sqlalchemy import delete, func, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.base.storage import get_storage_service
 from app.models import Chunk, Document, KnowledgeBase, User
 from app.plugins.parser.base import DocumentParseError
 from app.routers.deps import (
@@ -16,7 +15,10 @@ from app.routers.deps import (
     get_current_org_id,
 )
 from app.schemas.document import DocumentRead
-from app.services.rag.document_service import upload_document_and_enqueue
+from app.services.rag.document_service import (
+    delete_document_and_enqueue_cleanup,
+    upload_document_and_enqueue,
+)
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -162,13 +164,7 @@ async def delete_document(
     if doc is None or doc.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    minio_url = doc.minio_url
-    if minio_url:
-        await get_storage_service().delete_file(minio_url)
-
-    stmt = delete(Document).where(Document.id == document_id)
-    await db.execute(stmt)
-    await db.commit()
+    await delete_document_and_enqueue_cleanup(document=doc, db=db)
     return {"message": "Document deleted successfully"}
 
 

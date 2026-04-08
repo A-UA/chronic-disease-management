@@ -51,6 +51,19 @@ class FakeDB:
         document.id = 9001
 
 
+class FakeDeleteDB:
+    def __init__(self):
+        self.executed = []
+        self.commits = 0
+
+    async def execute(self, stmt):
+        self.executed.append(stmt)
+        return None
+
+    async def commit(self):
+        self.commits += 1
+
+
 @pytest.mark.asyncio
 async def test_upload_document_and_enqueue_uses_parser_storage_and_queue(
     monkeypatch: pytest.MonkeyPatch,
@@ -176,3 +189,67 @@ def _async_return(value):
         return value
 
     return _inner
+
+
+@pytest.mark.asyncio
+async def test_delete_document_and_enqueue_cleanup_deletes_after_queue_submission(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("JWT_SECRET", "test-secret")
+    monkeypatch.setenv("API_KEY_SALT", "test-salt")
+
+    from app.services.rag import document_service as service_module
+
+    fake_db = FakeDeleteDB()
+    document = SimpleNamespace(id=77, minio_url="minio://report.pdf")
+    calls = []
+
+    async def fake_enqueue_delete_file_job(*, minio_url: str) -> None:
+        calls.append(minio_url)
+
+    monkeypatch.setattr(
+        service_module,
+        "enqueue_delete_file_job",
+        fake_enqueue_delete_file_job,
+    )
+
+    await service_module.delete_document_and_enqueue_cleanup(
+        document=document,
+        db=fake_db,
+    )
+
+    assert calls == ["minio://report.pdf"]
+    assert fake_db.commits == 1
+    assert len(fake_db.executed) == 1
+
+
+@pytest.mark.asyncio
+async def test_delete_document_and_enqueue_cleanup_does_not_commit_when_queue_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("JWT_SECRET", "test-secret")
+    monkeypatch.setenv("API_KEY_SALT", "test-salt")
+
+    from app.services.rag import document_service as service_module
+
+    fake_db = FakeDeleteDB()
+    document = SimpleNamespace(id=77, minio_url="minio://report.pdf")
+
+    async def fake_enqueue_delete_file_job(*, minio_url: str) -> None:
+        raise RuntimeError("redis down")
+
+    monkeypatch.setattr(
+        service_module,
+        "enqueue_delete_file_job",
+        fake_enqueue_delete_file_job,
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        await service_module.delete_document_and_enqueue_cleanup(
+            document=document,
+            db=fake_db,
+        )
+
+    assert exc_info.value.status_code == 500
+    assert fake_db.commits == 0
+    assert fake_db.executed == []

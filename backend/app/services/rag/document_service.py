@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 
 from fastapi import HTTPException, UploadFile
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.base.config import settings
@@ -11,7 +11,7 @@ from app.base.storage import get_storage_service
 from app.models import Document, KnowledgeBase, PatientProfile, User
 from app.plugins.parser.base import DocumentParseError
 from app.services.rag.provider_service import provider_service
-from app.services.rag.tasks import enqueue_process_document_job
+from app.services.rag.tasks import enqueue_delete_file_job, enqueue_process_document_job
 
 logger = logging.getLogger(__name__)
 
@@ -111,3 +111,19 @@ async def upload_document_and_enqueue(
         "minio_url": document.minio_url,
         "status": document.status,
     }
+
+
+async def delete_document_and_enqueue_cleanup(
+    *,
+    document,
+    db: AsyncSession,
+) -> None:
+    try:
+        if document.minio_url:
+            await enqueue_delete_file_job(minio_url=document.minio_url)
+    except Exception as exc:
+        logger.exception("Failed to enqueue file deletion")
+        raise HTTPException(status_code=500, detail="Document cleanup enqueue failed") from exc
+
+    await db.execute(delete(Document).where(Document.id == document.id))
+    await db.commit()

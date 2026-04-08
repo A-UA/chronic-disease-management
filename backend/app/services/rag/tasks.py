@@ -25,6 +25,15 @@ async def enqueue_process_document_job(
     )
 
 
+async def enqueue_delete_file_job(*, minio_url: str) -> None:
+    from arq import create_pool
+
+    from app.tasks.worker import WorkerSettings
+
+    redis = await create_pool(WorkerSettings.redis_settings)
+    await redis.enqueue_job("delete_file_task", minio_url)
+
+
 async def process_document_task(
     ctx: dict,
     document_id: int,
@@ -108,3 +117,10 @@ async def write_audit_log_task(
         )
         db.add(log)
         await db.commit()
+
+
+async def delete_file_task(ctx: dict, minio_url: str):
+    """arq task: delete a file from object storage."""
+    from app.base.storage import get_storage_service
+
+    await get_storage_service().delete_file(minio_url)
