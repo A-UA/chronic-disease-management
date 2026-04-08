@@ -1,6 +1,6 @@
 # 慢病管理多租户 AI SaaS — 项目指南
 
-更新时间：2026-04-07
+更新时间：2026-04-08
 
 ## 1. 项目概览
 
@@ -47,7 +47,7 @@
 chronic-disease-management/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py                    # 应用入口、SnowflakeJSONResponse、Telemetry + 插件初始化
+│   │   ├── main.py                    # 应用入口、SnowflakeJSONResponse、Telemetry + 插件初始化 + Provider 启动校验
 │   │   ├── seed.py                    # 统一种子数据（RBAC + 菜单 + 超管账号）
 │   │   ├── base/                      # 基础设施层（原 core/ + db/session）
 │   │   │   ├── config.py              # pydantic-settings 配置（含 RAG + OTel + arq 参数）
@@ -70,7 +70,7 @@ chronic-disease-management/
 │   │   │   ├── audit/router.py        # 审计日志路由
 │   │   │   ├── patient/               # 患者路由（patients/health_metrics/family/managers）
 │   │   │   ├── system/                # 系统路由（10 个：dashboard/organizations/users/rbac/...）
-│   │   │   └── rag/                   # RAG 路由（chat/conversations/documents/knowledge_bases）
+│   │   │   └── rag/                   # RAG 路由（chat_runtime/conversations/documents_runtime/knowledge_bases）
 │   │   ├── services/                  # 业务编排层
 │   │   │   ├── auth/email.py          # 邮件服务
 │   │   │   ├── audit/service.py       # 审计日志服务（audit_action / fire_audit）
@@ -86,7 +86,7 @@ chronic-disease-management/
 │   │   │   │   ├── compress.py         # 多轮对话历史压缩
 │   │   │   │   ├── query_rewrite.py    # 查询改写
 │   │   │   │   └── evaluation.py       # RAG 评估
-│   │   │   └── agent/                 # AI Agent（LangGraph 状态机 + Skills）
+│   │   │   └── agent/                 # AI Agent（LangGraph 真实图执行 + Skills）
 │   │   │       ├── graph.py, state.py, memory.py, security.py
 │   │   │       └── skills/            # 工具技能（patient/rag/calculator/markdown）
 │   │   ├── plugins/                   # AI 插件体系（配置驱动 + 延迟初始化）
@@ -142,9 +142,9 @@ chronic-disease-management/
 | `/health-metrics` | `health_metrics.py` | 健康指标录入（含异常告警检测）/查询/趋势/修改/删除 |
 | `/family` | `family.py` | 家属关联创建/查看/解绑、跨组织查看 |
 | `/managers` | `managers.py` | 管理师档案 CRUD、患者分配/取消、管理建议 CRUD |
-| `/chat` | `chat.py` | RAG 对话（SSE 流式）、配额校验、引用抽取 |
+| `/chat` | `chat_runtime.py` | RAG 对话（SSE 流式）、配额校验、引用抽取 |
 | `/conversations` | `conversations.py` | 对话管理（列表/详情/删除） |
-| `/documents` | `documents.py` | 文档上传/管理/状态 |
+| `/documents` | `documents_runtime.py` | 文档上传/管理/状态 |
 | `/kb` | `knowledge_bases.py` | 知识库 CRUD + 统计 |
 
 ### 组织与权限
@@ -440,12 +440,12 @@ vp build                              # 生产构建
 - [x] 后端模块化重构：6 个业务模块 + 5 个 AI 插件族 + PluginRegistry
 - [x] 三层架构重构：routers/services/ai 分离，modules/ → 三层目录，core/ → base/，db/ → models/ + base/database
 - [x] OpenTelemetry 可观测性基础设施（trace_span / @traced / setup_telemetry）
-- [x] arq 异步任务队列（Worker 配置 + 文档入库/审计日志任务）
+- [x] arq 异步任务队列（Worker 配置 + 文档入库/审计日志/文件删除任务）
 - [x] 引用逻辑拆分（citation.py 独立模块）
 
 ## 11. 测试覆盖
 
 ```
-后端：234 tests passed（模块层 + API 层 + 服务层 + RLS + 插件注册 + Telemetry）
+后端：21 tests passed（服务层 + 架构收敛回归 + 插件解析 + Agent 运行时）
 前端：vp check — 39 files, 0 error, 0 warning
 ```
