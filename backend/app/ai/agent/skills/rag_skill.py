@@ -10,10 +10,11 @@ async def rag_search_handler(
     if not query or not kb_id:
         return SkillResult(success=False, error="需要 query 和 kb_id 参数")
     try:
-        from app.ai.rag.chat_service import build_rag_prompt, retrieve_chunks
-        from app.plugins.provider_compat import registry
+        from app.ai.rag.prompt import build_rag_prompt
+        from app.ai.rag.retrieval import retrieve_chunks
+        from app.plugins.registry import PluginRegistry
 
-        llm = registry.get_llm()
+        llm = PluginRegistry.get("llm")
         chunks = await retrieve_chunks(
             db=ctx.db, query=query, kb_id=kb_id,
             org_id=ctx.org_id, user_id=ctx.user_id,

@@ -14,9 +14,9 @@ from app.routers.patient.managers import router as managers_router
 from app.routers.patient.patients import router as patients_router
 
 # RAG module
-from app.routers.rag.chat import router as chat_router
+from app.routers.rag.chat_runtime import router as chat_router
 from app.routers.rag.conversations import router as conversations_router
-from app.routers.rag.documents import router as documents_router
+from app.routers.rag.documents_runtime import router as documents_router
 from app.routers.rag.knowledge_bases import router as kb_router
 from app.routers.system.api_keys import router as api_keys_router
 from app.routers.system.dashboard import router as dashboard_router

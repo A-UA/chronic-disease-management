@@ -1,42 +1,30 @@
 import logging
 
-from fastapi import (
-    APIRouter,
-    BackgroundTasks,
-    Depends,
-    File,
-    Form,
-    HTTPException,
-    UploadFile,
-)
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.base.storage import get_storage_service
+from app.models import Chunk, Document, KnowledgeBase, User
+from app.plugins.parser.base import DocumentParseError
 from app.routers.deps import (
-    get_current_org_id,
     get_current_tenant_id,
     get_current_user,
     get_db,
     get_effective_org_id,
     inject_rls_context,
+    get_current_org_id,
 )
-from app.base.config import settings
-from app.base.storage import get_storage_service
-from app.models import Chunk, Document, KnowledgeBase, PatientProfile, User
-from app.ai.rag.document_parser import DocumentParseError, parse_document
-from app.ai.rag.ingestion_legacy import process_document
 from app.schemas.document import DocumentRead
+from app.services.rag.document_service import upload_document_and_enqueue
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
-
-MAX_UPLOAD_BYTES = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
 
 
 @router.post("/kb/{kb_id}/documents")
 async def upload_document(
     kb_id: int,
-    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     patient_id: int | None = Form(None),
     current_user: User = Depends(get_current_user),
@@ -45,69 +33,15 @@ async def upload_document(
     db: AsyncSession = Depends(get_db),
 ):
     try:
-        kb = await db.get(KnowledgeBase, kb_id)
-        if kb is None:
-            raise HTTPException(status_code=404, detail="Knowledge base not found")
-        if kb.tenant_id != tenant_id:
-            raise HTTPException(status_code=403, detail="Not enough permissions")
-
-        if patient_id is not None:
-            patient_stmt = select(PatientProfile.id).where(
-                PatientProfile.id == patient_id, PatientProfile.tenant_id == tenant_id
-            )
-            patient_result = await db.execute(patient_stmt)
-            if patient_result.scalar_one_or_none() is None:
-                raise HTTPException(status_code=404, detail="Patient profile not found")
-
-        # 流式读取 + 分块校验大小，避免大文件导致 OOM
-        chunks = []
-        total_size = 0
-        while True:
-            chunk = await file.read(1024 * 1024)  # 每次读 1MB
-            if not chunk:
-                break
-            total_size += len(chunk)
-            if total_size > MAX_UPLOAD_BYTES:
-                raise HTTPException(
-                    status_code=413,
-                    detail=f"文件大小超过最大限制 {settings.MAX_UPLOAD_SIZE_MB}MB",
-                )
-            chunks.append(chunk)
-        file_bytes = b"".join(chunks)
-
-        parsed = parse_document(file_bytes, file.filename, file.content_type)
-
-        minio_url = await get_storage_service().upload_file(
-            file_bytes=file_bytes,
-            filename=file.filename,
-            org_id=str(org_id),
-        )
-
-        document = Document(
+        return await upload_document_and_enqueue(
             kb_id=kb_id,
+            file=file,
+            patient_id=patient_id,
+            current_user=current_user,
             tenant_id=tenant_id,
             org_id=org_id,
-            uploader_id=current_user.id,
-            patient_id=patient_id,
-            file_name=file.filename,
-            file_type=file.content_type,
-            file_size=len(file_bytes),
-            minio_url=minio_url,
-            status="pending",
+            db=db,
         )
-        db.add(document)
-        await db.commit()
-        await db.refresh(document)
-
-        background_tasks.add_task(
-            process_document, document.id, parsed.text, org_id, parsed.pages
-        )
-
-        return {
-            "id": document.id,
-            "minio_url": document.minio_url,
-            "status": document.status,
-        }
     except DocumentParseError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except HTTPException:
@@ -115,6 +49,7 @@ async def upload_document(
     except Exception:
         logger.exception("文档上传处理失败")
         raise HTTPException(status_code=500, detail="文档上传处理失败，请稍后重试")
+
 
 @router.get("/kb/{kb_id}/documents", response_model=list[DocumentRead])
 async def list_documents(
@@ -127,12 +62,10 @@ async def list_documents(
     effective_org_id: int | None = Depends(get_effective_org_id),
     db: AsyncSession = Depends(get_db),
 ):
-    """查询知识库下的文档列表（含切块数）"""
     kb = await db.get(KnowledgeBase, kb_id)
     if kb is None or kb.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Knowledge base not found")
 
-    # 子查询：每个文档的切块数（排除软删除）
     chunk_count_sq = (
         select(
             Chunk.document_id,
@@ -187,15 +120,18 @@ async def get_document(
     tenant_id: int = Depends(inject_rls_context),
     db: AsyncSession = Depends(get_db),
 ):
-    """获取指定文档详情（含切块数）"""
     doc = await db.get(Document, document_id)
     if doc is None or doc.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    chunk_count = (await db.execute(
-        select(func.count(Chunk.id))
-        .where(Chunk.document_id == document_id, Chunk.deleted_at.is_(None))
-    )).scalar() or 0
+    chunk_count = (
+        await db.execute(
+            select(func.count(Chunk.id)).where(
+                Chunk.document_id == document_id,
+                Chunk.deleted_at.is_(None),
+            )
+        )
+    ).scalar() or 0
 
     return DocumentRead(
         id=doc.id,
@@ -218,20 +154,17 @@ async def get_document(
 @router.delete("/{document_id}", response_model=dict)
 async def delete_document(
     document_id: int,
-    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     tenant_id: int = Depends(inject_rls_context),
     db: AsyncSession = Depends(get_db),
 ):
-    """删除文档"""
     doc = await db.get(Document, document_id)
     if doc is None or doc.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    # 异步清理 MinIO 中的文件
     minio_url = doc.minio_url
     if minio_url:
-        background_tasks.add_task(get_storage_service().delete_file, minio_url)
+        await get_storage_service().delete_file(minio_url)
 
     stmt = delete(Document).where(Document.id == document_id)
     await db.execute(stmt)
@@ -246,7 +179,6 @@ async def get_document_status(
     tenant_id: int = Depends(inject_rls_context),
     db: AsyncSession = Depends(get_db),
 ):
-    """查询文档处理状态"""
     doc = await db.get(Document, document_id)
     if doc is None or doc.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Document not found")
@@ -257,4 +189,3 @@ async def get_document_status(
         "failed_reason": doc.failed_reason,
         "file_name": doc.file_name,
     }
-
