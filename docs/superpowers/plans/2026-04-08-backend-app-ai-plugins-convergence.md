@@ -3,7 +3,7 @@
 **Execution Status (2026-04-08):** Implemented in .worktrees/backend-app-convergence.
 Canonical chat, document ingestion, agent orchestration, and provider access paths are now live.
 Legacy runtime modules and compatibility wrappers listed in Tasks 8-9 were deleted.
-Verification completed with uv run pytest tests -v => 16 passed and code search returned NO_LEGACY_IMPORT_MATCHES.
+Verification completed with uv run pytest tests -v => 17 passed and code search returned NO_LEGACY_IMPORT_MATCHES.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

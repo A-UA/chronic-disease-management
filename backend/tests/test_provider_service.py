@@ -57,3 +57,47 @@ def test_provider_service_rejects_unsupported_parser_suffix() -> None:
 
     with pytest.raises(ProviderResolutionError):
         provider_service.get_parser_for_filename("report.xlsx")
+
+
+def test_provider_service_validates_runtime_dependencies(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.services.rag.provider_service import provider_service
+
+    calls: list[str] = []
+
+    monkeypatch.setattr(
+        provider_service,
+        "get_llm",
+        lambda: calls.append("llm") or object(),
+    )
+    monkeypatch.setattr(
+        provider_service,
+        "get_embedding",
+        lambda: calls.append("embedding") or object(),
+    )
+    monkeypatch.setattr(
+        provider_service,
+        "get_reranker",
+        lambda: calls.append("reranker") or object(),
+    )
+    monkeypatch.setattr(
+        provider_service,
+        "get_chunker",
+        lambda: calls.append("chunker") or object(),
+    )
+    monkeypatch.setattr(
+        provider_service,
+        "get_parser_for_filename",
+        lambda filename: calls.append(f"parser:{filename}") or object(),
+    )
+
+    provider_service.validate_runtime_dependencies()
+
+    assert calls == [
+        "llm",
+        "embedding",
+        "reranker",
+        "chunker",
+        "parser:bootstrap.pdf",
+    ]

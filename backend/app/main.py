@@ -14,6 +14,7 @@ from fastapi.responses import JSONResponse
 
 from app.routers import api_router
 from app.base.config import settings
+from app.services.rag.provider_service import provider_service
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +65,8 @@ import importlib as _importlib
 
 for _plugin in ("llm", "embedding", "reranker", "parser", "chunker"):
     _importlib.import_module(f"app.plugins.{_plugin}")
+
+provider_service.validate_runtime_dependencies()
 
 # 注册异常处理器以保护大整数精度
 @app.exception_handler(HTTPException)

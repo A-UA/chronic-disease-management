@@ -39,6 +39,13 @@ class ProviderService:
             raise ProviderResolutionError(f"Unsupported parser suffix: {suffix or 'unknown'}")
         return self.get_parser(parser_name)
 
+    def validate_runtime_dependencies(self) -> None:
+        self.get_llm()
+        self.get_embedding()
+        self.get_reranker()
+        self.get_chunker()
+        self.get_parser_for_filename("bootstrap.pdf")
+
     def _get(self, category: str, name: str | None = None) -> Any:
         try:
             return PluginRegistry.get(category, name)
