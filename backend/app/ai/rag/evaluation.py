@@ -4,7 +4,7 @@ import json
 import logging
 from typing import Any
 
-from app.plugins.provider_compat import registry
+from app.plugins.registry import PluginRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +15,7 @@ def _has_keyword_match(answer_text: str, expected_keywords: list[str]) -> bool:
 
 async def _llm_judge_correctness(query: str, answer: str, expected_answer: str) -> bool:
     """使用 LLM 作为裁判，判断回答是否与参考答案一致"""
-    llm = registry.get_llm()
+    llm = PluginRegistry.get("llm")
     prompt = (
         "You are an expert medical auditor. Compare the generated answer with the reference answer for the given query.\n"
         "Judge if the generated answer is factually correct and consistent with the reference.\n"

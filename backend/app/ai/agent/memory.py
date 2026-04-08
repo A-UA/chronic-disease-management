@@ -93,7 +93,7 @@ async def maybe_compress(
 ) -> None:
     """检查是否需要压缩对话历史（复用现有逻辑）"""
     from app.ai.rag.compress import maybe_compress_history
-    from app.plugins.provider_compat import registry
+    from app.plugins.registry import PluginRegistry
 
-    llm = registry.get_llm()
+    llm = PluginRegistry.get("llm")
     await maybe_compress_history(ctx.db, conversation_id, llm)

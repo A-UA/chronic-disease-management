@@ -1,4 +1,6 @@
-# Backend App/AI/Plugins Convergence Design
+﻿# Backend App/AI/Plugins Convergence Design
+
+**Implementation Note (2026-04-08):** This design has been executed in .worktrees/backend-app-convergence. Runtime entry points were converged to service-led paths, compatibility wrappers were removed, and legacy RAG modules were deleted after import migration and regression verification.
 
 **Date:** 2026-04-08
 
@@ -327,3 +329,4 @@ Mitigation:
 - `ai` modules no longer create their own sessions
 - route permission checks match seeded permission codes
 - canonical tests cover chat, ingestion, permissions, and agent orchestration
+

@@ -30,7 +30,7 @@ async def create_api_key(
     tenant_id: int = Depends(get_current_tenant_id),
     org_id: int = Depends(get_current_org_id),
     current_user: User = Depends(get_current_active_user),
-    _org_member=Depends(check_permission("org:manage")),
+    _org_member=Depends(check_permission("org_member:manage")),
     db: AsyncSession = Depends(get_db)
 ):
     """创建 API Key（需组织管理权限）"""
@@ -80,7 +80,7 @@ async def list_api_keys(
     skip: int = 0,
     limit: int = 50,
     org_id: int = Depends(get_current_org_id),
-    _org_member=Depends(check_permission("org:manage")),
+    _org_member=Depends(check_permission("org_member:manage")),
     db: AsyncSession = Depends(get_db)
 ):
     """列出当前组织的 API Keys"""
@@ -94,7 +94,7 @@ async def update_api_key(
     api_key_id: int,
     data: ApiKeyUpdate,
     org_id: int = Depends(get_current_org_id),
-    _org_member=Depends(check_permission("org:manage")),
+    _org_member=Depends(check_permission("org_member:manage")),
     db: AsyncSession = Depends(get_db)
 ):
     """更新 API Key 属性/状态"""
@@ -115,7 +115,7 @@ async def update_api_key(
 async def revoke_api_key(
     api_key_id: int,
     org_id: int = Depends(get_current_org_id),
-    _org_member=Depends(check_permission("org:manage")),
+    _org_member=Depends(check_permission("org_member:manage")),
     db: AsyncSession = Depends(get_db)
 ):
     """吊销 API Key"""

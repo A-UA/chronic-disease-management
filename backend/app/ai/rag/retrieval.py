@@ -16,7 +16,7 @@ from app.base.config import settings
 from app.models import Chunk, Document
 from app.ai.rag.query_rewrite import prepare_retrieval_query
 from app.services.system.quota import redis_client
-from app.plugins.provider_compat import registry
+from app.plugins.registry import PluginRegistry
 from app.telemetry.tracing import trace_span
 
 if TYPE_CHECKING:
@@ -373,7 +373,7 @@ async def retrieve_ranked_chunks(
                 return cached_results
 
         # 3. 多路检索
-        embedding_provider = registry.get_embedding()
+        embedding_provider = PluginRegistry.get("embedding")
         retrieved_by_id: dict[int, RetrievedChunk] = {}
 
         vector_weight = getattr(settings, "RAG_VECTOR_WEIGHT", 0.7)
@@ -450,7 +450,7 @@ async def retrieve_ranked_chunks(
 
         with trace_span("rag.rerank", {"candidates": len(fused_results)}):
             try:
-                reranker = registry.get_reranker()
+                reranker = PluginRegistry.get("reranker")
                 reranked_results = await reranker.rerank(search_query, fused_results, limit)
             except Exception:
                 logger.warning("Reranker failed; falling back to fused ranking")

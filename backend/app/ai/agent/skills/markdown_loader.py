@@ -85,7 +85,7 @@ def _make_prompt_handler(instructions: str, skill_dir: Path | None = None):
     """
 
     async def handler(ctx: SecurityContext, **params: Any) -> SkillResult:
-        from app.plugins.provider_compat import registry
+        from app.plugins.registry import PluginRegistry
 
         # 构建 prompt
         parts = [instructions]
@@ -108,7 +108,7 @@ def _make_prompt_handler(instructions: str, skill_dir: Path | None = None):
         parts.append("\n请基于以上指令和参数，用中文 Markdown 格式回答。")
 
         try:
-            llm = registry.get_llm()
+            llm = PluginRegistry.get("llm")
             response = await llm.complete_text("\n".join(parts))
             return SkillResult(success=True, data=response)
         except Exception as e:
