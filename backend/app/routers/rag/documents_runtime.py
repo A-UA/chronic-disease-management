@@ -7,12 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import Chunk, Document, KnowledgeBase, User
 from app.plugins.parser.base import DocumentParseError
 from app.routers.deps import (
+    get_current_org_id,
     get_current_tenant_id,
     get_current_user,
     get_db,
     get_effective_org_id,
     inject_rls_context,
-    get_current_org_id,
 )
 from app.schemas.document import DocumentRead
 from app.services.rag.document_service import (

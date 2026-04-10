@@ -15,14 +15,19 @@ def _sanitize_filename(filename: str) -> str:
     # 提取纯文件名（去除任何路径部分）
     basename = PurePosixPath(filename).name
     # 去除危险字符，仅保留字母数字中文下划线点号横线
-    safe_name = re.sub(r'[^\w\u4e00-\u9fff.\-]', '_', basename)
+    safe_name = re.sub(r"[^\w\u4e00-\u9fff.\-]", "_", basename)
     # 用 UUID 前缀避免文件名冲突
-    suffix = PurePosixPath(safe_name).suffix or ''
-    return f"{uuid.uuid4().hex[:12]}_{safe_name}" if safe_name else f"{uuid.uuid4().hex}{suffix}"
+    suffix = PurePosixPath(safe_name).suffix or ""
+    return (
+        f"{uuid.uuid4().hex[:12]}_{safe_name}"
+        if safe_name
+        else f"{uuid.uuid4().hex}{suffix}"
+    )
 
 
 class StorageService:
     """异步存储服务，避免 IO 阻塞"""
+
     def __init__(self):
         self.session = aioboto3.Session()
         self.endpoint_url = settings.MINIO_URL
@@ -61,7 +66,7 @@ class StorageService:
             if not minio_url.startswith(prefix):
                 logger.warning(f"无法解析 MinIO URL: {minio_url}")
                 return False
-            object_name = minio_url[len(prefix):]
+            object_name = minio_url[len(prefix) :]
             async with self._get_client() as s3:
                 await s3.delete_object(
                     Bucket=self.bucket_name,
@@ -75,6 +80,7 @@ class StorageService:
 
 
 _storage_service: StorageService | None = None
+
 
 def get_storage_service() -> StorageService:
     global _storage_service

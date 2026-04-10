@@ -6,14 +6,15 @@
     cd backend
     uv run python -m app.db.seed_data
 """
+
 import asyncio
 
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
+from app.base.database import AsyncSessionLocal as SessionLocal
 from app.models.menu import Menu
 from app.models.rbac import Action, Permission, Resource, Role
-from app.base.database import AsyncSessionLocal as SessionLocal
 
 # ═══════════════════════════════════════════════════════════
 #  1. RBAC 数据定义
@@ -21,11 +22,19 @@ from app.base.database import AsyncSessionLocal as SessionLocal
 
 RESOURCES = [
     {"name": "Patient Profile", "code": "patient", "description": "患者档案数据"},
-    {"name": "Management Suggestion", "code": "suggestion", "description": "慢病管理建议"},
+    {
+        "name": "Management Suggestion",
+        "code": "suggestion",
+        "description": "慢病管理建议",
+    },
     {"name": "Knowledge Base", "code": "kb", "description": "RAG 知识库"},
     {"name": "Document", "code": "doc", "description": "知识库文档"},
     {"name": "Organization User", "code": "org_member", "description": "机构成员管理"},
-    {"name": "Organization Usage", "code": "org_usage", "description": "机构配额与使用量"},
+    {
+        "name": "Organization Usage",
+        "code": "org_usage",
+        "description": "机构配额与使用量",
+    },
     {"name": "AI Chat", "code": "chat", "description": "AI 问答服务"},
     {"name": "Audit Log", "code": "audit_log", "description": "审计日志"},
     {"name": "Tenant", "code": "tenant", "description": "租户管理"},
@@ -63,18 +72,37 @@ PERMISSION_MAP = [
 # 角色只分配 API 权限；菜单可见性通过 menus.permission_code 自动关联
 ROLES = [
     # (code, name, description, [直接权限], parent_code)
-    ("staff", "基础成员", "机构基础职员",
-     ["chat:use", "patient:read", "suggestion:read"],
-     None),
-    ("manager", "管理人员", "健康管理师/主治医",
-     ["patient:create", "patient:update", "suggestion:create"],
-     "staff"),
-    ("admin", "管理员", "机构系统管理员",
-     ["patient:delete", "kb:manage", "doc:manage", "org_member:manage", "org_usage:read", "audit_log:read", "tenant:manage", "menu:manage"],
-     "manager"),
-    ("owner", "所有者", "机构主账户",
-     [],
-     "admin"),
+    (
+        "staff",
+        "基础成员",
+        "机构基础职员",
+        ["chat:use", "patient:read", "suggestion:read"],
+        None,
+    ),
+    (
+        "manager",
+        "管理人员",
+        "健康管理师/主治医",
+        ["patient:create", "patient:update", "suggestion:create"],
+        "staff",
+    ),
+    (
+        "admin",
+        "管理员",
+        "机构系统管理员",
+        [
+            "patient:delete",
+            "kb:manage",
+            "doc:manage",
+            "org_member:manage",
+            "org_usage:read",
+            "audit_log:read",
+            "tenant:manage",
+            "menu:manage",
+        ],
+        "manager",
+    ),
+    ("owner", "所有者", "机构主账户", [], "admin"),
 ]
 
 
@@ -83,20 +111,51 @@ ROLES = [
 # ═══════════════════════════════════════════════════════════
 
 SYSTEM_MENUS = [
-    {"code": "dashboard", "name": "控制台", "menu_type": "page", "path": "/dashboard",
-     "icon": "DashboardOutlined", "sort": 1, "permission_code": None},
-
-    {"code": "patient-mgmt", "name": "患者管理", "menu_type": "directory", "path": "/patients",
-     "icon": "TeamOutlined", "sort": 2, "permission_code": None},
-
-    {"code": "kb-mgmt", "name": "知识库管理", "menu_type": "directory", "path": "/knowledge",
-     "icon": "BookOutlined", "sort": 3, "permission_code": "kb:manage"},
-
-    {"code": "ai-chat", "name": "AI 问答", "menu_type": "page", "path": "/chat",
-     "icon": "MessageOutlined", "sort": 4, "permission_code": "chat:use"},
-
-    {"code": "system-mgmt", "name": "系统管理", "menu_type": "directory", "path": "/system",
-     "icon": "SettingOutlined", "sort": 5, "permission_code": None},
+    {
+        "code": "dashboard",
+        "name": "控制台",
+        "menu_type": "page",
+        "path": "/dashboard",
+        "icon": "DashboardOutlined",
+        "sort": 1,
+        "permission_code": None,
+    },
+    {
+        "code": "patient-mgmt",
+        "name": "患者管理",
+        "menu_type": "directory",
+        "path": "/patients",
+        "icon": "TeamOutlined",
+        "sort": 2,
+        "permission_code": None,
+    },
+    {
+        "code": "kb-mgmt",
+        "name": "知识库管理",
+        "menu_type": "directory",
+        "path": "/knowledge",
+        "icon": "BookOutlined",
+        "sort": 3,
+        "permission_code": "kb:manage",
+    },
+    {
+        "code": "ai-chat",
+        "name": "AI 问答",
+        "menu_type": "page",
+        "path": "/chat",
+        "icon": "MessageOutlined",
+        "sort": 4,
+        "permission_code": "chat:use",
+    },
+    {
+        "code": "system-mgmt",
+        "name": "系统管理",
+        "menu_type": "directory",
+        "path": "/system",
+        "icon": "SettingOutlined",
+        "sort": 5,
+        "permission_code": None,
+    },
 ]
 
 # 被新菜单替代的旧一级菜单 code，种子脚本执行时会自动删除
@@ -104,32 +163,98 @@ DEPRECATED_MENU_CODES = ["member-mgmt", "role-mgmt", "audit-logs"]
 
 CHILD_MENUS = {
     "patient-mgmt": [
-        {"code": "patient-list", "name": "患者列表", "menu_type": "page", "path": "/patients/list",
-         "sort": 1, "permission_code": "patient:read"},
-        {"code": "patient-metrics", "name": "健康指标", "menu_type": "page", "path": "/patients/metrics",
-         "sort": 2, "permission_code": "patient:read"},
-        {"code": "patient-suggestions", "name": "管理建议", "menu_type": "page", "path": "/patients/suggestions",
-         "sort": 3, "permission_code": "suggestion:read"},
+        {
+            "code": "patient-list",
+            "name": "患者列表",
+            "menu_type": "page",
+            "path": "/patients/list",
+            "sort": 1,
+            "permission_code": "patient:read",
+        },
+        {
+            "code": "patient-metrics",
+            "name": "健康指标",
+            "menu_type": "page",
+            "path": "/patients/metrics",
+            "sort": 2,
+            "permission_code": "patient:read",
+        },
+        {
+            "code": "patient-suggestions",
+            "name": "管理建议",
+            "menu_type": "page",
+            "path": "/patients/suggestions",
+            "sort": 3,
+            "permission_code": "suggestion:read",
+        },
     ],
     "kb-mgmt": [
-        {"code": "kb-list", "name": "知识库列表", "menu_type": "page", "path": "/knowledge/list",
-         "sort": 1, "permission_code": "kb:manage"},
-        {"code": "kb-documents", "name": "文档管理", "menu_type": "page", "path": "/knowledge/documents",
-         "sort": 2, "permission_code": "doc:manage"},
+        {
+            "code": "kb-list",
+            "name": "知识库列表",
+            "menu_type": "page",
+            "path": "/knowledge/list",
+            "sort": 1,
+            "permission_code": "kb:manage",
+        },
+        {
+            "code": "kb-documents",
+            "name": "文档管理",
+            "menu_type": "page",
+            "path": "/knowledge/documents",
+            "sort": 2,
+            "permission_code": "doc:manage",
+        },
     ],
     "system-mgmt": [
-        {"code": "sys-tenants", "name": "租户管理", "menu_type": "page", "path": "/system/tenants",
-         "sort": 1, "permission_code": "tenant:manage"},
-        {"code": "sys-orgs", "name": "组织管理", "menu_type": "page", "path": "/system/orgs",
-         "sort": 2, "permission_code": "org_member:manage"},
-        {"code": "sys-users", "name": "用户管理", "menu_type": "page", "path": "/system/users",
-         "sort": 3, "permission_code": "org_member:manage"},
-        {"code": "sys-roles", "name": "角色管理", "menu_type": "page", "path": "/system/roles",
-         "sort": 4, "permission_code": "org_member:manage"},
-        {"code": "sys-menus", "name": "菜单管理", "menu_type": "page", "path": "/system/menus",
-         "sort": 5, "permission_code": "menu:manage"},
-        {"code": "sys-audit", "name": "操作审计", "menu_type": "page", "path": "/system/audit",
-         "sort": 6, "permission_code": "audit_log:read"},
+        {
+            "code": "sys-tenants",
+            "name": "租户管理",
+            "menu_type": "page",
+            "path": "/system/tenants",
+            "sort": 1,
+            "permission_code": "tenant:manage",
+        },
+        {
+            "code": "sys-orgs",
+            "name": "组织管理",
+            "menu_type": "page",
+            "path": "/system/orgs",
+            "sort": 2,
+            "permission_code": "org_member:manage",
+        },
+        {
+            "code": "sys-users",
+            "name": "用户管理",
+            "menu_type": "page",
+            "path": "/system/users",
+            "sort": 3,
+            "permission_code": "org_member:manage",
+        },
+        {
+            "code": "sys-roles",
+            "name": "角色管理",
+            "menu_type": "page",
+            "path": "/system/roles",
+            "sort": 4,
+            "permission_code": "org_member:manage",
+        },
+        {
+            "code": "sys-menus",
+            "name": "菜单管理",
+            "menu_type": "page",
+            "path": "/system/menus",
+            "sort": 5,
+            "permission_code": "menu:manage",
+        },
+        {
+            "code": "sys-audit",
+            "name": "操作审计",
+            "menu_type": "page",
+            "path": "/system/audit",
+            "sort": 6,
+            "permission_code": "audit_log:read",
+        },
     ],
 }
 
@@ -163,6 +288,7 @@ DEFAULT_ORG = {
 # ═══════════════════════════════════════════════════════════
 #  执行函数
 # ═══════════════════════════════════════════════════════════
+
 
 async def seed_rbac(db):
     """初始化 RBAC：资源 → 操作 → 权限 → 角色"""
@@ -200,10 +326,12 @@ async def seed_rbac(db):
         obj = (await db.execute(stmt)).scalar_one_or_none()
         if not obj:
             obj = Permission(
-                name=p_name, code=p_code,
+                name=p_name,
+                code=p_code,
                 resource_id=resource_objs[r_code].id,
                 action_id=action_objs[a_code].id,
-                permission_type=p_type, ui_metadata=ui_meta,
+                permission_type=p_type,
+                ui_metadata=ui_meta,
             )
             db.add(obj)
             await db.flush()
@@ -217,9 +345,11 @@ async def seed_rbac(db):
     # Roles (pass 1: create)
     role_objs = {}
     for r_code, r_name, r_desc, p_codes, _ in ROLES:
-        stmt = (select(Role)
-                .where(Role.code == r_code, Role.tenant_id == None)
-                .options(selectinload(Role.permissions)))
+        stmt = (
+            select(Role)
+            .where(Role.code == r_code, Role.tenant_id == None)
+            .options(selectinload(Role.permissions))
+        )
         role = (await db.execute(stmt)).scalar_one_or_none()
         perms = [permission_objs[c] for c in p_codes]
         if not role:
@@ -335,7 +465,10 @@ async def seed_super_admin(db, role_objs: dict):
 
     # 4. 关联到部门
     org_user = OrganizationUser(
-        tenant_id=tenant.id, org_id=org.id, user_id=user.id, user_type="staff",
+        tenant_id=tenant.id,
+        org_id=org.id,
+        user_id=user.id,
+        user_type="staff",
     )
     db.add(org_user)
     await db.flush()
@@ -343,15 +476,21 @@ async def seed_super_admin(db, role_objs: dict):
     # 5. 分配 owner 角色
     owner_role = role_objs.get("owner")
     if owner_role:
-        db.add(OrganizationUserRole(
-            tenant_id=tenant.id, org_id=org.id,
-            user_id=user.id, role_id=owner_role.id,
-        ))
+        db.add(
+            OrganizationUserRole(
+                tenant_id=tenant.id,
+                org_id=org.id,
+                user_id=user.id,
+                role_id=owner_role.id,
+            )
+        )
         print(f"  + Role: owner → {user.email}")
     else:
         print("  [WARN] owner role not found")
 
-    print(f"  [OK] SuperAdmin ready: {SUPER_ADMIN['email']} / {SUPER_ADMIN['password']}")
+    print(
+        f"  [OK] SuperAdmin ready: {SUPER_ADMIN['email']} / {SUPER_ADMIN['password']}"
+    )
 
 
 async def main():

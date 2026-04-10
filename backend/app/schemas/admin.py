@@ -30,6 +30,7 @@ class TokenTrendItem(BaseModel):
     date: str
     tokens: int
 
+
 class DashboardStats(BaseModel):
     total_organizations: int
     total_users: int

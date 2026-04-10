@@ -1,4 +1,5 @@
 """OpenAI 兼容 LLM 插件实现"""
+
 import logging
 from collections.abc import AsyncGenerator
 
@@ -70,7 +71,9 @@ def _create_llm_plugin() -> OpenAICompatibleLLMPlugin:
         raise ValueError("请设置 LLM_API_KEY")
     if not settings.LLM_BASE_URL:
         raise ValueError("请设置 LLM_BASE_URL")
-    logger.info("LLM Plugin: model=%s, base_url=%s", settings.CHAT_MODEL, settings.LLM_BASE_URL)
+    logger.info(
+        "LLM Plugin: model=%s, base_url=%s", settings.CHAT_MODEL, settings.LLM_BASE_URL
+    )
     client = AsyncOpenAI(api_key=settings.LLM_API_KEY, base_url=settings.LLM_BASE_URL)
     return OpenAICompatibleLLMPlugin(client, model_name=settings.CHAT_MODEL)
 

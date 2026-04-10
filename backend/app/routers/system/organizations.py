@@ -7,13 +7,6 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.routers.deps import (
-    check_permission,
-    get_current_org_id,
-    get_current_tenant_id,
-    get_current_user,
-    get_db,
-)
 from app.models import (
     Organization,
     OrganizationInvitation,
@@ -21,6 +14,13 @@ from app.models import (
     OrganizationUserRole,
     Role,
     User,
+)
+from app.routers.deps import (
+    check_permission,
+    get_current_org_id,
+    get_current_tenant_id,
+    get_current_user,
+    get_db,
 )
 from app.schemas.organization import (
     OrganizationCreate,
@@ -34,10 +34,10 @@ from app.schemas.organization import (
 
 router = APIRouter()
 
+
 @router.get("/me", response_model=list[OrganizationReadAdmin])
 async def get_my_organizations(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ) -> Any:
     """[通用] 获取当前用户所属的所有机构"""
     stmt = (
@@ -48,6 +48,7 @@ async def get_my_organizations(
     result = await db.execute(stmt)
     return result.scalars().all()
 
+
 @router.get("")
 async def list_organizations(
     skip: int = 0,
@@ -55,29 +56,36 @@ async def list_organizations(
     search: str | None = None,
     tenant_id: int = Depends(get_current_tenant_id),
     _permission=Depends(check_permission("org_member:manage")),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """[管理视图] 列出当前租户的所有组织"""
     from sqlalchemy import func
+
     base = select(Organization).where(Organization.tenant_id == tenant_id)
     if search:
         base = base.where(
-            Organization.name.ilike(f"%{search}%") | Organization.code.ilike(f"%{search}%")
+            Organization.name.ilike(f"%{search}%")
+            | Organization.code.ilike(f"%{search}%")
         )
 
     count_stmt = select(func.count()).select_from(base.subquery())
     total = (await db.execute(count_stmt)).scalar() or 0
 
-    stmt = base.order_by(Organization.sort, Organization.created_at.desc()).offset(skip).limit(limit)
+    stmt = (
+        base.order_by(Organization.sort, Organization.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+    )
     result = await db.execute(stmt)
     return {"total": total, "items": result.scalars().all()}
+
 
 @router.post("", response_model=OrganizationReadPublic)
 async def create_organization(
     org_in: OrganizationCreate,
     tenant_id: int = Depends(get_current_tenant_id),
     _permission=Depends(check_permission("org_member:manage")),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """[管理视图] 创建新机构（tenant_id 从 JWT 自动注入）"""
     # 使用请求体中的 tenant_id，如果未提供则从 JWT 上下文取
@@ -89,7 +97,9 @@ async def create_organization(
         Organization.code == org_in.code,
     )
     if (await db.execute(stmt)).scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Organization code already exists in this tenant")
+        raise HTTPException(
+            status_code=400, detail="Organization code already exists in this tenant"
+        )
 
     org = Organization(
         tenant_id=effective_tenant_id,
@@ -139,9 +149,12 @@ async def delete_organization(
 
     # 检查组织下是否还有成员
     from sqlalchemy import func as sqlfunc
-    member_count = (await db.execute(
-        select(sqlfunc.count()).where(OrganizationUser.org_id == org_id)
-    )).scalar() or 0
+
+    member_count = (
+        await db.execute(
+            select(sqlfunc.count()).where(OrganizationUser.org_id == org_id)
+        )
+    ).scalar() or 0
     if member_count > 0:
         raise HTTPException(
             status_code=409,
@@ -157,27 +170,29 @@ async def delete_organization(
 async def get_organization_members(
     org_id: int,
     _permission=Depends(check_permission("org_member:manage")),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ) -> Any:
     """[管理视图] 获取机构成员列表 (含角色)"""
     stmt = (
         select(OrganizationUser)
         .options(
             selectinload(OrganizationUser.user),
-            selectinload(OrganizationUser.rbac_roles).selectinload(Role.permissions)
+            selectinload(OrganizationUser.rbac_roles).selectinload(Role.permissions),
         )
         .where(OrganizationUser.org_id == org_id)
     )
     result = await db.execute(stmt)
     members = []
     for org_user in result.scalars().all():
-        members.append({
-            "user_id": org_user.user.id,
-            "email": org_user.user.email,
-            "name": org_user.user.name,
-            "roles": [r.code for r in org_user.rbac_roles],
-            "user_type": org_user.user_type,
-        })
+        members.append(
+            {
+                "user_id": org_user.user.id,
+                "email": org_user.user.email,
+                "name": org_user.user.name,
+                "roles": [r.code for r in org_user.rbac_roles],
+                "user_type": org_user.user_type,
+            }
+        )
     return members
 
 
@@ -210,7 +225,9 @@ async def add_organization_member(
         OrganizationUser.user_id == data.user_id,
     )
     if (await db.execute(stmt)).scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="User is already a member of this organization")
+        raise HTTPException(
+            status_code=400, detail="User is already a member of this organization"
+        )
 
     # 添加到组织
     org_user = OrganizationUser(
@@ -224,12 +241,14 @@ async def add_organization_member(
 
     # 分配角色
     for rid in data.role_ids:
-        db.add(OrganizationUserRole(
-            tenant_id=tenant_id,
-            org_id=org_id,
-            user_id=data.user_id,
-            role_id=rid,
-        ))
+        db.add(
+            OrganizationUserRole(
+                tenant_id=tenant_id,
+                org_id=org_id,
+                user_id=data.user_id,
+                role_id=rid,
+            )
+        )
 
     await db.commit()
     return {"status": "ok"}
@@ -240,13 +259,12 @@ async def remove_organization_member(
     org_id: int,
     user_id: int,
     _org_member=Depends(check_permission("org_member:manage")),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """[管理视图] 移除机构成员"""
     # 不能移除最后一名成员的保护逻辑（可选），或直接删除关联
     stmt = delete(OrganizationUser).where(
-        OrganizationUser.org_id == org_id,
-        OrganizationUser.user_id == user_id
+        OrganizationUser.org_id == org_id, OrganizationUser.user_id == user_id
     )
     result = await db.execute(stmt)
     if result.rowcount == 0:
@@ -254,19 +272,21 @@ async def remove_organization_member(
     await db.commit()
     return {"message": "Member removed successfully"}
 
+
 @router.get("/{org_id}/invitations", response_model=list[OrganizationInvitationRead])
 async def list_invitations(
     org_id: int,
     _org_member=Depends(check_permission("org_member:manage")),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """[管理视图] 列出机构的待处理邀请"""
     stmt = select(OrganizationInvitation).where(
         OrganizationInvitation.org_id == org_id,
-        OrganizationInvitation.status == "pending"
+        OrganizationInvitation.status == "pending",
     )
     result = await db.execute(stmt)
     return result.scalars().all()
+
 
 @router.post("/{org_id}/invitations", response_model=OrganizationInvitationRead)
 async def create_invitation(
@@ -275,7 +295,7 @@ async def create_invitation(
     current_user: User = Depends(get_current_user),
     tenant_id: int = Depends(get_current_tenant_id),
     _org_member=Depends(check_permission("org_member:manage")),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """[管理视图] 发起组织邀请"""
     # 检查目标用户是否已经是组织成员
@@ -285,7 +305,7 @@ async def create_invitation(
     if target_user:
         member_stmt = select(OrganizationUser).where(
             OrganizationUser.org_id == org_id,
-            OrganizationUser.user_id == target_user.id
+            OrganizationUser.user_id == target_user.id,
         )
         if (await db.execute(member_stmt)).scalar_one_or_none():
             raise HTTPException(status_code=400, detail="User is already a member")
@@ -301,28 +321,31 @@ async def create_invitation(
         role=invitation_in.role,
         token=token,
         status="pending",
-        expires_at=expires_at
+        expires_at=expires_at,
     )
     db.add(invitation)
     await db.commit()
     await db.refresh(invitation)
     return invitation
 
+
 @router.post("/invitations/{token}/accept", response_model=dict)
 async def accept_invitation(
     token: str,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """[通用] 接受组织邀请"""
     stmt = select(OrganizationInvitation).where(
         OrganizationInvitation.token == token,
-        OrganizationInvitation.status == "pending"
+        OrganizationInvitation.status == "pending",
     )
     invitation = (await db.execute(stmt)).scalar_one_or_none()
 
     if not invitation:
-        raise HTTPException(status_code=404, detail="Invalid or expired invitation token")
+        raise HTTPException(
+            status_code=404, detail="Invalid or expired invitation token"
+        )
 
     # Python 的 naive datetime 和 current_user 兼容处理
     if invitation.expires_at.tzinfo is None:
@@ -336,7 +359,9 @@ async def accept_invitation(
         raise HTTPException(status_code=400, detail="Invitation has expired")
 
     if current_user.email != invitation.email:
-        raise HTTPException(status_code=403, detail="Invitation is for another email address")
+        raise HTTPException(
+            status_code=403, detail="Invitation is for another email address"
+        )
 
     # 查找邀请对应的组织以获取 tenant_id
     org = await db.get(Organization, invitation.org_id)
@@ -347,22 +372,18 @@ async def accept_invitation(
         tenant_id=t_id,
         org_id=invitation.org_id,
         user_id=current_user.id,
-        user_type="staff"
+        user_type="staff",
     )
     db.add(org_user)
 
     # 查找邀请指定的角色
-    role_stmt = select(Role).where(
-        Role.code == invitation.role,
-        Role.tenant_id == t_id
-    )
+    role_stmt = select(Role).where(Role.code == invitation.role, Role.tenant_id == t_id)
     role = (await db.execute(role_stmt)).scalar_one_or_none()
 
     # 回退到找系统级角色
     if not role:
         sys_role_stmt = select(Role).where(
-            Role.code == invitation.role,
-            Role.tenant_id.is_(None)
+            Role.code == invitation.role, Role.tenant_id.is_(None)
         )
         role = (await db.execute(sys_role_stmt)).scalar_one_or_none()
 
@@ -371,7 +392,7 @@ async def accept_invitation(
             tenant_id=t_id,
             org_id=invitation.org_id,
             user_id=current_user.id,
-            role_id=role.id
+            role_id=role.id,
         )
         db.add(user_role)
 

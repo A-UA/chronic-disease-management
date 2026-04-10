@@ -44,7 +44,9 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
         if not texts:
             return []
         try:
-            response = await self.client.embeddings.create(model=self.model_name, input=texts)
+            response = await self.client.embeddings.create(
+                model=self.model_name, input=texts
+            )
             embeddings = [item.embedding for item in response.data]
             if embeddings and self._dimension is None:
                 self._dimension = len(embeddings[0])
@@ -63,7 +65,9 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
         if not text:
             return []
         try:
-            response = await self.client.embeddings.create(model=self.model_name, input=text)
+            response = await self.client.embeddings.create(
+                model=self.model_name, input=text
+            )
             embedding = response.data[0].embedding
             if self._dimension is None:
                 self._dimension = len(embedding)
@@ -96,6 +100,8 @@ def get_embedding_provider() -> EmbeddingProvider:
             "常见厂商地址参考 .env.example"
         )
 
-    logger.info("Embedding Provider: model=%s, base_url=%s", settings.EMBEDDING_MODEL, base_url)
+    logger.info(
+        "Embedding Provider: model=%s, base_url=%s", settings.EMBEDDING_MODEL, base_url
+    )
     client = AsyncOpenAI(api_key=api_key, base_url=base_url)
     return OpenAIEmbeddingProvider(client, model_name=settings.EMBEDDING_MODEL)

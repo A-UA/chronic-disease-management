@@ -4,6 +4,7 @@ Revision ID: rls_policies_001
 Revises: 4cf086a0a0c3
 Create Date: 2026-04-05
 """
+
 from alembic import op
 
 revision = "rls_policies_001"
@@ -186,11 +187,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    all_tables = (
-        TENANT_TABLES
-        + NULLABLE_TENANT_TABLES
-        + [FAMILY_LINK_TABLE, "menus"]
-    )
+    all_tables = TENANT_TABLES + NULLABLE_TENANT_TABLES + [FAMILY_LINK_TABLE, "menus"]
     for table in all_tables:
         op.execute(f"""
             DO $$ DECLARE

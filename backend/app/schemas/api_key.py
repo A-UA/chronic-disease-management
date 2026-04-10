@@ -9,12 +9,14 @@ class ApiKeyCreate(BaseModel):
     token_quota: int | None = None
     expires_at: datetime | None = None
 
+
 class ApiKeyUpdate(BaseModel):
     name: str | None = None
     qps_limit: int | None = None
     token_quota: int | None = None
     status: str | None = None
     expires_at: datetime | None = None
+
 
 class ApiKeyRead(BaseModel):
     id: int
@@ -31,6 +33,7 @@ class ApiKeyRead(BaseModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
 
 class ApiKeyCreateResponse(ApiKeyRead):
     raw_key: str

@@ -9,36 +9,40 @@ class Conversation(Base, IDMixin, TimestampMixin):
     __tablename__ = "conversations"
 
     tenant_id: Mapped[int] = mapped_column(
-        ForeignKey("tenants.id", ondelete="CASCADE"), index=True,
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        index=True,
     )
     kb_id: Mapped[int] = mapped_column(
         ForeignKey("knowledge_bases.id", ondelete="CASCADE"),
     )
     org_id: Mapped[int] = mapped_column(
-        ForeignKey("organizations.id", ondelete="CASCADE"), index=True,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        index=True,
     )
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     title: Mapped[str] = mapped_column(String(255), nullable=True)
 
-    __table_args__ = (
-        Index("idx_conversations_tenant_user", "tenant_id", "user_id"),
-    )
+    __table_args__ = (Index("idx_conversations_tenant_user", "tenant_id", "user_id"),)
 
 
 class Message(Base, IDMixin, TimestampMixin):
     __tablename__ = "messages"
 
     tenant_id: Mapped[int] = mapped_column(
-        ForeignKey("tenants.id", ondelete="CASCADE"), index=True,
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        index=True,
     )
     conversation_id: Mapped[int] = mapped_column(
-        ForeignKey("conversations.id", ondelete="CASCADE"), index=True,
+        ForeignKey("conversations.id", ondelete="CASCADE"),
+        index=True,
     )
     org_id: Mapped[int] = mapped_column(
-        ForeignKey("organizations.id", ondelete="CASCADE"), index=True,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        index=True,
     )
     role: Mapped[str] = mapped_column(
-        String(50), nullable=False,
+        String(50),
+        nullable=False,
     )  # user, assistant, system
     content: Mapped[str] = mapped_column(Text, nullable=False)
     metadata_: Mapped[dict] = mapped_column("metadata", JSONB, nullable=True)
@@ -48,14 +52,17 @@ class UsageLog(Base, IDMixin, TimestampMixin):
     __tablename__ = "usage_logs"
 
     tenant_id: Mapped[int] = mapped_column(
-        ForeignKey("tenants.id", ondelete="CASCADE"), index=True,
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        index=True,
     )
     org_id: Mapped[int] = mapped_column(
-        ForeignKey("organizations.id", ondelete="CASCADE"), index=True,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        index=True,
     )
     user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     api_key_id: Mapped[int | None] = mapped_column(
-        ForeignKey("api_keys.id"), nullable=True,
+        ForeignKey("api_keys.id"),
+        nullable=True,
     )
 
     model: Mapped[str] = mapped_column(String(100), nullable=False)

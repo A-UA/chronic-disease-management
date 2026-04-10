@@ -4,6 +4,7 @@
 - conversation_context.is_likely_follow_up + build_retrieval_query_from_history
 - conversation_compress.maybe_compress_history
 """
+
 from __future__ import annotations
 
 import logging
@@ -11,12 +12,12 @@ from typing import Any
 
 from sqlalchemy import select
 
-from app.models import Message
 from app.ai.agent.security import SecurityContext
 from app.ai.rag.context import (
     build_retrieval_query_from_history,
     is_likely_follow_up,
 )
+from app.models import Message
 
 logger = logging.getLogger(__name__)
 

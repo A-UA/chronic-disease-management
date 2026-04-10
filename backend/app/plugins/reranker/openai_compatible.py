@@ -1,4 +1,5 @@
 """OpenAI Compatible Reranker — 基于 LLM 的重排序"""
+
 import json
 import logging
 from collections.abc import Sequence
@@ -32,7 +33,7 @@ class OpenAICompatibleRerankerPlugin:
         ]
         prompt = (
             "You are a retrieval reranker. Rank the most relevant chunks for the user query. "
-            "Return strict JSON with the shape {\"ranked_results\":[{\"chunk_id\":\"...\",\"score\":0.0}]}. "
+            'Return strict JSON with the shape {"ranked_results":[{"chunk_id":"...","score":0.0}]}. '
             "Use higher score for more relevant chunks and include at most the requested limit.\n\n"
             f"Query: {query}\n"
             f"Limit: {limit}\n"

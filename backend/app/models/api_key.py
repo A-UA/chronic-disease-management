@@ -10,10 +10,12 @@ class ApiKey(Base, IDMixin, TimestampMixin):
     __tablename__ = "api_keys"
 
     tenant_id: Mapped[int] = mapped_column(
-        ForeignKey("tenants.id", ondelete="CASCADE"), index=True,
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        index=True,
     )
     org_id: Mapped[int] = mapped_column(
-        ForeignKey("organizations.id", ondelete="CASCADE"), index=True,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        index=True,
     )
     created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
     name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -26,6 +28,8 @@ class ApiKey(Base, IDMixin, TimestampMixin):
     token_used: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
 
     status: Mapped[str] = mapped_column(
-        String(50), default="active", server_default="active",
+        String(50),
+        default="active",
+        server_default="active",
     )
     expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

@@ -1,16 +1,9 @@
-
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.routers.deps import (
-    check_org_admin,
-    get_current_org_id,
-    get_current_tenant_id,
-    get_db,
-)
 from app.models import (
     Action,
     OrganizationUser,
@@ -19,11 +12,18 @@ from app.models import (
     Resource,
     Role,
 )
+from app.routers.deps import (
+    check_org_admin,
+    get_current_org_id,
+    get_current_tenant_id,
+    get_db,
+)
+from app.schemas.rbac import RoleCreate, RoleRead
 from app.services.audit.service import audit_action
 from app.services.system.rbac import RBACService
-from app.schemas.rbac import RoleCreate, RoleRead
 
 router = APIRouter()
+
 
 @router.get("/resources", response_model=list[dict])
 async def list_resources(
@@ -33,7 +33,10 @@ async def list_resources(
     """[管理员] 获取系统受保护资源字典"""
     stmt = select(Resource)
     result = await db.execute(stmt)
-    return [{"id": r.id, "name": r.name, "code": r.code} for r in result.scalars().all()]
+    return [
+        {"id": r.id, "name": r.name, "code": r.code} for r in result.scalars().all()
+    ]
+
 
 @router.get("/actions", response_model=list[dict])
 async def list_actions(
@@ -43,7 +46,10 @@ async def list_actions(
     """[管理员] 获取系统操作行为字典"""
     stmt = select(Action)
     result = await db.execute(stmt)
-    return [{"id": a.id, "name": a.name, "code": a.code} for a in result.scalars().all()]
+    return [
+        {"id": a.id, "name": a.name, "code": a.code} for a in result.scalars().all()
+    ]
+
 
 @router.get("/permissions", response_model=list[dict])
 async def list_permissions(
@@ -53,7 +59,10 @@ async def list_permissions(
     """[管理员] 获取系统所有权限列表"""
     stmt = select(Permission)
     result = await db.execute(stmt)
-    return [{"id": p.id, "name": p.name, "code": p.code} for p in result.scalars().all()]
+    return [
+        {"id": p.id, "name": p.name, "code": p.code} for p in result.scalars().all()
+    ]
+
 
 @router.get("/roles")
 async def list_roles(
@@ -64,6 +73,7 @@ async def list_roles(
 ):
     """获取本组织可用角色列表（含用户计数）"""
     from sqlalchemy import func
+
     stmt = (
         select(Role)
         .options(selectinload(Role.permissions))
@@ -77,20 +87,29 @@ async def list_roles(
         # 统计该角色绑定的用户数
         count_stmt = select(func.count()).where(OrganizationUserRole.role_id == role.id)
         user_count = (await db.execute(count_stmt)).scalar() or 0
-        items.append({
-            "id": role.id,
-            "name": role.name,
-            "code": role.code,
-            "description": role.description,
-            "is_system": role.is_system,
-            "parent_role_id": role.parent_role_id,
-            "permissions": [
-                {"id": p.id, "name": p.name, "code": p.code, "permission_type": p.permission_type, "ui_metadata": p.ui_metadata}
-                for p in role.permissions
-            ],
-            "user_count": user_count,
-        })
+        items.append(
+            {
+                "id": role.id,
+                "name": role.name,
+                "code": role.code,
+                "description": role.description,
+                "is_system": role.is_system,
+                "parent_role_id": role.parent_role_id,
+                "permissions": [
+                    {
+                        "id": p.id,
+                        "name": p.name,
+                        "code": p.code,
+                        "permission_type": p.permission_type,
+                        "ui_metadata": p.ui_metadata,
+                    }
+                    for p in role.permissions
+                ],
+                "user_count": user_count,
+            }
+        )
     return items
+
 
 @router.post("/roles", response_model=RoleRead)
 async def create_custom_role(
@@ -104,12 +123,16 @@ async def create_custom_role(
     # 1. Check if code exists in org
     stmt = select(Role).where(Role.tenant_id == tenant_id, Role.code == role_in.code)
     if (await db.execute(stmt)).scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Role code already exists in this organization")
+        raise HTTPException(
+            status_code=400, detail="Role code already exists in this organization"
+        )
 
     # 2. Verify parent role visibility
     if role_in.parent_role_id:
         parent = await db.get(Role, role_in.parent_role_id)
-        if not parent or (parent.tenant_id is not None and parent.tenant_id != tenant_id):
+        if not parent or (
+            parent.tenant_id is not None and parent.tenant_id != tenant_id
+        ):
             raise HTTPException(status_code=400, detail="Invalid parent role")
 
     # 3. Create Role
@@ -119,7 +142,7 @@ async def create_custom_role(
         code=role_in.code,
         description=role_in.description,
         parent_role_id=role_in.parent_role_id,
-        is_system=False
+        is_system=False,
     )
 
     # 4. Attach Direct Permissions
@@ -129,7 +152,7 @@ async def create_custom_role(
         role.permissions = list(perms)
 
     db.add(role)
-    await db.flush() # Get role.id
+    await db.flush()  # Get role.id
 
     # Audit log
     await audit_action(
@@ -139,12 +162,13 @@ async def create_custom_role(
         action="CREATE_ROLE",
         resource_type="role",
         resource_id=role.id,
-        details=f"Created custom role: {role.code}"
+        details=f"Created custom role: {role.code}",
     )
 
     await db.commit()
     await db.refresh(role, ["permissions"])
     return role
+
 
 @router.post("/members/{user_id}/roles")
 async def assign_user_roles(
@@ -159,11 +183,14 @@ async def assign_user_roles(
     # 1. Verify roles belong to org/system
     stmt_v = select(Role).where(
         Role.id.in_(role_ids),
-        (Role.tenant_id == tenant_id) | (Role.tenant_id.is_(None))
+        (Role.tenant_id == tenant_id) | (Role.tenant_id.is_(None)),
     )
     valid_roles = (await db.execute(stmt_v)).scalars().all()
     if len(valid_roles) != len(role_ids):
-        raise HTTPException(status_code=400, detail="One or more roles are invalid for this organization")
+        raise HTTPException(
+            status_code=400,
+            detail="One or more roles are invalid for this organization",
+        )
 
     # 2. SSD Constraint Check (Static Separation of Duties)
     conflict_msg = await RBACService.check_ssd_violation(db, tenant_id, role_ids)
@@ -173,9 +200,9 @@ async def assign_user_roles(
     # 3. Update roles
     # Clean old ones first
     from app.models import OrganizationUserRole
+
     stmt_del = select(OrganizationUserRole).where(
-        OrganizationUserRole.org_id == org_id,
-        OrganizationUserRole.user_id == user_id
+        OrganizationUserRole.org_id == org_id, OrganizationUserRole.user_id == user_id
     )
     old_links = (await db.execute(stmt_del)).scalars().all()
     for link in old_links:
@@ -183,7 +210,11 @@ async def assign_user_roles(
 
     # Add new ones
     for rid in role_ids:
-        db.add(OrganizationUserRole(tenant_id=tenant_id, org_id=org_id, user_id=user_id, role_id=rid))
+        db.add(
+            OrganizationUserRole(
+                tenant_id=tenant_id, org_id=org_id, user_id=user_id, role_id=rid
+            )
+        )
 
     # Audit log
     await audit_action(
@@ -193,7 +224,7 @@ async def assign_user_roles(
         action="ASSIGN_ROLES",
         resource_type="user",
         resource_id=user_id,
-        details=f"Assigned roles {role_ids} to user {user_id}"
+        details=f"Assigned roles {role_ids} to user {user_id}",
     )
 
     await db.commit()
@@ -201,6 +232,7 @@ async def assign_user_roles(
 
 
 # ── Role 更新/删除 ──
+
 
 class RoleUpdate(BaseModel):
     name: str | None = None
@@ -236,8 +268,11 @@ async def update_role(
     await db.commit()
     await db.refresh(role, ["permissions"])
     return {
-        "id": role.id, "name": role.name, "code": role.code,
-        "description": role.description, "is_system": role.is_system,
+        "id": role.id,
+        "name": role.name,
+        "code": role.code,
+        "description": role.description,
+        "is_system": role.is_system,
     }
 
 
@@ -263,8 +298,7 @@ async def delete_role(
     bound = (await db.execute(bound_stmt)).scalars().first()
     if bound:
         raise HTTPException(
-            status_code=409,
-            detail="Role is still assigned to users. Unassign first."
+            status_code=409, detail="Role is still assigned to users. Unassign first."
         )
 
     await db.delete(role)

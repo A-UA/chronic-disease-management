@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -31,7 +30,9 @@ def test_runtime_modules_no_longer_depend_on_legacy_provider_or_chat_service() -
         contents = file_path.read_text(encoding="utf-8")
         for forbidden in forbidden_imports:
             if forbidden in contents:
-                offenders.append(f"{file_path.relative_to(PROJECT_ROOT)} -> {forbidden}")
+                offenders.append(
+                    f"{file_path.relative_to(PROJECT_ROOT)} -> {forbidden}"
+                )
 
     assert offenders == []
 

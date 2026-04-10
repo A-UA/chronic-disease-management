@@ -6,14 +6,15 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.routers.deps import check_permission, get_current_org_id, get_db
 from app.models import Menu, OrganizationUser
+from app.routers.deps import check_permission, get_current_org_id, get_db
 from app.services.audit.service import fire_audit
 
 router = APIRouter()
 
 
 # ── Schemas ──
+
 
 class MenuCreate(BaseModel):
     parent_id: int | None = None
@@ -59,6 +60,7 @@ class MenuRead(BaseModel):
 
 # ── 端点 ──
 
+
 @router.get("", response_model=list[MenuRead])
 async def list_menus(
     _perm=Depends(check_permission("menu:manage")),
@@ -99,9 +101,12 @@ async def create_menu(
     await db.flush()
 
     fire_audit(
-        user_id=_perm.user_id, org_id=org_id,
-        action="CREATE_MENU", resource_type="menu",
-        resource_id=menu.id, details=f"Created menu: {menu.name} ({menu.code})",
+        user_id=_perm.user_id,
+        org_id=org_id,
+        action="CREATE_MENU",
+        resource_type="menu",
+        resource_id=menu.id,
+        details=f"Created menu: {menu.name} ({menu.code})",
     )
 
     await db.commit()
@@ -130,9 +135,12 @@ async def update_menu(
         setattr(menu, field, value)
 
     fire_audit(
-        user_id=_perm.user_id, org_id=org_id,
-        action="UPDATE_MENU", resource_type="menu",
-        resource_id=menu.id, details=f"Updated menu: {menu.name}",
+        user_id=_perm.user_id,
+        org_id=org_id,
+        action="UPDATE_MENU",
+        resource_type="menu",
+        resource_id=menu.id,
+        details=f"Updated menu: {menu.name}",
     )
 
     await db.commit()
@@ -153,9 +161,12 @@ async def delete_menu(
         raise HTTPException(status_code=404, detail="Menu not found")
 
     fire_audit(
-        user_id=_perm.user_id, org_id=org_id,
-        action="DELETE_MENU", resource_type="menu",
-        resource_id=menu.id, details=f"Deleted menu: {menu.name} ({menu.code})",
+        user_id=_perm.user_id,
+        org_id=org_id,
+        action="DELETE_MENU",
+        resource_type="menu",
+        resource_id=menu.id,
+        details=f"Deleted menu: {menu.name} ({menu.code})",
     )
 
     await db.delete(menu)

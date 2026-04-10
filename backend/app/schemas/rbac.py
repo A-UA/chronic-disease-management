@@ -12,6 +12,7 @@ class PermissionRead(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class MenuRead(BaseModel):
     id: int
     name: str
@@ -21,6 +22,7 @@ class MenuRead(BaseModel):
     sort: int = 100
 
     model_config = ConfigDict(from_attributes=True)
+
 
 class RoleRead(BaseModel):
     id: int
@@ -32,6 +34,7 @@ class RoleRead(BaseModel):
     permissions: list[PermissionRead]
 
     model_config = ConfigDict(from_attributes=True)
+
 
 class RoleCreate(BaseModel):
     name: str

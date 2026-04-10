@@ -12,11 +12,11 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Select
 
+from app.ai.rag.query_rewrite import prepare_retrieval_query
 from app.base.config import settings
 from app.models import Chunk, Document
-from app.ai.rag.query_rewrite import prepare_retrieval_query
-from app.services.system.quota import redis_client
 from app.plugins.registry import PluginRegistry
+from app.services.system.quota import redis_client
 from app.telemetry.tracing import trace_span
 
 if TYPE_CHECKING:
@@ -309,7 +309,7 @@ async def expand_query(
 ) -> list[str]:
     """将原始查询扩展为多个不同维度的检索词（仅对复杂查询执行）"""
     # 简单查询跳过扩展：短查询或不含问号的陈述句
-    if len(query) < 15 or not any(c in query for c in '?？吗呢什么怎么如何为什么'):
+    if len(query) < 15 or not any(c in query for c in "?？吗呢什么怎么如何为什么"):
         return [query]
 
     history_str = (
@@ -348,7 +348,9 @@ async def retrieve_ranked_chunks(
     history: list[dict[str, str]] | None = None,
     llm_provider: LLMProvider | None = None,
 ) -> list[RetrievedChunk]:
-    with trace_span("rag.retrieve_ranked_chunks", {"kb_id": kb_id, "query_len": len(query)}):
+    with trace_span(
+        "rag.retrieve_ranked_chunks", {"kb_id": kb_id, "query_len": len(query)}
+    ):
         # 查询压缩（仅当有历史上下文时）
         search_query = query
         if history and llm_provider:
@@ -358,7 +360,9 @@ async def retrieve_ranked_chunks(
         # 查询复杂度判断：短查询或简单查询跳过 Multi-Query 扩展
         if llm_provider:
             with trace_span("rag.expand_query"):
-                all_queries = await expand_query(search_query, history or [], llm_provider)
+                all_queries = await expand_query(
+                    search_query, history or [], llm_provider
+                )
             if search_query not in all_queries:
                 all_queries.append(search_query)
         else:
@@ -405,7 +409,9 @@ async def retrieve_ranked_chunks(
                         Chunk.tsv_content.op("@@")(func.plainto_tsquery("simple", rq)),
                     )
                     .order_by(
-                        func.ts_rank(Chunk.tsv_content, func.plainto_tsquery("simple", rq)).desc()
+                        func.ts_rank(
+                            Chunk.tsv_content, func.plainto_tsquery("simple", rq)
+                        ).desc()
                     )
                     .limit(limit * 2)
                 )
@@ -425,7 +431,9 @@ async def retrieve_ranked_chunks(
                 for rank, chunk in enumerate(v_chunks):
                     item = retrieved_by_id.setdefault(
                         chunk.id,
-                        RetrievedChunk(chunk=chunk, fused_score=0.0, final_score=0.0, sources=()),
+                        RetrievedChunk(
+                            chunk=chunk, fused_score=0.0, final_score=0.0, sources=()
+                        ),
                     )
                     item.fused_score += vector_weight / (k_rrf + rank + 1)
                     item.vector_rank = min(item.vector_rank or 999, rank + 1)
@@ -434,7 +442,9 @@ async def retrieve_ranked_chunks(
                 for rank, chunk in enumerate(k_chunks):
                     item = retrieved_by_id.setdefault(
                         chunk.id,
-                        RetrievedChunk(chunk=chunk, fused_score=0.0, final_score=0.0, sources=()),
+                        RetrievedChunk(
+                            chunk=chunk, fused_score=0.0, final_score=0.0, sources=()
+                        ),
                     )
                     item.fused_score += keyword_weight / (k_rrf + rank + 1)
                     item.keyword_rank = min(item.keyword_rank or 999, rank + 1)
@@ -443,7 +453,11 @@ async def retrieve_ranked_chunks(
         # 排序与重排
         min_score_threshold = getattr(settings, "RAG_MIN_SCORE_THRESHOLD", 0.0)
         fused_results = sorted(
-            [r for r in retrieved_by_id.values() if r.fused_score >= min_score_threshold],
+            [
+                r
+                for r in retrieved_by_id.values()
+                if r.fused_score >= min_score_threshold
+            ],
             key=lambda x: x.fused_score,
             reverse=True,
         )
@@ -451,7 +465,9 @@ async def retrieve_ranked_chunks(
         with trace_span("rag.rerank", {"candidates": len(fused_results)}):
             try:
                 reranker = PluginRegistry.get("reranker")
-                reranked_results = await reranker.rerank(search_query, fused_results, limit)
+                reranked_results = await reranker.rerank(
+                    search_query, fused_results, limit
+                )
             except Exception:
                 logger.warning("Reranker failed; falling back to fused ranking")
                 reranked_results = fused_results[:limit]
@@ -487,7 +503,9 @@ async def retrieve_chunks(
 
 
 def build_rag_prompt(
-    query: str, chunks: list[Chunk], patient_name: str | None = None,
+    query: str,
+    chunks: list[Chunk],
+    patient_name: str | None = None,
     language: str = "zh",
 ) -> tuple[str, list[dict[str, Citation]]]:
     context_blocks = []
@@ -547,5 +565,3 @@ def build_rag_prompt(
             f"**Question:** {query}\n\n"
         )
     return prompt, citations
-
-

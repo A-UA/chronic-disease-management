@@ -4,8 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.routers.deps import check_permission, get_current_org_id, get_db
 from app.models import Organization, OrganizationUser, Tenant
+from app.routers.deps import check_permission, get_current_org_id, get_db
 from app.services.audit.service import fire_audit
 
 router = APIRouter()
@@ -71,6 +71,7 @@ class TenantRead(BaseModel):
 
 # ── 端点 ──
 
+
 @router.get("")
 async def list_tenants(
     skip: int = 0,
@@ -83,7 +84,9 @@ async def list_tenants(
     """[管理员] 租户列表（分页+搜索）"""
     base = select(Tenant)
     if search:
-        base = base.where(Tenant.name.ilike(f"%{search}%") | Tenant.slug.ilike(f"%{search}%"))
+        base = base.where(
+            Tenant.name.ilike(f"%{search}%") | Tenant.slug.ilike(f"%{search}%")
+        )
     if status:
         base = base.where(Tenant.status == status)
 
@@ -98,20 +101,29 @@ async def list_tenants(
 
     reads = []
     for t in tenants:
-        org_count = (await db.execute(
-            select(func.count()).where(Organization.tenant_id == t.id)
-        )).scalar() or 0
-        reads.append(TenantRead(
-            id=t.id, name=t.name, slug=t.slug, status=t.status,
-            plan_type=t.plan_type,
-            quota_tokens_limit=t.quota_tokens_limit,
-            quota_tokens_used=t.quota_tokens_used,
-            max_members=t.max_members, max_patients=t.max_patients,
-            contact_name=t.contact_name, contact_phone=t.contact_phone,
-            contact_email=t.contact_email, org_type=t.org_type,
-            address=t.address, org_count=org_count,
-            created_at=t.created_at,
-        ))
+        org_count = (
+            await db.execute(select(func.count()).where(Organization.tenant_id == t.id))
+        ).scalar() or 0
+        reads.append(
+            TenantRead(
+                id=t.id,
+                name=t.name,
+                slug=t.slug,
+                status=t.status,
+                plan_type=t.plan_type,
+                quota_tokens_limit=t.quota_tokens_limit,
+                quota_tokens_used=t.quota_tokens_used,
+                max_members=t.max_members,
+                max_patients=t.max_patients,
+                contact_name=t.contact_name,
+                contact_phone=t.contact_phone,
+                contact_email=t.contact_email,
+                org_type=t.org_type,
+                address=t.address,
+                org_count=org_count,
+                created_at=t.created_at,
+            )
+        )
     return {"total": total, "items": reads}
 
 
@@ -125,18 +137,27 @@ async def get_tenant(
     tenant = await db.get(Tenant, tenant_id)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
-    org_count = (await db.execute(
-        select(func.count()).where(Organization.tenant_id == tenant.id)
-    )).scalar() or 0
+    org_count = (
+        await db.execute(
+            select(func.count()).where(Organization.tenant_id == tenant.id)
+        )
+    ).scalar() or 0
     return TenantRead(
-        id=tenant.id, name=tenant.name, slug=tenant.slug, status=tenant.status,
+        id=tenant.id,
+        name=tenant.name,
+        slug=tenant.slug,
+        status=tenant.status,
         plan_type=tenant.plan_type,
         quota_tokens_limit=tenant.quota_tokens_limit,
         quota_tokens_used=tenant.quota_tokens_used,
-        max_members=tenant.max_members, max_patients=tenant.max_patients,
-        contact_name=tenant.contact_name, contact_phone=tenant.contact_phone,
-        contact_email=tenant.contact_email, org_type=tenant.org_type,
-        address=tenant.address, org_count=org_count,
+        max_members=tenant.max_members,
+        max_patients=tenant.max_patients,
+        contact_name=tenant.contact_name,
+        contact_phone=tenant.contact_phone,
+        contact_email=tenant.contact_email,
+        org_type=tenant.org_type,
+        address=tenant.address,
+        org_count=org_count,
         created_at=tenant.created_at,
     )
 
@@ -169,22 +190,33 @@ async def create_tenant(
     await db.flush()
 
     fire_audit(
-        user_id=_perm.user_id, org_id=org_id,
-        action="CREATE_TENANT", resource_type="tenant",
-        resource_id=tenant.id, details=f"Created tenant: {tenant.name} (with default org)",
+        user_id=_perm.user_id,
+        org_id=org_id,
+        action="CREATE_TENANT",
+        resource_type="tenant",
+        resource_id=tenant.id,
+        details=f"Created tenant: {tenant.name} (with default org)",
     )
 
     await db.commit()
     await db.refresh(tenant)
     return TenantRead(
-        id=tenant.id, name=tenant.name, slug=tenant.slug, status=tenant.status,
+        id=tenant.id,
+        name=tenant.name,
+        slug=tenant.slug,
+        status=tenant.status,
         plan_type=tenant.plan_type,
         quota_tokens_limit=tenant.quota_tokens_limit,
         quota_tokens_used=tenant.quota_tokens_used,
-        max_members=tenant.max_members, max_patients=tenant.max_patients,
-        contact_name=tenant.contact_name, contact_phone=tenant.contact_phone,
-        contact_email=tenant.contact_email, org_type=tenant.org_type,
-        address=tenant.address, org_count=1, created_at=tenant.created_at,
+        max_members=tenant.max_members,
+        max_patients=tenant.max_patients,
+        contact_name=tenant.contact_name,
+        contact_phone=tenant.contact_phone,
+        contact_email=tenant.contact_email,
+        org_type=tenant.org_type,
+        address=tenant.address,
+        org_count=1,
+        created_at=tenant.created_at,
     )
 
 
@@ -211,25 +243,38 @@ async def update_tenant(
         setattr(tenant, field, value)
 
     fire_audit(
-        user_id=_perm.user_id, org_id=org_id,
-        action="UPDATE_TENANT", resource_type="tenant",
-        resource_id=tenant.id, details=f"Updated tenant: {tenant.name}",
+        user_id=_perm.user_id,
+        org_id=org_id,
+        action="UPDATE_TENANT",
+        resource_type="tenant",
+        resource_id=tenant.id,
+        details=f"Updated tenant: {tenant.name}",
     )
 
     await db.commit()
     await db.refresh(tenant)
-    org_count = (await db.execute(
-        select(func.count()).where(Organization.tenant_id == tenant.id)
-    )).scalar() or 0
+    org_count = (
+        await db.execute(
+            select(func.count()).where(Organization.tenant_id == tenant.id)
+        )
+    ).scalar() or 0
     return TenantRead(
-        id=tenant.id, name=tenant.name, slug=tenant.slug, status=tenant.status,
+        id=tenant.id,
+        name=tenant.name,
+        slug=tenant.slug,
+        status=tenant.status,
         plan_type=tenant.plan_type,
         quota_tokens_limit=tenant.quota_tokens_limit,
         quota_tokens_used=tenant.quota_tokens_used,
-        max_members=tenant.max_members, max_patients=tenant.max_patients,
-        contact_name=tenant.contact_name, contact_phone=tenant.contact_phone,
-        contact_email=tenant.contact_email, org_type=tenant.org_type,
-        address=tenant.address, org_count=org_count, created_at=tenant.created_at,
+        max_members=tenant.max_members,
+        max_patients=tenant.max_patients,
+        contact_name=tenant.contact_name,
+        contact_phone=tenant.contact_phone,
+        contact_email=tenant.contact_email,
+        org_type=tenant.org_type,
+        address=tenant.address,
+        org_count=org_count,
+        created_at=tenant.created_at,
     )
 
 
@@ -245,9 +290,11 @@ async def delete_tenant(
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
 
-    org_count = (await db.execute(
-        select(func.count()).where(Organization.tenant_id == tenant.id)
-    )).scalar() or 0
+    org_count = (
+        await db.execute(
+            select(func.count()).where(Organization.tenant_id == tenant.id)
+        )
+    ).scalar() or 0
     if org_count > 0:
         raise HTTPException(
             status_code=409,
@@ -255,9 +302,12 @@ async def delete_tenant(
         )
 
     fire_audit(
-        user_id=_perm.user_id, org_id=org_id,
-        action="DELETE_TENANT", resource_type="tenant",
-        resource_id=tenant.id, details=f"Deleted tenant: {tenant.name}",
+        user_id=_perm.user_id,
+        org_id=org_id,
+        action="DELETE_TENANT",
+        resource_type="tenant",
+        resource_id=tenant.id,
+        details=f"Deleted tenant: {tenant.name}",
     )
 
     await db.delete(tenant)

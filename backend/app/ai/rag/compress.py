@@ -2,6 +2,7 @@
 
 当对话历史超过阈值时，使用 LLM 生成摘要以减少后续请求的 Token 消耗。
 """
+
 import logging
 
 logger = logging.getLogger(__name__)

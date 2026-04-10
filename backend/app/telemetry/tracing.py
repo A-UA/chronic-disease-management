@@ -3,6 +3,7 @@
 当 OpenTelemetry SDK 未安装或 OTLP 未配置时，所有追踪操作为无操作（noop），
 不影响业务逻辑正常运行。
 """
+
 from contextlib import contextmanager
 from functools import wraps
 from typing import Any
@@ -17,6 +18,7 @@ def _get_tracer():
         _initialized = True
         try:
             from opentelemetry import trace
+
             _tracer = trace.get_tracer("cdm.backend")
         except ImportError:
             _tracer = None
@@ -42,11 +44,15 @@ def trace_span(name: str, attributes: dict[str, Any] | None = None):
 
 def traced(name: str | None = None):
     """装饰器：自动为异步函数创建 span"""
+
     def decorator(func):
         span_name = name or f"{func.__module__}.{func.__qualname__}"
+
         @wraps(func)
         async def wrapper(*args, **kwargs):
             with trace_span(span_name):
                 return await func(*args, **kwargs)
+
         return wrapper
+
     return decorator

@@ -3,6 +3,7 @@
 从 services/rag_ingestion.py 提取的核心切块逻辑，
 保留医疗标题识别、句子边界切块、token 计数控制、页码追踪等全部功能。
 """
+
 import logging
 import re
 from functools import lru_cache
@@ -166,6 +167,7 @@ def _split_by_sentences(
 
 class MedicalHeadingChunkerPlugin:
     """医疗标题感知切块策略"""
+
     name = "medical_heading"
 
     def chunk(
@@ -198,7 +200,9 @@ class MedicalHeadingChunkerPlugin:
         for i in range(len(matches)):
             start_pos = matches[i].start()
             heading = matches[i].group(1).strip()
-            end_pos = matches[i + 1].start() if i + 1 < len(matches) else len(normalized)
+            end_pos = (
+                matches[i + 1].start() if i + 1 < len(matches) else len(normalized)
+            )
             section_content = normalized[start_pos:end_pos].strip()
 
             section_tokens = count_tokens(section_content, model_name)
@@ -231,4 +235,6 @@ class MedicalHeadingChunkerPlugin:
         return final_chunks
 
 
-PluginRegistry.register("chunker", "medical_heading", lambda: MedicalHeadingChunkerPlugin())
+PluginRegistry.register(
+    "chunker", "medical_heading", lambda: MedicalHeadingChunkerPlugin()
+)

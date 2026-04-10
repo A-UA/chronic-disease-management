@@ -1,4 +1,5 @@
 """Noop Reranker — 不重排序，直接截断"""
+
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 

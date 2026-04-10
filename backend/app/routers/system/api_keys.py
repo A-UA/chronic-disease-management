@@ -6,6 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.base.config import settings
+from app.models import ApiKey, User
 from app.routers.deps import (
     check_permission,
     get_current_active_user,
@@ -13,8 +15,6 @@ from app.routers.deps import (
     get_current_tenant_id,
     get_db,
 )
-from app.base.config import settings
-from app.models import ApiKey, User
 from app.schemas.api_key import (
     ApiKeyCreate,
     ApiKeyCreateResponse,
@@ -24,6 +24,7 @@ from app.schemas.api_key import (
 
 router = APIRouter()
 
+
 @router.post("", response_model=ApiKeyCreateResponse)
 async def create_api_key(
     data: ApiKeyCreate,
@@ -31,7 +32,7 @@ async def create_api_key(
     org_id: int = Depends(get_current_org_id),
     current_user: User = Depends(get_current_active_user),
     _org_member=Depends(check_permission("org_member:manage")),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """创建 API Key（需组织管理权限）"""
     raw_key = secrets.token_urlsafe(32)
@@ -81,10 +82,16 @@ async def list_api_keys(
     limit: int = 50,
     org_id: int = Depends(get_current_org_id),
     _org_member=Depends(check_permission("org_member:manage")),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """列出当前组织的 API Keys"""
-    stmt = select(ApiKey).where(ApiKey.org_id == org_id).offset(skip).limit(limit).order_by(ApiKey.created_at.desc())
+    stmt = (
+        select(ApiKey)
+        .where(ApiKey.org_id == org_id)
+        .offset(skip)
+        .limit(limit)
+        .order_by(ApiKey.created_at.desc())
+    )
     result = await db.execute(stmt)
     return result.scalars().all()
 
@@ -95,7 +102,7 @@ async def update_api_key(
     data: ApiKeyUpdate,
     org_id: int = Depends(get_current_org_id),
     _org_member=Depends(check_permission("org_member:manage")),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """更新 API Key 属性/状态"""
     api_key = await db.get(ApiKey, api_key_id)
@@ -116,7 +123,7 @@ async def revoke_api_key(
     api_key_id: int,
     org_id: int = Depends(get_current_org_id),
     _org_member=Depends(check_permission("org_member:manage")),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """吊销 API Key"""
     api_key = await db.get(ApiKey, api_key_id)

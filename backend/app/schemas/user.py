@@ -7,8 +7,10 @@ class UserBase(BaseModel):
     email: EmailStr
     name: str | None = None
 
+
 class UserCreate(UserBase):
     password: str
+
 
 class UserRead(BaseModel):
     id: int
@@ -21,12 +23,15 @@ class UserRead(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class Token(BaseModel):
     access_token: str
     token_type: str
 
+
 class TokenPayload(BaseModel):
     sub: str | None = None
+
 
 class UserUpdatePassword(BaseModel):
     current_password: str

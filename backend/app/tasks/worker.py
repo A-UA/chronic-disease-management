@@ -2,6 +2,7 @@
 
 启动命令：uv run arq app.tasks.worker.WorkerSettings
 """
+
 import importlib
 import logging
 
@@ -13,9 +14,11 @@ logger = logging.getLogger(__name__)
 def _parse_redis_settings():
     """从 REDIS_URL 解析 arq RedisSettings"""
     from arq.connections import RedisSettings
+
     url = settings.REDIS_URL  # redis://localhost:6379/0
     # 简单解析，支持 redis://host:port/db 格式
     from urllib.parse import urlparse
+
     parsed = urlparse(url)
     return RedisSettings(
         host=parsed.hostname or "localhost",
@@ -27,7 +30,9 @@ def _parse_redis_settings():
 
 async def startup(ctx: dict):
     """Worker 启动时初始化"""
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-8s [%(name)s] %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s %(levelname)-8s [%(name)s] %(message)s"
+    )
     # 触发插件注册（使用 importlib 避免变量名冲突）
     for plugin in ("llm", "embedding", "reranker", "parser", "chunker"):
         importlib.import_module(f"app.plugins.{plugin}")
@@ -41,6 +46,7 @@ async def shutdown(ctx: dict):
 
 class WorkerSettings:
     """arq Worker 配置"""
+
     redis_settings = _parse_redis_settings()
     on_startup = startup
     on_shutdown = shutdown

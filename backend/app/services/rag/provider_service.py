@@ -36,7 +36,9 @@ class ProviderService:
         suffix = Path(filename).suffix.lower()
         parser_name = self._PARSER_BY_SUFFIX.get(suffix)
         if parser_name is None:
-            raise ProviderResolutionError(f"Unsupported parser suffix: {suffix or 'unknown'}")
+            raise ProviderResolutionError(
+                f"Unsupported parser suffix: {suffix or 'unknown'}"
+            )
         return self.get_parser(parser_name)
 
     def validate_runtime_dependencies(self) -> None:
@@ -49,9 +51,13 @@ class ProviderService:
     def _get(self, category: str, name: str | None = None) -> Any:
         try:
             return PluginRegistry.get(category, name)
-        except Exception as exc:  # pragma: no cover - exercised by tests via monkeypatch
+        except (
+            Exception
+        ) as exc:  # pragma: no cover - exercised by tests via monkeypatch
             label = f"{category}:{name}" if name is not None else category
-            raise ProviderResolutionError(f"Failed to resolve provider: {label}") from exc
+            raise ProviderResolutionError(
+                f"Failed to resolve provider: {label}"
+            ) from exc
 
 
 provider_service = ProviderService()

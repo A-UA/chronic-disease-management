@@ -1,4 +1,5 @@
 """LangGraph Agent 状态定义"""
+
 from __future__ import annotations
 
 from typing import Any, TypedDict
@@ -17,6 +18,7 @@ class AgentState(TypedDict):
         iteration: 当前迭代轮次（安全防护）
         max_iterations: 最大迭代次数（默认 3）
     """
+
     messages: list[dict[str, str]]
     query: str
     kb_id: int

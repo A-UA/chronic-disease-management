@@ -1,4 +1,5 @@
 """健康指标数据模型：支持血压/血糖/体重/心率/BMI 等结构化指标录入"""
+
 from datetime import datetime
 
 from sqlalchemy import Float, ForeignKey, Index, String, Text
@@ -11,16 +12,20 @@ class HealthMetric(Base, IDMixin, TimestampMixin):
     __tablename__ = "health_metrics"
 
     tenant_id: Mapped[int] = mapped_column(
-        ForeignKey("tenants.id", ondelete="CASCADE"), index=True,
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        index=True,
     )
     patient_id: Mapped[int] = mapped_column(
-        ForeignKey("patient_profiles.id", ondelete="CASCADE"), index=True,
+        ForeignKey("patient_profiles.id", ondelete="CASCADE"),
+        index=True,
     )
     org_id: Mapped[int] = mapped_column(
-        ForeignKey("organizations.id", ondelete="CASCADE"), index=True,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        index=True,
     )
     recorded_by: Mapped[int] = mapped_column(
-        ForeignKey("users.id"), index=True,
+        ForeignKey("users.id"),
+        index=True,
     )
 
     # 指标类型：blood_pressure, blood_sugar, weight, heart_rate, bmi, spo2

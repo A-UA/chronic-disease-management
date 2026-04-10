@@ -1,4 +1,5 @@
 """Skills 框架：定义、注册、权限过滤、安全执行"""
+
 from __future__ import annotations
 
 import json
@@ -15,6 +16,7 @@ logger = logging.getLogger(__name__)
 @dataclass(slots=True)
 class SkillResult:
     """Skill 执行结果"""
+
     success: bool
     data: Any = None
     error: str | None = None
@@ -35,6 +37,7 @@ SkillHandler = Callable[..., Awaitable[SkillResult]]
 @dataclass(slots=True)
 class SkillDefinition:
     """Skill 注册定义"""
+
     name: str
     description: str
     parameters_schema: dict[str, Any]
@@ -72,7 +75,8 @@ class SkillRegistry:
     def get_available(self, permissions: frozenset[str]) -> list[SkillDefinition]:
         """根据权限过滤可用 Skills"""
         return [
-            s for s in self._skills.values()
+            s
+            for s in self._skills.values()
             if s.required_permission is None or s.required_permission in permissions
         ]
 
@@ -81,7 +85,10 @@ class SkillRegistry:
         return [s.to_openai_tool_schema() for s in self.get_available(permissions)]
 
     async def execute(
-        self, name: str, ctx: SecurityContext, params: dict[str, Any],
+        self,
+        name: str,
+        ctx: SecurityContext,
+        params: dict[str, Any],
     ) -> SkillResult:
         """安全执行 Skill：权限预校验 + 参数白名单"""
         skill = self.get(name)
@@ -89,7 +96,9 @@ class SkillRegistry:
             return SkillResult(success=False, error=f"未知技能: {name}")
 
         # 权限预校验
-        if skill.required_permission and not ctx.has_permission(skill.required_permission):
+        if skill.required_permission and not ctx.has_permission(
+            skill.required_permission
+        ):
             return SkillResult(
                 success=False,
                 error=f"权限不足: 需要 {skill.required_permission}",

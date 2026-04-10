@@ -8,10 +8,12 @@ from app.plugins.registry import PluginRegistry
 
 logger = logging.getLogger(__name__)
 
+
 def _has_keyword_match(answer_text: str, expected_keywords: list[str]) -> bool:
     if not expected_keywords:
         return True
     return all(keyword in answer_text for keyword in expected_keywords)
+
 
 async def _llm_judge_correctness(query: str, answer: str, expected_answer: str) -> bool:
     """使用 LLM 作为裁判，判断回答是否与参考答案一致"""
@@ -22,18 +24,19 @@ async def _llm_judge_correctness(query: str, answer: str, expected_answer: str) 
         f"Query: {query}\n"
         f"Generated Answer: {answer}\n"
         f"Reference Answer: {expected_answer}\n\n"
-        "Return strict JSON: {\"correct\": true/false, \"reason\": \"...\"}"
+        'Return strict JSON: {"correct": true/false, "reason": "..."}'
     )
 
     try:
         response = await llm.complete_text(prompt)
         # 尝试提取 JSON
         if "{" in response:
-            data = json.loads(response[response.find("{"):response.rfind("}")+1])
+            data = json.loads(response[response.find("{") : response.rfind("}") + 1])
             return bool(data.get("correct", False))
     except Exception as e:
         logger.warning(f"LLM Judge failed: {str(e)}")
     return False
+
 
 async def evaluate_rag_cases(cases: list[dict[str, Any]], k: int = 5) -> dict[str, Any]:
     evaluated_cases = []
@@ -58,14 +61,18 @@ async def evaluate_rag_cases(cases: list[dict[str, Any]], k: int = 5) -> dict[st
             retrieval_hits += 1
 
         # 2. 基础关键词匹配
-        answer_hit = _has_keyword_match(answer_text, case.get("expected_answer_keywords", []))
+        answer_hit = _has_keyword_match(
+            answer_text, case.get("expected_answer_keywords", [])
+        )
         if answer_hit:
             answer_hits += 1
 
         # 3. LLM 裁判 (Correctness)
         judge_hit = False
         if expected_answer and answer_text:
-            judge_hit = await _llm_judge_correctness(query, answer_text, expected_answer)
+            judge_hit = await _llm_judge_correctness(
+                query, answer_text, expected_answer
+            )
             if judge_hit:
                 llm_judge_hits += 1
 
@@ -79,7 +86,9 @@ async def evaluate_rag_cases(cases: list[dict[str, Any]], k: int = 5) -> dict[st
         # 5. 拒答准确率
         expected_refusal = case.get("expected_refusal")
         actual_refusal = case.get("refusal")
-        refusal_hit = expected_refusal == actual_refusal if expected_refusal is not None else True
+        refusal_hit = (
+            expected_refusal == actual_refusal if expected_refusal is not None else True
+        )
         if refusal_hit:
             refusal_hits += 1
 
@@ -88,7 +97,9 @@ async def evaluate_rag_cases(cases: list[dict[str, Any]], k: int = 5) -> dict[st
         actual_condensed = case.get("condensed_query")
         condensation_hit = True
         if expected_condensed:
-            condensation_hit = (expected_condensed.lower() == (actual_condensed or "").lower())
+            condensation_hit = (
+                expected_condensed.lower() == (actual_condensed or "").lower()
+            )
 
         latency_ms = case.get("latency_ms")
         if latency_ms is not None:
@@ -129,8 +140,14 @@ async def evaluate_rag_cases(cases: list[dict[str, Any]], k: int = 5) -> dict[st
             "citation_hit_rate": round(citation_hits / case_count, 4),
             "refusal_match_rate": round(refusal_hits / case_count, 4),
             "query_condensation_score": round(condensation_hits / case_count, 4),
-            "avg_latency_ms": round(sum(latency_values) / len(latency_values), 4) if latency_values else 0.0,
-            "avg_total_tokens": round(sum(total_token_values) / len(total_token_values), 4) if total_token_values else 0.0,
+            "avg_latency_ms": round(sum(latency_values) / len(latency_values), 4)
+            if latency_values
+            else 0.0,
+            "avg_total_tokens": round(
+                sum(total_token_values) / len(total_token_values), 4
+            )
+            if total_token_values
+            else 0.0,
         },
         "cases": evaluated_cases,
     }

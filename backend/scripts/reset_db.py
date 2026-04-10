@@ -1,8 +1,10 @@
 """重置数据库：清空所有表和 RLS 策略，重建 public schema"""
+
 import asyncio
-from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy import text
+
 from app.core.config import settings
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
 
 
 async def drop_all():

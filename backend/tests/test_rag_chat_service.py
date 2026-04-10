@@ -99,7 +99,11 @@ async def test_handle_standard_chat_orchestrates_stream_and_persistence(
     )
 
     async def fake_retrieve_chunks(*args, **kwargs):
-        return [SimpleNamespace(id=301, document_id=401, page_number=2, content="血压 140/90")]
+        return [
+            SimpleNamespace(
+                id=301, document_id=401, page_number=2, content="血压 140/90"
+            )
+        ]
 
     async def fake_extract_statement_citations_structured(*args, **kwargs):
         return [{"text": "结论", "citations": [{"ref": "Doc 1", "chunk_id": "301"}]}]
@@ -147,13 +151,19 @@ async def test_handle_standard_chat_orchestrates_stream_and_persistence(
     assert "event: chunk" in decoded
     assert "event: done" in decoded
 
-    meta_payload = json.loads(decoded.split("event: meta\ndata: ", 1)[1].split("\n\n", 1)[0])
+    meta_payload = json.loads(
+        decoded.split("event: meta\ndata: ", 1)[1].split("\n\n", 1)[0]
+    )
     assert meta_payload["citations"] == [{"ref": "Doc 1", "chunk_id": "301"}]
 
     assert fake_db.commits == 1
     assert any(getattr(item, "role", None) == "user" for item in fake_db.added)
-    assert any(getattr(item, "role", None) == "assistant" for item in fake_stream_db.added)
-    assert any(getattr(item, "action_type", None) == "chat" for item in fake_stream_db.added)
+    assert any(
+        getattr(item, "role", None) == "assistant" for item in fake_stream_db.added
+    )
+    assert any(
+        getattr(item, "action_type", None) == "chat" for item in fake_stream_db.added
+    )
 
 
 def test_build_filters_normalizes_optional_request_fields(

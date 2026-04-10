@@ -12,8 +12,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.routers import api_router
 from app.base.config import settings
+from app.routers import api_router
 from app.services.rag.provider_service import provider_service
 
 logger = logging.getLogger(__name__)
@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 JS_MAX_INT = 9007199254740991
 JS_MIN_INT = -9007199254740991
+
 
 def bigint_to_str(obj: Any) -> Any:
     """递归将超过 JS 精度范围的 int 转换为 str"""
@@ -33,26 +34,28 @@ def bigint_to_str(obj: Any) -> Any:
         return [bigint_to_str(v) for v in obj]
     return obj
 
+
 class SnowflakeJSONResponse(JSONResponse):
     """
     自定义响应类：
     1. 使用 orjson 提供极致的性能
     2. 自动处理雪花 ID 等大整数，防止前端精度丢失
     """
+
     def render(self, content: Any) -> bytes:
         # 在序列化前执行转换
         content = bigint_to_str(content)
         return orjson.dumps(
-            content,
-            option=orjson.OPT_NON_STR_KEYS | orjson.OPT_SERIALIZE_NUMPY
+            content, option=orjson.OPT_NON_STR_KEYS | orjson.OPT_SERIALIZE_NUMPY
         )
+
 
 # --- 应用初始化 ---
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
-    default_response_class=SnowflakeJSONResponse
+    default_response_class=SnowflakeJSONResponse,
 )
 
 # --- 可观测性初始化 ---
@@ -68,6 +71,7 @@ for _plugin in ("llm", "embedding", "reranker", "parser", "chunker"):
 
 provider_service.validate_runtime_dependencies()
 
+
 # 注册异常处理器以保护大整数精度
 @app.exception_handler(HTTPException)
 async def custom_http_exception_handler(request: Request, exc: HTTPException):
@@ -76,17 +80,21 @@ async def custom_http_exception_handler(request: Request, exc: HTTPException):
     return SnowflakeJSONResponse(
         status_code=response.status_code,
         content=bigint_to_str(orjson.loads(response.body)),
-        headers=dict(response.headers)
+        headers=dict(response.headers),
     )
 
+
 @app.exception_handler(RequestValidationError)
-async def custom_validation_exception_handler(request: Request, exc: RequestValidationError):
+async def custom_validation_exception_handler(
+    request: Request, exc: RequestValidationError
+):
     response = await request_validation_exception_handler(request, exc)
     return SnowflakeJSONResponse(
         status_code=response.status_code,
         content=bigint_to_str(orjson.loads(response.body)),
-        headers=dict(response.headers)
+        headers=dict(response.headers),
     )
+
 
 # 跨域配置
 app.add_middleware(
@@ -103,6 +111,7 @@ from app.base.middleware import RequestIDMiddleware
 
 app.add_middleware(RequestIDMiddleware)
 
+
 @app.middleware("http")
 async def catch_exceptions_middleware(request: Request, call_next):
     """全局异常捕获中间件"""
@@ -114,8 +123,10 @@ async def catch_exceptions_middleware(request: Request, call_next):
             status_code=500, content={"detail": "Internal Server Error"}
         )
 
+
 # 挂载业务路由
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
 
 @app.get("/health")
 async def health_check():

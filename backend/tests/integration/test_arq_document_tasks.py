@@ -12,7 +12,6 @@ from app.base.snowflake import get_next_id
 from app.models import Document, KnowledgeBase, Organization, Tenant, User
 from app.tasks.worker import WorkerSettings
 
-
 TEST_REDIS_SETTINGS = RedisSettings(host="localhost", port=6379, database=15)
 
 
@@ -89,7 +88,9 @@ async def document_record() -> AsyncIterator[Document]:
         async with AsyncSessionLocal() as db:
             await db.execute(delete(Document).where(Document.id == document.id))
             await db.execute(delete(KnowledgeBase).where(KnowledgeBase.id == kb.id))
-            await db.execute(delete(Organization).where(Organization.id == organization.id))
+            await db.execute(
+                delete(Organization).where(Organization.id == organization.id)
+            )
             await db.execute(delete(User).where(User.id == user.id))
             await db.execute(delete(Tenant).where(Tenant.id == tenant.id))
             await db.commit()

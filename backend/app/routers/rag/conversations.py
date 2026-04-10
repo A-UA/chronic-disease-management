@@ -3,6 +3,7 @@
 对话是用户个人资源，通过 user_id 过滤即可。
 tenant_id 通过 RLS 保证隔离。
 """
+
 from datetime import datetime
 from typing import Any
 
@@ -11,17 +12,18 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models import Conversation, Message, User
 from app.routers.deps import (
     get_current_user,
     get_db,
     inject_rls_context,
 )
-from app.models import Conversation, Message, User
 
 router = APIRouter()
 
 
 # ── Schemas ──
+
 
 class ConversationRead(BaseModel):
     id: int
@@ -56,6 +58,7 @@ class ConversationUpdate(BaseModel):
 
 
 # ── Endpoints ──
+
 
 @router.get("", response_model=list[ConversationRead])
 async def list_conversations(

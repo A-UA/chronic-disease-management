@@ -1,4 +1,5 @@
 """纯文本 / Markdown 解析器插件"""
+
 from app.plugins.parser.base import DocumentParseError, ParseResult, normalize_text
 from app.plugins.registry import PluginRegistry
 

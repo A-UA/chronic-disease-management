@@ -5,7 +5,9 @@ import pytest
 from app.plugins.registry import PluginRegistry
 
 
-def test_provider_service_returns_registered_plugins(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_provider_service_returns_registered_plugins(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     from app.services.rag.provider_service import provider_service
 
     sentinels = {
@@ -27,9 +29,18 @@ def test_provider_service_returns_registered_plugins(monkeypatch: pytest.MonkeyP
     assert provider_service.get_embedding() is sentinels[("embedding", None)]
     assert provider_service.get_reranker() is sentinels[("reranker", None)]
     assert provider_service.get_chunker() is sentinels[("chunker", None)]
-    assert provider_service.get_parser_for_filename("report.pdf") is sentinels[("parser", "pdf")]
-    assert provider_service.get_parser_for_filename("report.docx") is sentinels[("parser", "docx")]
-    assert provider_service.get_parser_for_filename("report.txt") is sentinels[("parser", "text")]
+    assert (
+        provider_service.get_parser_for_filename("report.pdf")
+        is sentinels[("parser", "pdf")]
+    )
+    assert (
+        provider_service.get_parser_for_filename("report.docx")
+        is sentinels[("parser", "docx")]
+    )
+    assert (
+        provider_service.get_parser_for_filename("report.txt")
+        is sentinels[("parser", "text")]
+    )
 
 
 def test_provider_service_normalizes_registry_failures(

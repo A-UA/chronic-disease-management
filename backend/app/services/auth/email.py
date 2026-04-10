@@ -3,6 +3,7 @@
 支持 SMTP 发送密码重置验证码等邮件。
 配置为空时仅记录日志，不实际发送（开发环境兼容）。
 """
+
 import logging
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -19,9 +20,7 @@ async def send_reset_code_email(to_email: str, code: str) -> bool:
     返回 True 表示发送成功（或 SMTP 未配置时日志记录成功）
     """
     if not settings.SMTP_HOST:
-        logger.info(
-            f"[SMTP 未配置] 密码重置验证码 → {to_email}: {code}（15 分钟有效）"
-        )
+        logger.info(f"[SMTP 未配置] 密码重置验证码 → {to_email}: {code}（15 分钟有效）")
         return True
 
     subject = f"【{settings.PROJECT_NAME}】密码重置验证码"

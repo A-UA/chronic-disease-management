@@ -1,15 +1,14 @@
-
 from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models import Organization, Tenant, UsageLog
 from app.routers.deps import (
     get_current_tenant_id,
     get_current_user,
     get_db,
     get_platform_viewer,
 )
-from app.models import Organization, Tenant, UsageLog
 from app.schemas.admin import UsageSummaryItem
 
 router = APIRouter()
@@ -82,9 +81,7 @@ async def get_my_org_usage(
 ):
     """[租户级] 查看当前租户的用量汇总"""
     stmt = select(
-        func.coalesce(
-            func.sum(UsageLog.prompt_tokens + UsageLog.completion_tokens), 0
-        )
+        func.coalesce(func.sum(UsageLog.prompt_tokens + UsageLog.completion_tokens), 0)
     ).where(UsageLog.tenant_id == tenant_id)
     result = await db.execute(stmt)
     total_tokens = result.scalar() or 0
@@ -97,4 +94,3 @@ async def get_my_org_usage(
         "quota_limit": tenant.quota_tokens_limit if tenant else 0,
         "quota_used": tenant.quota_tokens_used if tenant else 0,
     }
-

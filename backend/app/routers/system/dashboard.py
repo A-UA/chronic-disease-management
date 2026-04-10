@@ -3,20 +3,13 @@
 - 普通用户：租户级统计（admin/owner）或部门级统计（staff/manager）
 - 平台管理员：全平台统计
 """
+
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import Date, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.routers.deps import (
-    get_current_active_user,
-    get_current_roles,
-    get_db,
-    get_effective_org_id,
-    get_platform_viewer,
-    inject_rls_context,
-)
 from app.models import (
     Conversation,
     Document,
@@ -25,6 +18,14 @@ from app.models import (
     PatientProfile,
     UsageLog,
     User,
+)
+from app.routers.deps import (
+    get_current_active_user,
+    get_current_roles,
+    get_db,
+    get_effective_org_id,
+    get_platform_viewer,
+    inject_rls_context,
 )
 from app.schemas.admin import DashboardStats, TokenTrendItem
 
@@ -45,9 +46,15 @@ async def get_dashboard_stats(
     - staff/manager: 本部门统计
     """
     # 1. 基础统计
-    org_stmt = select(func.count(Organization.id)).where(Organization.tenant_id == tenant_id)
-    patient_stmt = select(func.count(PatientProfile.id)).where(PatientProfile.tenant_id == tenant_id)
-    conv_stmt = select(func.count(Conversation.id)).where(Conversation.tenant_id == tenant_id)
+    org_stmt = select(func.count(Organization.id)).where(
+        Organization.tenant_id == tenant_id
+    )
+    patient_stmt = select(func.count(PatientProfile.id)).where(
+        PatientProfile.tenant_id == tenant_id
+    )
+    conv_stmt = select(func.count(Conversation.id)).where(
+        Conversation.tenant_id == tenant_id
+    )
     failed_doc_stmt = select(func.count(Document.id)).where(
         Document.tenant_id == tenant_id, Document.status == "failed"
     )
@@ -89,7 +96,9 @@ async def get_dashboard_stats(
     trend_stmt = (
         select(
             cast(UsageLog.created_at, Date).label("date"),
-            func.sum(UsageLog.prompt_tokens + UsageLog.completion_tokens).label("count")
+            func.sum(UsageLog.prompt_tokens + UsageLog.completion_tokens).label(
+                "count"
+            ),
         )
         .where(
             UsageLog.tenant_id == tenant_id,
@@ -117,7 +126,7 @@ async def get_dashboard_stats(
         total_conversations=conv_count,
         total_tokens_used=tokens,
         token_usage_trend=full_trend,
-        recent_failed_docs=failed_docs
+        recent_failed_docs=failed_docs,
     )
 
 
@@ -129,27 +138,41 @@ async def get_platform_stats(
     """[平台管理员] 全平台统计（不限租户）"""
     org_count = (await db.execute(select(func.count(Organization.id)))).scalar() or 0
     user_count = (await db.execute(select(func.count(User.id)))).scalar() or 0
-    patient_count = (await db.execute(select(func.count(PatientProfile.id)))).scalar() or 0
+    patient_count = (
+        await db.execute(select(func.count(PatientProfile.id)))
+    ).scalar() or 0
     conv_count = (await db.execute(select(func.count(Conversation.id)))).scalar() or 0
-    failed_docs = (await db.execute(
-        select(func.count(Document.id)).where(Document.status == "failed")
-    )).scalar() or 0
-    tokens = (await db.execute(
-        select(func.coalesce(func.sum(UsageLog.prompt_tokens + UsageLog.completion_tokens), 0))
-    )).scalar() or 0
+    failed_docs = (
+        await db.execute(
+            select(func.count(Document.id)).where(Document.status == "failed")
+        )
+    ).scalar() or 0
+    tokens = (
+        await db.execute(
+            select(
+                func.coalesce(
+                    func.sum(UsageLog.prompt_tokens + UsageLog.completion_tokens), 0
+                )
+            )
+        )
+    ).scalar() or 0
 
     since_24h = datetime.utcnow() - timedelta(hours=24)
-    active_users = (await db.execute(
-        select(func.count(func.distinct(UsageLog.user_id))).where(
-            UsageLog.created_at >= since_24h, UsageLog.user_id.isnot(None)
+    active_users = (
+        await db.execute(
+            select(func.count(func.distinct(UsageLog.user_id))).where(
+                UsageLog.created_at >= since_24h, UsageLog.user_id.isnot(None)
+            )
         )
-    )).scalar() or 0
+    ).scalar() or 0
 
     since_7d = (datetime.utcnow() - timedelta(days=6)).date()
     trend_stmt = (
         select(
             cast(UsageLog.created_at, Date).label("date"),
-            func.sum(UsageLog.prompt_tokens + UsageLog.completion_tokens).label("count")
+            func.sum(UsageLog.prompt_tokens + UsageLog.completion_tokens).label(
+                "count"
+            ),
         )
         .where(UsageLog.created_at >= since_7d)
         .group_by(cast(UsageLog.created_at, Date))

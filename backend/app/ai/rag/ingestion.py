@@ -3,6 +3,7 @@
 The public ingestion entry now accepts injected runtime dependencies instead of
 creating its own session or updating quota directly.
 """
+
 import asyncio
 import logging
 
@@ -73,13 +74,17 @@ async def ingest_document_with_dependencies(
                 contexts.extend(batch_results)
 
             for cr, ctx in zip(chunk_results, contexts):
-                enhanced_contents.append(f"{ctx}\n\n{cr.content}" if ctx else cr.content)
+                enhanced_contents.append(
+                    f"{ctx}\n\n{cr.content}" if ctx else cr.content
+                )
         else:
             enhanced_contents = [cr.content for cr in chunk_results]
 
         with trace_span("rag.embed_chunks", {"count": len(enhanced_contents)}):
             embeddings: list[list[float]] = []
-            for batch_start in range(0, len(enhanced_contents), settings.EMBEDDING_BATCH_SIZE):
+            for batch_start in range(
+                0, len(enhanced_contents), settings.EMBEDDING_BATCH_SIZE
+            ):
                 batch = enhanced_contents[
                     batch_start : batch_start + settings.EMBEDDING_BATCH_SIZE
                 ]
@@ -118,7 +123,9 @@ async def ingest_document_with_dependencies(
                         else None,
                         "heading_aware": True,
                         "section_title": chunk_result.section_title,
-                        "source": str(document.file_name) if document.file_name else "unknown",
+                        "source": str(document.file_name)
+                        if document.file_name
+                        else "unknown",
                         "token_count": num_tokens,
                         "char_start": chunk_result.char_start,
                         "char_end": chunk_result.char_end,

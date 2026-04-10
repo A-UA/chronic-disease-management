@@ -9,14 +9,6 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.routers.deps import (
-    get_current_org_id,
-    get_current_org_user,
-    get_current_roles,
-    get_current_tenant_id,
-    get_current_user,
-    get_db,
-)
 from app.base import security
 from app.base.config import settings
 from app.models import (
@@ -29,8 +21,16 @@ from app.models import (
     User,
 )
 from app.models.menu import Menu
-from app.services.system.rbac import RBACService
+from app.routers.deps import (
+    get_current_org_id,
+    get_current_org_user,
+    get_current_roles,
+    get_current_tenant_id,
+    get_current_user,
+    get_db,
+)
 from app.schemas.user import UserCreate, UserRead, UserUpdatePassword
+from app.services.system.rbac import RBACService
 
 router = APIRouter()
 
@@ -70,7 +70,9 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)) -> A
 
     # 5. 绑定用户到部门
     org_user = OrganizationUser(
-        tenant_id=tenant.id, org_id=org.id, user_id=user.id,
+        tenant_id=tenant.id,
+        org_id=org.id,
+        user_id=user.id,
     )
     db.add(org_user)
 
@@ -80,8 +82,10 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)) -> A
     owner_role = res.scalar_one_or_none()
     if owner_role:
         role_link = OrganizationUserRole(
-            tenant_id=tenant.id, org_id=org.id,
-            user_id=user.id, role_id=owner_role.id,
+            tenant_id=tenant.id,
+            org_id=org.id,
+            user_id=user.id,
+            role_id=owner_role.id,
         )
         db.add(role_link)
 
@@ -96,8 +100,10 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)) -> A
         platform_role = res_platform.scalar_one_or_none()
         if platform_role:
             role_link_platform = OrganizationUserRole(
-                tenant_id=tenant.id, org_id=org.id,
-                user_id=user.id, role_id=platform_role.id,
+                tenant_id=tenant.id,
+                org_id=org.id,
+                user_id=user.id,
+                role_id=platform_role.id,
             )
             db.add(role_link_platform)
 
@@ -105,8 +111,10 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)) -> A
     await db.refresh(user)
 
     return {
-        "id": user.id, "email": user.email,
-        "tenant_id": tenant.id, "org_id": org.id,
+        "id": user.id,
+        "email": user.email,
+        "tenant_id": tenant.id,
+        "org_id": org.id,
     }
 
 
@@ -163,7 +171,8 @@ async def login_access_token(
             "access_token": token,
             "token_type": "bearer",
             "organization": {
-                "id": org.id, "name": org.name,
+                "id": org.id,
+                "name": org.name,
                 "tenant_id": org.tenant_id,
             },
             "require_org_selection": False,
@@ -174,12 +183,16 @@ async def login_access_token(
     org_list = []
     for ou in org_users:
         org = ou.organization
-        org_list.append({
-            "id": org.id,
-            "name": org.name,
-            "tenant_id": org.tenant_id,
-            "tenant_name": org.tenant.name if hasattr(org, "tenant") and org.tenant else None,
-        })
+        org_list.append(
+            {
+                "id": org.id,
+                "name": org.name,
+                "tenant_id": org.tenant_id,
+                "tenant_name": org.tenant.name
+                if hasattr(org, "tenant") and org.tenant
+                else None,
+            }
+        )
     return {
         "access_token": None,
         "token_type": "bearer",
@@ -242,7 +255,8 @@ async def select_org(
         "access_token": token,
         "token_type": "bearer",
         "organization": {
-            "id": org.id, "name": org.name,
+            "id": org.id,
+            "name": org.name,
             "tenant_id": org.tenant_id,
         },
     }
@@ -288,7 +302,8 @@ async def switch_org(
         "access_token": token,
         "token_type": "bearer",
         "organization": {
-            "id": org.id, "name": org.name,
+            "id": org.id,
+            "name": org.name,
             "tenant_id": org.tenant_id,
         },
     }
@@ -452,6 +467,7 @@ async def update_password(
 
 # ── 用户信息编辑 ──
 
+
 class UserProfileUpdate(BaseModel):
     name: str | None = None
 
@@ -471,6 +487,7 @@ async def update_my_profile(
 
 # ── 密码重置 ──
 
+
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
 
@@ -489,8 +506,6 @@ async def forgot_password(
     """请求密码重置（无论邮箱是否存在都返回200，防信息泄露）"""
     import logging
     import secrets
-
-    logger = logging.getLogger(__name__)
 
     stmt = select(User).where(User.email == data.email)
     result = await db.execute(stmt)
@@ -512,6 +527,7 @@ async def forgot_password(
 
         # 发送邮件（SMTP 未配置时降级为日志）
         from app.services.auth.email import send_reset_code_email
+
         await send_reset_code_email(data.email, code)
 
     return {"message": "If the email exists, a reset code has been sent."}

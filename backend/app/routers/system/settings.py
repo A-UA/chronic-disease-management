@@ -4,8 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.routers.deps import get_db, get_platform_admin
-from app.services.system.settings import SettingsService
 from app.schemas.admin import DynamicSettings
+from app.services.system.settings import SettingsService
 
 router = APIRouter()
 
@@ -38,4 +38,6 @@ async def update_settings(
         updated = await SettingsService.update(db, current_dict)
         return updated
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Invalid settings format: {str(e)}")
+        raise HTTPException(
+            status_code=400, detail=f"Invalid settings format: {str(e)}"
+        )

@@ -9,6 +9,7 @@ from .base import Base, IDMixin, TimestampMixin
 
 class Resource(Base, IDMixin):
     """系统受保护的资源定义 (例如: patient, document, knowledge_base)"""
+
     __tablename__ = "rbac_resources"
 
     name: Mapped[str] = mapped_column(String(100), unique=True, index=True)
@@ -16,12 +17,14 @@ class Resource(Base, IDMixin):
     description: Mapped[str | None] = mapped_column(Text)
 
     permissions: Mapped[list["Permission"]] = relationship(
-        back_populates="resource", cascade="all, delete-orphan",
+        back_populates="resource",
+        cascade="all, delete-orphan",
     )
 
 
 class Action(Base, IDMixin):
     """系统支持的操作定义 (例如: create, read, update, delete, export)"""
+
     __tablename__ = "rbac_actions"
 
     name: Mapped[str] = mapped_column(String(100), unique=True, index=True)
@@ -31,17 +34,22 @@ class Action(Base, IDMixin):
 
 class Permission(Base, IDMixin):
     """权限点：资源 + 操作的组合 (例如: patient:read)"""
+
     __tablename__ = "permissions"
 
     resource_id: Mapped[int] = mapped_column(
-        ForeignKey("rbac_resources.id", ondelete="CASCADE"), index=True,
+        ForeignKey("rbac_resources.id", ondelete="CASCADE"),
+        index=True,
     )
     action_id: Mapped[int] = mapped_column(
-        ForeignKey("rbac_actions.id", ondelete="CASCADE"), index=True,
+        ForeignKey("rbac_actions.id", ondelete="CASCADE"),
+        index=True,
     )
 
     permission_type: Mapped[str] = mapped_column(
-        String(20), default="api", server_default="api",
+        String(20),
+        default="api",
+        server_default="api",
     )
     name: Mapped[str] = mapped_column(String(100), index=True)
     code: Mapped[str] = mapped_column(String(100), unique=True, index=True)
@@ -52,7 +60,8 @@ class Permission(Base, IDMixin):
     resource: Mapped["Resource"] = relationship(back_populates="permissions")
     action: Mapped["Action"] = relationship()
     roles: Mapped[list["Role"]] = relationship(
-        secondary="role_permissions", back_populates="permissions",
+        secondary="role_permissions",
+        back_populates="permissions",
     )
 
     __table_args__ = (
@@ -62,13 +71,17 @@ class Permission(Base, IDMixin):
 
 class Role(Base, IDMixin, TimestampMixin):
     """角色：支持继承与多租户隔离"""
+
     __tablename__ = "roles"
 
     tenant_id: Mapped[int | None] = mapped_column(
-        ForeignKey("tenants.id", ondelete="CASCADE"), index=True, nullable=True,
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        index=True,
+        nullable=True,
     )
     parent_role_id: Mapped[int | None] = mapped_column(
-        ForeignKey("roles.id", ondelete="SET NULL"), index=True,
+        ForeignKey("roles.id", ondelete="SET NULL"),
+        index=True,
     )
 
     name: Mapped[str] = mapped_column(String(100), index=True)
@@ -78,10 +91,12 @@ class Role(Base, IDMixin, TimestampMixin):
 
     # Relationships
     permissions: Mapped[list["Permission"]] = relationship(
-        secondary="role_permissions", back_populates="roles",
+        secondary="role_permissions",
+        back_populates="roles",
     )
     parent_role: Mapped[Optional["Role"]] = relationship(
-        remote_side="Role.id", backref="child_roles",
+        remote_side="Role.id",
+        backref="child_roles",
     )
 
     __table_args__ = (
@@ -93,19 +108,26 @@ class RolePermission(Base):
     __tablename__ = "role_permissions"
 
     role_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True,
+        BigInteger,
+        ForeignKey("roles.id", ondelete="CASCADE"),
+        primary_key=True,
     )
     permission_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True,
+        BigInteger,
+        ForeignKey("permissions.id", ondelete="CASCADE"),
+        primary_key=True,
     )
 
 
 class RoleConstraint(Base, IDMixin, TimestampMixin):
     """责任分离约束 (SoD)"""
+
     __tablename__ = "rbac_role_constraints"
 
     tenant_id: Mapped[int | None] = mapped_column(
-        ForeignKey("tenants.id", ondelete="CASCADE"), index=True, nullable=True,
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        index=True,
+        nullable=True,
     )
     name: Mapped[str] = mapped_column(String(100))
     constraint_type: Mapped[str] = mapped_column(String(20))
@@ -117,6 +139,9 @@ class RoleConstraint(Base, IDMixin, TimestampMixin):
 
     __table_args__ = (
         UniqueConstraint(
-            "role_id_1", "role_id_2", "constraint_type", name="_role_conflict_uc",
+            "role_id_1",
+            "role_id_2",
+            "constraint_type",
+            name="_role_conflict_uc",
         ),
     )

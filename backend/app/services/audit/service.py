@@ -3,6 +3,7 @@
 提供同步（事务内）和异步（后台任务）两种写入方式。
 从 services/audit.py 迁移，保持接口完全兼容。
 """
+
 import asyncio
 import logging
 
@@ -51,9 +52,11 @@ async def audit_action_async(
     """异步审计记录（后台任务，独立会话，不阻塞请求）"""
     try:
         from app.base.database import AsyncSessionLocal
+
         async with AsyncSessionLocal() as db:
             if tenant_id:
                 from sqlalchemy import text
+
                 await db.execute(
                     text("SELECT set_config('app.current_tenant_id', :tid, true)"),
                     {"tid": str(tenant_id)},
@@ -87,15 +90,17 @@ def fire_audit(
     """即发即忘式审计记录（适用于不需要等待结果的场景）"""
     try:
         loop = asyncio.get_running_loop()
-        loop.create_task(audit_action_async(
-            user_id=user_id,
-            org_id=org_id,
-            action=action,
-            resource_type=resource_type,
-            resource_id=resource_id,
-            details=details,
-            ip_address=ip_address,
-            tenant_id=tenant_id,
-        ))
+        loop.create_task(
+            audit_action_async(
+                user_id=user_id,
+                org_id=org_id,
+                action=action,
+                resource_type=resource_type,
+                resource_id=resource_id,
+                details=details,
+                ip_address=ip_address,
+                tenant_id=tenant_id,
+            )
+        )
     except RuntimeError:
         logger.warning("无事件循环，审计日志跳过")

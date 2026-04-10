@@ -4,7 +4,6 @@ import ast
 import re
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 SEED_FILE = ROOT / "app" / "seed.py"
 ROUTERS_DIR = ROOT / "app" / "routers"
@@ -18,7 +17,10 @@ def _load_seeded_permissions() -> set[str]:
             for target in node.targets:
                 if isinstance(target, ast.Name) and target.id == "PERMISSION_MAP":
                     permission_map = ast.literal_eval(node.value)
-                    return {f"{resource}:{action}" for resource, action, *_ in permission_map}
+                    return {
+                        f"{resource}:{action}"
+                        for resource, action, *_ in permission_map
+                    }
     raise AssertionError("PERMISSION_MAP not found in seed.py")
 
 

@@ -1,4 +1,5 @@
 """PDF 文档解析器插件 — PyMuPDF 主解析 + pdfplumber OCR 回退"""
+
 import logging
 from io import BytesIO
 
@@ -38,7 +39,9 @@ class PdfParserPlugin:
                         text = page.extract_text()
                         if not text or len(text.strip()) < 50:
                             pil_image = page.to_image(resolution=300).original
-                            text = pytesseract.image_to_string(pil_image, lang="chi_sim+eng")
+                            text = pytesseract.image_to_string(
+                                pil_image, lang="chi_sim+eng"
+                            )
                         pages.append(text.strip() if text else "")
 
             pages = [p for p in pages if p]

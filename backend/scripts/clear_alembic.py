@@ -1,7 +1,9 @@
 """清理 alembic_version 表，准备全新迁移"""
+
 import asyncio
-from sqlalchemy import text
+
 from app.db.session import AsyncSessionLocal
+from sqlalchemy import text
 
 
 async def main():

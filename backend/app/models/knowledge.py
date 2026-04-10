@@ -12,10 +12,12 @@ class KnowledgeBase(Base, IDMixin, TimestampMixin):
     __tablename__ = "knowledge_bases"
 
     tenant_id: Mapped[int] = mapped_column(
-        ForeignKey("tenants.id", ondelete="CASCADE"), index=True,
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        index=True,
     )
     org_id: Mapped[int] = mapped_column(
-        ForeignKey("organizations.id", ondelete="CASCADE"), index=True,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        index=True,
     )
     created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
     name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -26,10 +28,12 @@ class Document(Base, IDMixin, TimestampMixin):
     __tablename__ = "documents"
 
     tenant_id: Mapped[int] = mapped_column(
-        ForeignKey("tenants.id", ondelete="CASCADE"), index=True,
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        index=True,
     )
     kb_id: Mapped[int] = mapped_column(
-        ForeignKey("knowledge_bases.id", ondelete="CASCADE"), index=True,
+        ForeignKey("knowledge_bases.id", ondelete="CASCADE"),
+        index=True,
     )
     org_id: Mapped[int] = mapped_column(
         ForeignKey("organizations.id", ondelete="CASCADE"),
@@ -46,23 +50,25 @@ class Document(Base, IDMixin, TimestampMixin):
     file_size: Mapped[int] = mapped_column(Integer, nullable=True)
     minio_url: Mapped[str] = mapped_column(String(1024), nullable=False)
     status: Mapped[str] = mapped_column(
-        String(50), default="processing", server_default="processing",
+        String(50),
+        default="processing",
+        server_default="processing",
     )
     failed_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    __table_args__ = (
-        Index("idx_documents_tenant_kb", "tenant_id", "kb_id"),
-    )
+    __table_args__ = (Index("idx_documents_tenant_kb", "tenant_id", "kb_id"),)
 
 
 class Chunk(Base, IDMixin, TimestampMixin):
     __tablename__ = "chunks"
 
     tenant_id: Mapped[int] = mapped_column(
-        ForeignKey("tenants.id", ondelete="CASCADE"), index=True,
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        index=True,
     )
     kb_id: Mapped[int] = mapped_column(
-        ForeignKey("knowledge_bases.id", ondelete="CASCADE"), index=True,
+        ForeignKey("knowledge_bases.id", ondelete="CASCADE"),
+        index=True,
     )
     org_id: Mapped[int] = mapped_column(
         ForeignKey("organizations.id", ondelete="CASCADE"),

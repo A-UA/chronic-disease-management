@@ -77,7 +77,9 @@ async def test_upload_document_and_enqueue_uses_parser_storage_and_queue(
     fake_user = SimpleNamespace(id=7)
     fake_file = FakeUploadFile("report.pdf", "application/pdf", [b"abc", b"def"])
     fake_parser = SimpleNamespace(
-        parse=lambda file_bytes, filename: SimpleNamespace(text="parsed text", pages=["page-1"])
+        parse=lambda file_bytes, filename: SimpleNamespace(
+            text="parsed text", pages=["page-1"]
+        )
     )
 
     enqueue_calls = []
@@ -142,7 +144,9 @@ async def test_upload_document_and_enqueue_marks_document_failed_when_queue_subm
     fake_user = SimpleNamespace(id=7)
     fake_file = FakeUploadFile("report.pdf", "application/pdf", [b"abc"])
     fake_parser = SimpleNamespace(
-        parse=lambda file_bytes, filename: SimpleNamespace(text="parsed text", pages=["page-1"])
+        parse=lambda file_bytes, filename: SimpleNamespace(
+            text="parsed text", pages=["page-1"]
+        )
     )
 
     async def fake_enqueue_process_document_job(**kwargs):

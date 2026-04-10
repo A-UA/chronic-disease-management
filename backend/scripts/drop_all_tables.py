@@ -1,7 +1,9 @@
 """Drop 所有业务表，准备全量重建"""
+
 import asyncio
-from sqlalchemy import text
+
 from app.db.session import AsyncSessionLocal
+from sqlalchemy import text
 
 
 async def main():
@@ -10,11 +12,13 @@ async def main():
         await db.execute(text("SET session_replication_role = 'replica';"))
 
         # 获取所有业务表（排除 alembic_version）
-        result = await db.execute(text("""
+        result = await db.execute(
+            text("""
             SELECT tablename FROM pg_tables 
             WHERE schemaname = 'public' 
             AND tablename != 'alembic_version'
-        """))
+        """)
+        )
         tables = [row[0] for row in result.fetchall()]
 
         for table in tables:

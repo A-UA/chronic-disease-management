@@ -123,7 +123,9 @@ async def delete_document_and_enqueue_cleanup(
             await enqueue_delete_file_job(minio_url=document.minio_url)
     except Exception as exc:
         logger.exception("Failed to enqueue file deletion")
-        raise HTTPException(status_code=500, detail="Document cleanup enqueue failed") from exc
+        raise HTTPException(
+            status_code=500, detail="Document cleanup enqueue failed"
+        ) from exc
 
     await db.execute(delete(Document).where(Document.id == document.id))
     await db.commit()

@@ -23,6 +23,7 @@ SKILL.md frontmatter 字段（标准）：
   2. Activation: 加载完整 SKILL.md body（< 5000 tokens）
   3. Execution: 按需加载 scripts/references/assets
 """
+
 from __future__ import annotations
 
 import logging
@@ -72,7 +73,7 @@ def parse_skill_md(content: str) -> tuple[dict[str, Any], str]:
     if len(desc) < 1 or len(desc) > 1024:
         raise ValueError("description 长度必须在 1-1024 之间")
 
-    body = content[match.end():].strip()
+    body = content[match.end() :].strip()
     return meta, body
 
 
@@ -97,7 +98,9 @@ def _make_prompt_handler(instructions: str, skill_dir: Path | None = None):
                 for ref_file in sorted(refs_dir.glob("*.md")):
                     try:
                         ref_content = ref_file.read_text(encoding="utf-8")
-                        parts.append(f"\n--- 参考文档: {ref_file.name} ---\n{ref_content}")
+                        parts.append(
+                            f"\n--- 参考文档: {ref_file.name} ---\n{ref_content}"
+                        )
                     except Exception:
                         pass
 
@@ -135,7 +138,8 @@ def load_skill_from_directory(skill_dir: Path) -> SkillDefinition:
     if skill_dir.name != name:
         logger.warning(
             "Skill name '%s' 与目录名 '%s' 不匹配（标准要求一致）",
-            name, skill_dir.name,
+            name,
+            skill_dir.name,
         )
 
     # 从 metadata 扩展字段读取权限
@@ -218,7 +222,8 @@ def register_skills_from_directory(
     if registered:
         logger.info(
             "从 %s 加载了 %d 个 Agent Skills: %s",
-            base, len(registered),
+            base,
+            len(registered),
             ", ".join(s.name for s in registered),
         )
     return registered

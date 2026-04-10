@@ -9,14 +9,17 @@ class PatientProfileBase(BaseModel):
     birth_date: date | None = None
     medical_history: dict | None = None
 
+
 class PatientProfileCreate(PatientProfileBase):
     pass
+
 
 class PatientProfileUpdate(BaseModel):
     real_name: str | None = None
     gender: str | None = None
     birth_date: date | None = None
     medical_history: dict | None = None
+
 
 class PatientProfileRead(PatientProfileBase):
     id: int

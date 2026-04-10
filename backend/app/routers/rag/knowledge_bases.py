@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models import Chunk, Document, KnowledgeBase, User
 from app.routers.deps import (
     get_current_org_id,
     get_current_tenant_id,
@@ -14,7 +15,6 @@ from app.routers.deps import (
     get_effective_org_id,
     inject_rls_context,
 )
-from app.models import Chunk, Document, KnowledgeBase, User
 
 router = APIRouter()
 
@@ -171,14 +171,20 @@ async def update_knowledge_base(
     await db.refresh(kb)
 
     # 查询统计数据
-    doc_count = (await db.execute(
-        select(func.count(Document.id))
-        .where(Document.kb_id == kb_id, Document.deleted_at.is_(None))
-    )).scalar() or 0
-    chunk_count = (await db.execute(
-        select(func.count(Chunk.id))
-        .where(Chunk.kb_id == kb_id, Chunk.deleted_at.is_(None))
-    )).scalar() or 0
+    doc_count = (
+        await db.execute(
+            select(func.count(Document.id)).where(
+                Document.kb_id == kb_id, Document.deleted_at.is_(None)
+            )
+        )
+    ).scalar() or 0
+    chunk_count = (
+        await db.execute(
+            select(func.count(Chunk.id)).where(
+                Chunk.kb_id == kb_id, Chunk.deleted_at.is_(None)
+            )
+        )
+    ).scalar() or 0
 
     return KBRead(
         id=kb.id,
@@ -207,21 +213,23 @@ async def get_knowledge_base_stats(
         raise HTTPException(status_code=403, detail="Not enough permissions")
 
     # 文档数
-    doc_count = (await db.execute(
-        select(func.count(Document.id)).where(Document.kb_id == kb_id)
-    )).scalar() or 0
+    doc_count = (
+        await db.execute(select(func.count(Document.id)).where(Document.kb_id == kb_id))
+    ).scalar() or 0
 
     # chunk 数
-    chunk_count = (await db.execute(
-        select(func.count(Chunk.id)).where(Chunk.kb_id == kb_id)
-    )).scalar() or 0
+    chunk_count = (
+        await db.execute(select(func.count(Chunk.id)).where(Chunk.kb_id == kb_id))
+    ).scalar() or 0
 
     # 总 token 数（从 chunk metadata 的 token_count 聚合）
-    total_tokens = (await db.execute(
-        select(func.coalesce(
-            func.sum(Chunk.metadata_["token_count"].as_integer()), 0
-        )).where(Chunk.kb_id == kb_id)
-    )).scalar() or 0
+    total_tokens = (
+        await db.execute(
+            select(
+                func.coalesce(func.sum(Chunk.metadata_["token_count"].as_integer()), 0)
+            ).where(Chunk.kb_id == kb_id)
+        )
+    ).scalar() or 0
 
     return {
         "kb_id": kb_id,
@@ -229,4 +237,3 @@ async def get_knowledge_base_stats(
         "chunk_count": chunk_count,
         "total_tokens": total_tokens,
     }
-

@@ -1,4 +1,5 @@
 """统一业务异常定义"""
+
 from fastapi import HTTPException
 
 

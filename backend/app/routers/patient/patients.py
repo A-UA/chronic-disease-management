@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models import PatientProfile, User
 from app.routers.deps import (
     check_permission,
     get_current_org_id,
@@ -13,21 +14,24 @@ from app.routers.deps import (
     get_effective_org_id,
     inject_rls_context,
 )
-from app.models import PatientProfile, User
 from app.schemas.patient import PatientProfileRead, PatientProfileUpdate
 
 router = APIRouter()
 
+
 # --- Helper ---
-async def _load_patient_profile(db: AsyncSession, user_id: int, org_id: int) -> PatientProfile | None:
+async def _load_patient_profile(
+    db: AsyncSession, user_id: int, org_id: int
+) -> PatientProfile | None:
     stmt = select(PatientProfile).where(
-        PatientProfile.user_id == user_id,
-        PatientProfile.org_id == org_id
+        PatientProfile.user_id == user_id, PatientProfile.org_id == org_id
     )
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
+
 # --- Unified Endpoints ---
+
 
 @router.get("", response_model=list[PatientProfileRead])
 async def list_patients(
@@ -52,18 +56,20 @@ async def list_patients(
     result = await db.execute(stmt)
     return result.scalars().all()
 
+
 @router.get("/me", response_model=PatientProfileRead)
 async def get_my_patient_profile(
     current_user: User = Depends(get_current_user),
     tenant_id: int = Depends(get_current_tenant_id),
     org_id: int = Depends(get_current_org_id),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ) -> Any:
     """[个人视图] 获取当前用户自己的患者档案"""
     profile = await _load_patient_profile(db, current_user.id, org_id)
     if not profile:
         raise HTTPException(status_code=404, detail="Patient profile not found")
     return profile
+
 
 @router.get("/{patient_id}", response_model=PatientProfileRead)
 async def get_patient_detail(
@@ -84,18 +90,24 @@ async def get_patient_detail(
         raise HTTPException(status_code=404, detail="Patient not found")
     return patient
 
+
 @router.put("/me", response_model=PatientProfileRead)
 async def update_my_patient_profile(
     profile_in: PatientProfileUpdate,
     current_user: User = Depends(get_current_user),
     tenant_id: int = Depends(get_current_tenant_id),
     org_id: int = Depends(get_current_org_id),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ) -> Any:
     """[个人视图] 更新当前用户自己的患者档案"""
     profile = await _load_patient_profile(db, current_user.id, org_id)
     if not profile:
-        profile = PatientProfile(user_id=current_user.id, tenant_id=tenant_id, org_id=org_id, real_name="Unnamed")
+        profile = PatientProfile(
+            user_id=current_user.id,
+            tenant_id=tenant_id,
+            org_id=org_id,
+            real_name="Unnamed",
+        )
         db.add(profile)
 
     for field, value in profile_in.model_dump(exclude_unset=True).items():
@@ -103,6 +115,7 @@ async def update_my_patient_profile(
     await db.commit()
     await db.refresh(profile)
     return profile
+
 
 @router.put("/{patient_id}", response_model=PatientProfileRead)
 async def admin_update_patient(
@@ -197,8 +210,11 @@ async def admin_create_patient_profile(
     await db.commit()
     await db.refresh(profile)
     return {
-        "id": profile.id, "user_id": profile.user_id, "org_id": profile.org_id,
-        "real_name": profile.real_name, "gender": profile.gender,
+        "id": profile.id,
+        "user_id": profile.user_id,
+        "org_id": profile.org_id,
+        "real_name": profile.real_name,
+        "gender": profile.gender,
     }
 
 

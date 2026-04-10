@@ -11,7 +11,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.agent import SecurityContext, run_agent
 from app.base.database import AsyncSessionLocal
-from app.models import Conversation, Message, OrganizationUser, OrganizationUserRole, User
+from app.models import (
+    Conversation,
+    Message,
+    OrganizationUser,
+    OrganizationUserRole,
+    User,
+)
 from app.services.system.rbac import RBACService
 
 
@@ -73,7 +79,10 @@ async def handle_agent_chat(
         conversation = await db.get(Conversation, request.conversation_id)
         if conversation is None:
             raise HTTPException(status_code=404, detail="Conversation not found")
-        if conversation.tenant_id != tenant_id or conversation.user_id != current_user.id:
+        if (
+            conversation.tenant_id != tenant_id
+            or conversation.user_id != current_user.id
+        ):
             raise HTTPException(
                 status_code=403,
                 detail="Conversation does not belong to current user",

@@ -1,13 +1,16 @@
 """患者相关 Skills — 所有数据访问通过 ctx.db（带 RLS）"""
+
 from sqlalchemy import select
 
-from app.models import HealthMetric, PatientProfile
 from app.ai.agent.security import SecurityContext
 from app.ai.agent.skills.base import SkillDefinition, SkillResult, skill_registry
+from app.models import HealthMetric, PatientProfile
 
 
 async def query_patient_handler(
-    ctx: SecurityContext, patient_id: int | None = None, name: str | None = None,
+    ctx: SecurityContext,
+    patient_id: int | None = None,
+    name: str | None = None,
 ) -> SkillResult:
     """根据 ID 或姓名查询患者档案"""
     try:
@@ -72,36 +75,47 @@ async def health_trend_handler(
         return SkillResult(success=False, error=str(e))
 
 
-skill_registry.register(SkillDefinition(
-    name="query_patient",
-    description="根据 ID 或姓名查询患者档案",
-    parameters_schema={
-        "type": "object",
-        "properties": {
-            "patient_id": {"type": "integer", "description": "患者 ID"},
-            "name": {"type": "string", "description": "患者姓名（模糊搜索）"},
-        },
-    },
-    handler=query_patient_handler,
-    required_permission="patient:read",
-))
-
-skill_registry.register(SkillDefinition(
-    name="health_trend",
-    description="查询患者健康指标趋势（血压/血糖/体重/心率等）",
-    parameters_schema={
-        "type": "object",
-        "properties": {
-            "patient_id": {"type": "integer", "description": "患者 ID"},
-            "metric_type": {
-                "type": "string",
-                "enum": ["blood_pressure", "blood_sugar", "weight", "heart_rate", "bmi", "spo2"],
-                "description": "指标类型",
+skill_registry.register(
+    SkillDefinition(
+        name="query_patient",
+        description="根据 ID 或姓名查询患者档案",
+        parameters_schema={
+            "type": "object",
+            "properties": {
+                "patient_id": {"type": "integer", "description": "患者 ID"},
+                "name": {"type": "string", "description": "患者姓名（模糊搜索）"},
             },
-            "days": {"type": "integer", "description": "查询天数", "default": 30},
         },
-        "required": ["patient_id"],
-    },
-    handler=health_trend_handler,
-    required_permission="patient:read",
-))
+        handler=query_patient_handler,
+        required_permission="patient:read",
+    )
+)
+
+skill_registry.register(
+    SkillDefinition(
+        name="health_trend",
+        description="查询患者健康指标趋势（血压/血糖/体重/心率等）",
+        parameters_schema={
+            "type": "object",
+            "properties": {
+                "patient_id": {"type": "integer", "description": "患者 ID"},
+                "metric_type": {
+                    "type": "string",
+                    "enum": [
+                        "blood_pressure",
+                        "blood_sugar",
+                        "weight",
+                        "heart_rate",
+                        "bmi",
+                        "spo2",
+                    ],
+                    "description": "指标类型",
+                },
+                "days": {"type": "integer", "description": "查询天数", "default": 30},
+            },
+            "required": ["patient_id"],
+        },
+        handler=health_trend_handler,
+        required_permission="patient:read",
+    )
+)

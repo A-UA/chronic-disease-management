@@ -1,4 +1,5 @@
 """OpenTelemetry SDK 初始化（在 main.py 中调用）"""
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -10,6 +11,7 @@ def setup_telemetry(app):
     仅在 OTLP_ENDPOINT 配置后生效，否则跳过。
     """
     from app.base.config import settings
+
     if not settings.OTLP_ENDPOINT:
         logger.info("OTLP_ENDPOINT not set, telemetry disabled")
         return

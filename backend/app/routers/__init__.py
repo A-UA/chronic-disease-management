@@ -1,4 +1,5 @@
 """API Router - all routes from modules"""
+
 from fastapi import APIRouter
 
 # Audit module
@@ -39,7 +40,9 @@ api_router.include_router(external_api_router, prefix="/external", tags=["extern
 
 # --- System ---
 api_router.include_router(dashboard_router, prefix="/dashboard", tags=["dashboard"])
-api_router.include_router(organizations_router, prefix="/organizations", tags=["organizations"])
+api_router.include_router(
+    organizations_router, prefix="/organizations", tags=["organizations"]
+)
 api_router.include_router(users_router, prefix="/users", tags=["users"])
 api_router.include_router(rbac_router, prefix="/rbac", tags=["rbac"])
 api_router.include_router(menus_router, prefix="/menus", tags=["menus"])
@@ -50,13 +53,17 @@ api_router.include_router(tenants_router, prefix="/tenants", tags=["tenants"])
 
 # --- Patient ---
 api_router.include_router(patients_router, prefix="/patients", tags=["patients"])
-api_router.include_router(health_metrics_router, prefix="/health-metrics", tags=["health-metrics"])
+api_router.include_router(
+    health_metrics_router, prefix="/health-metrics", tags=["health-metrics"]
+)
 api_router.include_router(family_router, prefix="/family", tags=["family"])
 api_router.include_router(managers_router, prefix="/managers", tags=["managers"])
 
 # --- RAG ---
 api_router.include_router(chat_router, prefix="/chat", tags=["chat"])
-api_router.include_router(conversations_router, prefix="/conversations", tags=["conversations"])
+api_router.include_router(
+    conversations_router, prefix="/conversations", tags=["conversations"]
+)
 api_router.include_router(documents_router, prefix="/documents", tags=["documents"])
 api_router.include_router(kb_router, prefix="/kb", tags=["knowledge-bases"])
 

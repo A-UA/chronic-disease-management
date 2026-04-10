@@ -5,6 +5,7 @@
 - build_statement_citations: 基于正则的声明-引用映射
 - extract_statement_citations_structured: 基于 LLM 的结构化声明-引用映射
 """
+
 from __future__ import annotations
 
 import json
@@ -136,7 +137,9 @@ async def extract_statement_citations_structured(
 
 
 def build_rag_prompt(
-    query: str, chunks: list[Chunk], patient_name: str | None = None,
+    query: str,
+    chunks: list[Chunk],
+    patient_name: str | None = None,
     language: str = "zh",
 ) -> tuple[str, list[dict[str, Citation]]]:
     """构建 RAG 提示词并生成引用列表"""

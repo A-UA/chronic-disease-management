@@ -1,4 +1,5 @@
 """Embedding 插件接口定义"""
+
 from typing import Protocol
 
 

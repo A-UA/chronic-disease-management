@@ -1,4 +1,5 @@
 """文档解析器插件接口定义"""
+
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -6,18 +7,22 @@ from typing import Protocol
 @dataclass(slots=True)
 class ParseResult:
     """解析结果"""
+
     text: str
     pages: list[str]
 
 
 class DocumentParseError(Exception):
     """文档解析错误"""
+
     pass
 
 
 class ParserPlugin(Protocol):
     """文档解析器插件协议"""
+
     supported_types: list[str]
+
     def parse(self, file_bytes: bytes, filename: str) -> ParseResult: ...
 
 

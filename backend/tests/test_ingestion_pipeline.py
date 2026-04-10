@@ -5,8 +5,9 @@ from types import SimpleNamespace
 
 import pytest
 
-
-INGESTION_FILE = Path(__file__).resolve().parents[1] / "app" / "ai" / "rag" / "ingestion.py"
+INGESTION_FILE = (
+    Path(__file__).resolve().parents[1] / "app" / "ai" / "rag" / "ingestion.py"
+)
 
 
 def test_ingestion_module_no_longer_owns_session_or_quota_side_effects() -> None:
@@ -74,7 +75,9 @@ async def test_ingest_document_with_dependencies_uses_injected_session_and_provi
     assert document.status == "completed"
     assert document.failed_reason is None
     assert any(getattr(item, "chunk_index", None) == 0 for item in fake_db.added)
-    assert any(getattr(item, "action_type", None) == "embedding" for item in fake_db.added)
+    assert any(
+        getattr(item, "action_type", None) == "embedding" for item in fake_db.added
+    )
 
 
 def _async_return(value):

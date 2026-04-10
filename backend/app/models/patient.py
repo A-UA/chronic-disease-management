@@ -15,11 +15,13 @@ class PatientProfile(Base, IDMixin, TimestampMixin):
     __tablename__ = "patient_profiles"
 
     tenant_id: Mapped[int] = mapped_column(
-        ForeignKey("tenants.id", ondelete="CASCADE"), index=True,
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        index=True,
     )
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     org_id: Mapped[int] = mapped_column(
-        ForeignKey("organizations.id", ondelete="CASCADE"), index=True,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        index=True,
     )
 
     real_name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -34,7 +36,9 @@ class PatientProfile(Base, IDMixin, TimestampMixin):
     organization: Mapped["Organization"] = relationship()
 
     __table_args__ = (
-        UniqueConstraint("tenant_id", "org_id", "user_id", name="uq_patient_profiles_tenant_org_user"),
+        UniqueConstraint(
+            "tenant_id", "org_id", "user_id", name="uq_patient_profiles_tenant_org_user"
+        ),
         Index(
             "idx_patient_medical_history_gin", "medical_history", postgresql_using="gin"
         ),

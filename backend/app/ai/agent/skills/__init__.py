@@ -1,4 +1,5 @@
 """Skills 包 — Python Skills 静态注册 + Agent Skills 标准目录动态注册"""
+
 import logging
 from pathlib import Path
 

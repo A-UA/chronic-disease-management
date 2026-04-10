@@ -5,13 +5,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.settings import SystemSetting
-from app.services.system.quota import redis_client
 from app.schemas.admin import DynamicSettings
+from app.services.system.quota import redis_client
 
 logger = logging.getLogger(__name__)
 
 CACHE_KEY = "system_dynamic_settings"
 CACHE_TTL = 300  # 5 minutes
+
 
 class SettingsService:
     @staticmethod
@@ -86,6 +87,7 @@ class SettingsService:
         await redis_client.delete(CACHE_KEY)
 
         return validated
+
 
 async def get_system_settings(db: AsyncSession) -> DynamicSettings:
     """快捷工具函数"""

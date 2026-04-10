@@ -21,6 +21,9 @@ from .user import PasswordResetToken, User
 
 # Ensure all models are in metadata for migrations
 __all__ = [
+    "Base",
+    "HealthMetric",
+    "PasswordResetToken",
     "Tenant",
     "User",
     "Organization",

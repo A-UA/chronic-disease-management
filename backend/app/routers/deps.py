@@ -27,6 +27,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.base.config import settings
+from app.base.database import get_db
 from app.base.security import ALGORITHM
 from app.models import (
     ApiKey,
@@ -35,7 +36,6 @@ from app.models import (
     Tenant,
     User,
 )
-from app.base.database import get_db
 from app.services.system.rbac import RBACService
 
 logger = logging.getLogger(__name__)
@@ -49,6 +49,7 @@ oauth2_scheme = OAuth2PasswordBearer(
 
 
 # ── 第 1 层：用户认证 ──
+
 
 async def get_current_user(
     db: AsyncSession = Depends(get_db),
@@ -90,6 +91,7 @@ async def get_current_active_user(
 
 # ── 第 2 层：租户上下文（从 JWT 读取，零查询） ──
 
+
 async def get_current_tenant_id(
     token: str = Depends(oauth2_scheme),
 ) -> int:
@@ -111,6 +113,7 @@ async def get_current_tenant_id(
 
 
 # ── 第 3 层：部门上下文（从 JWT 读取，零查询） ──
+
 
 async def get_current_org_id(
     token: str = Depends(oauth2_scheme),
@@ -159,6 +162,7 @@ async def get_effective_org_id(
 
 # ── 第 4 层：RLS 上下文注入 ──
 
+
 async def inject_rls_context(
     tenant_id: int = Depends(get_current_tenant_id),
     current_user: User = Depends(get_current_user),
@@ -173,6 +177,7 @@ async def inject_rls_context(
 
 
 # ── 第 5 层：OrganizationUser 上下文（需要 DB 查询，用于需要角色-权限细节的端点） ──
+
 
 async def get_current_org_user(
     tenant_id: int = Depends(inject_rls_context),
@@ -236,6 +241,7 @@ async def get_current_org(
 
 # ── 权限校验 ──
 
+
 def check_permission(perm_code: str):
     """RBAC 权限校验依赖"""
 
@@ -266,16 +272,19 @@ def check_permission(perm_code: str):
 
 # ── 配额校验 ──
 
+
 async def verify_quota(
     tenant_id: int = Depends(get_current_tenant_id),
     db: AsyncSession = Depends(get_db),
 ) -> Tenant:
     """校验租户级配额"""
     from app.services.system.quota import check_tenant_quota
+
     return await check_tenant_quota(db, tenant_id)
 
 
 # ── API Key 认证 ──
+
 
 async def get_api_key_context(
     authorization: str = Header(...),
@@ -304,10 +313,12 @@ async def get_api_key_context(
 
     # Rate Limiting
     from app.services.system.quota import check_api_key_rate_limit
+
     await check_api_key_rate_limit(api_key.id, api_key.qps_limit)
 
     # Tenant quota
     from app.services.system.quota import check_tenant_quota
+
     await check_tenant_quota(db, api_key.tenant_id)
 
     # Key level quota
@@ -324,6 +335,7 @@ async def get_api_key_context(
 
 
 # ── 平台管理员 ──
+
 
 async def get_platform_admin(
     current_user: User = Depends(get_current_user),

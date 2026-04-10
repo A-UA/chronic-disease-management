@@ -1,4 +1,5 @@
 """Simple Reranker — 基于来源数量的简单加分重排序"""
+
 from collections.abc import Sequence
 from typing import Any
 

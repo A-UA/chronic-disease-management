@@ -5,8 +5,8 @@ import logging
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Message
 from app.ai.rag.query_rewrite import normalize_query
+from app.models import Message
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ _FOLLOW_UP_MARKERS = (
 
 def is_likely_follow_up(query: str) -> bool:
     """判断是否可能是追问（宽松判断，用于决定是否需要上下文增强）
-    
+
     改进：不再仅依赖硬编码标记词 + 长度阈值。
     增加了更多标记词，且长度阈值适用于排除明显独立的长查询。
     """
@@ -49,9 +49,11 @@ def is_likely_follow_up(query: str) -> bool:
     return False
 
 
-def build_retrieval_query_from_history(current_query: str, history_messages: list[dict[str, str]]) -> str:
+def build_retrieval_query_from_history(
+    current_query: str, history_messages: list[dict[str, str]]
+) -> str:
     """基于上下文构建增强检索 query
-    
+
     改进：
     1. 不仅拼接最近的 user message，还会拼接 assistant 摘要中的关键信息
     2. 对非追问查询也做轻量的上下文增强（拼接上一轮话题词）
@@ -106,4 +108,6 @@ async def build_contextual_retrieval_query(
     current_query: str,
 ) -> str:
     history = await load_recent_conversation_messages(db, conversation_id)
-    return build_retrieval_query_from_history(current_query=current_query, history_messages=history)
+    return build_retrieval_query_from_history(
+        current_query=current_query, history_messages=history
+    )

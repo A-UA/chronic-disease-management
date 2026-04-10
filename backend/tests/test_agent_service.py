@@ -110,7 +110,9 @@ async def test_handle_agent_chat_builds_security_context_and_persists_messages(
             "skill_results": [{"skill": "rag_search"}],
         }
 
-    monkeypatch.setattr(service_module, "build_agent_permissions", fake_build_agent_permissions)
+    monkeypatch.setattr(
+        service_module, "build_agent_permissions", fake_build_agent_permissions
+    )
     monkeypatch.setattr(service_module, "run_agent", fake_run_agent)
     monkeypatch.setattr(service_module, "AsyncSessionLocal", lambda: fake_save_db)
     monkeypatch.setattr(service_module, "_generate_title", lambda query: "血压趋势")
@@ -132,8 +134,12 @@ async def test_handle_agent_chat_builds_security_context_and_persists_messages(
     assert "event: chunk" in decoded
     assert "event: done" in decoded
 
-    meta_payload = json.loads(decoded.split("event: meta\ndata: ", 1)[1].split("\n\n", 1)[0])
+    meta_payload = json.loads(
+        decoded.split("event: meta\ndata: ", 1)[1].split("\n\n", 1)[0]
+    )
     assert meta_payload["citations"] == [{"ref": "Doc 1"}]
     assert captured["ctx"].permissions == frozenset({"patient:read", "chat:use"})
     assert any(getattr(item, "role", None) == "user" for item in fake_db.added)
-    assert any(getattr(item, "role", None) == "assistant" for item in fake_save_db.added)
+    assert any(
+        getattr(item, "role", None) == "assistant" for item in fake_save_db.added
+    )

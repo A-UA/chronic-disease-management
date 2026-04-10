@@ -6,7 +6,9 @@ import pytest
 
 
 @pytest.mark.asyncio
-async def test_run_agent_executes_compiled_graph(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_run_agent_executes_compiled_graph(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("JWT_SECRET", "test-secret")
     monkeypatch.setenv("API_KEY_SALT", "test-salt")
 

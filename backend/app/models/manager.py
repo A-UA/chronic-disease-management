@@ -15,11 +15,13 @@ class ManagerProfile(Base, IDMixin, TimestampMixin):
     __tablename__ = "manager_profiles"
 
     tenant_id: Mapped[int] = mapped_column(
-        ForeignKey("tenants.id", ondelete="CASCADE"), index=True,
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        index=True,
     )
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     org_id: Mapped[int] = mapped_column(
-        ForeignKey("organizations.id", ondelete="CASCADE"), index=True,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        index=True,
     )
 
     title: Mapped[str | None] = mapped_column(String(100))
@@ -31,7 +33,9 @@ class ManagerProfile(Base, IDMixin, TimestampMixin):
     organization: Mapped["Organization"] = relationship()
 
     __table_args__ = (
-        UniqueConstraint("tenant_id", "org_id", "user_id", name="uq_manager_profiles_tenant_org_user"),
+        UniqueConstraint(
+            "tenant_id", "org_id", "user_id", name="uq_manager_profiles_tenant_org_user"
+        ),
     )
 
 
@@ -39,16 +43,20 @@ class PatientManagerAssignment(Base, TimestampMixin):
     __tablename__ = "patient_manager_assignments"
 
     tenant_id: Mapped[int] = mapped_column(
-        ForeignKey("tenants.id", ondelete="CASCADE"), primary_key=True,
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        primary_key=True,
     )
     org_id: Mapped[int] = mapped_column(
-        ForeignKey("organizations.id", ondelete="CASCADE"), primary_key=True,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        primary_key=True,
     )
     manager_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"), primary_key=True,
+        ForeignKey("users.id"),
+        primary_key=True,
     )
     patient_id: Mapped[int] = mapped_column(
-        ForeignKey("patient_profiles.id"), primary_key=True,
+        ForeignKey("patient_profiles.id"),
+        primary_key=True,
     )
 
     assignment_role: Mapped[str] = mapped_column(String(50), default="main")
@@ -62,19 +70,23 @@ class ManagementSuggestion(Base, IDMixin, TimestampMixin):
     __tablename__ = "management_suggestions"
 
     tenant_id: Mapped[int] = mapped_column(
-        ForeignKey("tenants.id", ondelete="CASCADE"), index=True,
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        index=True,
     )
     org_id: Mapped[int] = mapped_column(
-        ForeignKey("organizations.id", ondelete="CASCADE"), index=True,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        index=True,
     )
     manager_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     patient_id: Mapped[int] = mapped_column(
-        ForeignKey("patient_profiles.id"), index=True,
+        ForeignKey("patient_profiles.id"),
+        index=True,
     )
 
     content: Mapped[str] = mapped_column(Text, nullable=False)
     suggestion_type: Mapped[str] = mapped_column(
-        String(50), default="general",
+        String(50),
+        default="general",
     )  # clinical, lifestyle, medication
 
     # Relationships
@@ -82,5 +94,11 @@ class ManagementSuggestion(Base, IDMixin, TimestampMixin):
     patient: Mapped["PatientProfile"] = relationship()
 
     __table_args__ = (
-        Index("idx_tenant_patient_suggest", "tenant_id", "org_id", "patient_id", "created_at"),
+        Index(
+            "idx_tenant_patient_suggest",
+            "tenant_id",
+            "org_id",
+            "patient_id",
+            "created_at",
+        ),
     )

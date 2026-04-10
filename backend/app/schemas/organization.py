@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict
 class OrganizationBase(BaseModel):
     name: str
 
+
 class OrganizationCreate(OrganizationBase):
     code: str
     tenant_id: int | None = None  # 可选，后端会从 JWT 自动填充
@@ -13,14 +14,17 @@ class OrganizationCreate(OrganizationBase):
     status: str = "active"
     parent_id: int | None = None
 
+
 class OrganizationUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
     status: str | None = None
     parent_id: int | None = None
 
+
 class OrganizationReadPublic(BaseModel):
     """组织公开信息"""
+
     id: int
     name: str
     code: str = ""
@@ -33,9 +37,12 @@ class OrganizationReadPublic(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class OrganizationReadAdmin(OrganizationReadPublic):
     """管理视图（含额外统计信息，按需填充）"""
+
     pass
+
 
 class OrganizationMemberRead(BaseModel):
     user_id: int
@@ -44,14 +51,17 @@ class OrganizationMemberRead(BaseModel):
     roles: list[str] = []
     user_type: str
 
+
 class PatientAssignmentCreate(BaseModel):
     patient_id: int
     manager_id: int
     role: str = "main"
 
+
 class OrganizationInvitationCreate(BaseModel):
     email: str
     role: str
+
 
 from datetime import datetime
 

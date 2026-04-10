@@ -5,24 +5,26 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.rag.prompt import build_rag_prompt
 from app.ai.rag.retrieval import retrieve_chunks
+from app.ai.rag.tokens import count_tokens
 from app.models import ApiKey, UsageLog
 from app.routers.deps import get_api_key_context, get_db
-from app.ai.rag.tokens import count_tokens
 from app.services.rag.provider_service import provider_service
 from app.services.system.quota import update_tenant_quota
 
 router = APIRouter()
+
 
 class ExternalChatRequest(BaseModel):
     kb_id: int
     query: str
     limit: int = 5
 
+
 @router.post("/chat/completions")
 async def external_chat_completions(
     request: ExternalChatRequest,
     api_key: ApiKey = Depends(get_api_key_context),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     llm_provider = provider_service.get_llm()
 
@@ -71,17 +73,16 @@ async def external_chat_completions(
         "id": "chatcmpl-ext",
         "object": "chat.completion",
         "model": llm_provider.model_name,
-        "choices": [{
-            "index": 0,
-            "message": {
-                "role": "assistant",
-                "content": full_response
-            },
-            "finish_reason": "stop"
-        }],
+        "choices": [
+            {
+                "index": 0,
+                "message": {"role": "assistant", "content": full_response},
+                "finish_reason": "stop",
+            }
+        ],
         "usage": {
             "prompt_tokens": prompt_tokens,
             "completion_tokens": completion_tokens,
-            "total_tokens": total_tokens
-        }
+            "total_tokens": total_tokens,
+        },
     }

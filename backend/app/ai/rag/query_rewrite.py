@@ -118,7 +118,7 @@ def rewrite_query(normalized_query: str) -> str:
 
 async def rewrite_query_with_llm(query: str, llm_provider: LLMProvider) -> str:
     """使用 LLM 进行语义级查询改写（适用于复杂/模糊查询）
-    
+
     当规则型改写无法处理时，可回退到此方法。
     成本较高，建议仅对短查询或明显模糊的查询使用。
     """
@@ -134,7 +134,9 @@ async def rewrite_query_with_llm(query: str, llm_provider: LLMProvider) -> str:
         if rewritten and len(rewritten) < len(query) * 3:  # 防止 LLM 返回过长内容
             return rewritten
     except Exception:
-        logger.warning("LLM query rewrite failed; using rule-based rewrite", exc_info=True)
+        logger.warning(
+            "LLM query rewrite failed; using rule-based rewrite", exc_info=True
+        )
 
     return query
 

@@ -1,4 +1,5 @@
 """OpenAI 兼容 Embedding 插件实现"""
+
 import logging
 
 from openai import AsyncOpenAI
@@ -33,7 +34,9 @@ class OpenAICompatibleEmbeddingPlugin:
         if not texts:
             return []
         try:
-            response = await self.client.embeddings.create(model=self.model_name, input=texts)
+            response = await self.client.embeddings.create(
+                model=self.model_name, input=texts
+            )
             embeddings = [item.embedding for item in response.data]
             if embeddings and self._dimension is None:
                 self._dimension = len(embeddings[0])
@@ -52,7 +55,9 @@ class OpenAICompatibleEmbeddingPlugin:
         if not text:
             return []
         try:
-            response = await self.client.embeddings.create(model=self.model_name, input=text)
+            response = await self.client.embeddings.create(
+                model=self.model_name, input=text
+            )
             embedding = response.data[0].embedding
             if self._dimension is None:
                 self._dimension = len(embedding)
@@ -72,7 +77,9 @@ def _create_embedding_plugin() -> OpenAICompatibleEmbeddingPlugin:
         raise ValueError("请设置 EMBEDDING_API_KEY（或 LLM_API_KEY 作为回退）")
     if not base_url:
         raise ValueError("请设置 EMBEDDING_BASE_URL（或 LLM_BASE_URL 作为回退）")
-    logger.info("Embedding Plugin: model=%s, base_url=%s", settings.EMBEDDING_MODEL, base_url)
+    logger.info(
+        "Embedding Plugin: model=%s, base_url=%s", settings.EMBEDDING_MODEL, base_url
+    )
     client = AsyncOpenAI(api_key=api_key, base_url=base_url)
     return OpenAICompatibleEmbeddingPlugin(client, model_name=settings.EMBEDDING_MODEL)
 

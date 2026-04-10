@@ -49,9 +49,9 @@ def _parse_sse(raw: str) -> list[dict]:
     current_data = ""
     for line in raw.split("\n"):
         if line.startswith("event: "):
-            current_event = line[len("event: "):]
+            current_event = line[len("event: ") :]
         elif line.startswith("data: "):
-            current_data = line[len("data: "):]
+            current_data = line[len("data: ") :]
         elif line == "":
             if current_event:
                 try:
@@ -161,12 +161,8 @@ async def seed() -> AsyncIterator[_SeedData]:
             await db.execute(
                 delete(Conversation).where(Conversation.tenant_id == tenant.id)
             )
-            await db.execute(
-                delete(KnowledgeBase).where(KnowledgeBase.id == kb.id)
-            )
-            await db.execute(
-                delete(Organization).where(Organization.id == org.id)
-            )
+            await db.execute(delete(KnowledgeBase).where(KnowledgeBase.id == kb.id))
+            await db.execute(delete(Organization).where(Organization.id == org.id))
             await db.execute(delete(User).where(User.id == user.id))
             await db.execute(delete(Tenant).where(Tenant.id == tenant.id))
             await db.commit()
@@ -305,9 +301,7 @@ async def test_standard_chat_sse_and_persistence(
     assert conversation_id > 0
 
     # chunk 内容拼接
-    chunks_text = "".join(
-        e["data"]["text"] for e in events if e["event"] == "chunk"
-    )
+    chunks_text = "".join(e["data"]["text"] for e in events if e["event"] == "chunk")
     assert chunks_text == "Hello World"
 
     # ── 断言数据库持久化 ──
@@ -396,9 +390,7 @@ async def test_agent_chat_sse_and_metadata(
     assert meta["data"]["citations"] == [{"ref": "1", "title": "test"}]
 
     # chunk 内容
-    chunk_text = "".join(
-        e["data"]["text"] for e in events if e["event"] == "chunk"
-    )
+    chunk_text = "".join(e["data"]["text"] for e in events if e["event"] == "chunk")
     assert chunk_text == "Agent answer"
 
     # done 事件含 skill_results

@@ -9,10 +9,8 @@ DEFAULT_EPOCH = 1704067200000
 worker_id = int(os.environ.get("WORKER_ID", 0)) % 1024
 
 # Global instance from third-party library
-generator = TwitterSnowflakeIDGenerator(
-    node_id=worker_id,
-    epoch=DEFAULT_EPOCH
-)
+generator = TwitterSnowflakeIDGenerator(node_id=worker_id, epoch=DEFAULT_EPOCH)
+
 
 def get_next_id() -> int:
     """

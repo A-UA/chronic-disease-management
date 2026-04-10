@@ -19,6 +19,7 @@ class SecurityContext:
         permissions: 用户有效权限集合（含角色继承）
         db: 已注入 RLS 上下文的 AsyncSession（set_config 已执行）
     """
+
     tenant_id: int
     org_id: int
     user_id: int

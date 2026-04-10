@@ -9,17 +9,17 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.ai.rag.retrieval import (
-    RetrievalFilters,
-    extract_statement_citations_structured,
-    retrieve_chunks,
-)
 from app.ai.rag.conversation import (
     build_retrieval_query_from_history,
     estimate_tokens_chinese,
     load_history_by_token_budget,
 )
 from app.ai.rag.prompt import build_rag_prompt
+from app.ai.rag.retrieval import (
+    RetrievalFilters,
+    extract_statement_citations_structured,
+    retrieve_chunks,
+)
 from app.ai.rag.tokens import count_tokens
 from app.base.database import AsyncSessionLocal
 from app.models import Conversation, KnowledgeBase, Message, UsageLog, User
@@ -32,9 +32,9 @@ logger = logging.getLogger(__name__)
 def _generate_title(query: str, max_len: int = 50) -> str:
     import re
 
-    match = re.search(r'[。？?!]', query)
+    match = re.search(r"[。？?!]", query)
     if match and match.end() <= max_len:
-        return query[:match.end()]
+        return query[: match.end()]
     if len(query) <= max_len:
         return query
     truncated = query[:max_len]
@@ -74,7 +74,10 @@ async def _get_or_create_conversation(
         conversation = await db.get(Conversation, conversation_id)
         if conversation is None:
             raise HTTPException(status_code=404, detail="Conversation not found")
-        if conversation.tenant_id != tenant_id or conversation.user_id != current_user.id:
+        if (
+            conversation.tenant_id != tenant_id
+            or conversation.user_id != current_user.id
+        ):
             raise HTTPException(
                 status_code=403,
                 detail="Conversation does not belong to current user",
@@ -223,10 +226,12 @@ async def handle_standard_chat(
                 done_statement_citations = []
                 if full_response and not quota_exceeded:
                     try:
-                        statement_citations = await extract_statement_citations_structured(
-                            full_response,
-                            citations,
-                            llm_provider,
+                        statement_citations = (
+                            await extract_statement_citations_structured(
+                                full_response,
+                                citations,
+                                llm_provider,
+                            )
                         )
                         done_statement_citations = [
                             {

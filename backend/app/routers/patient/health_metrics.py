@@ -1,4 +1,5 @@
 """健康指标管理端点：录入/查询/趋势/删除"""
+
 from datetime import datetime
 from typing import Any, Literal
 
@@ -7,6 +8,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models import HealthMetric, PatientProfile, User
 from app.routers.deps import (
     check_permission,
     get_current_org_id,
@@ -16,17 +18,26 @@ from app.routers.deps import (
     get_effective_org_id,
     inject_rls_context,
 )
-from app.models import HealthMetric, PatientProfile, User
 
 router = APIRouter()
 
-ALLOWED_METRIC_TYPES = {"blood_pressure", "blood_sugar", "weight", "heart_rate", "bmi", "spo2"}
+ALLOWED_METRIC_TYPES = {
+    "blood_pressure",
+    "blood_sugar",
+    "weight",
+    "heart_rate",
+    "bmi",
+    "spo2",
+}
 
 
 # ── Schemas ──
 
+
 class HealthMetricCreate(BaseModel):
-    metric_type: Literal["blood_pressure", "blood_sugar", "weight", "heart_rate", "bmi", "spo2"]
+    metric_type: Literal[
+        "blood_pressure", "blood_sugar", "weight", "heart_rate", "bmi", "spo2"
+    ]
     value: float
     value_secondary: float | None = None
     unit: str
@@ -50,7 +61,10 @@ class HealthMetricRead(BaseModel):
 
 # ── 辅助函数 ──
 
-async def _get_my_patient(db: AsyncSession, user_id: int, org_id: int) -> PatientProfile:
+
+async def _get_my_patient(
+    db: AsyncSession, user_id: int, org_id: int
+) -> PatientProfile:
     """获取当前用户的患者档案"""
     stmt = select(PatientProfile).where(
         PatientProfile.user_id == user_id,
@@ -64,6 +78,7 @@ async def _get_my_patient(db: AsyncSession, user_id: int, org_id: int) -> Patien
 
 
 # ── 个人端点（使用 get_current_org_id） ──
+
 
 @router.post("")
 async def create_health_metric(
@@ -94,6 +109,7 @@ async def create_health_metric(
 
     # 告警检测
     from app.services.patient.health_alert import check_metric_alert
+
     alerts = check_metric_alert(data.metric_type, data.value, data.value_secondary)
 
     return {
@@ -105,10 +121,9 @@ async def create_health_metric(
         "unit": metric.unit,
         "measured_at": str(metric.measured_at),
         "note": metric.note,
-        "alerts": [
-            {"level": a.level, "message": a.message}
-            for a in alerts
-        ] if alerts else [],
+        "alerts": [{"level": a.level, "message": a.message} for a in alerts]
+        if alerts
+        else [],
     }
 
 
@@ -186,6 +201,7 @@ async def delete_health_metric(
 
 # ── 更新健康指标 ──
 
+
 class HealthMetricUpdate(BaseModel):
     value: float | None = None
     value_secondary: float | None = None
@@ -216,6 +232,7 @@ async def update_health_metric(
 
 # ── 管理端接口 ──
 
+
 @router.get("/patients/{patient_id}/trend")
 async def get_patient_trend(
     patient_id: int,
@@ -230,7 +247,9 @@ async def get_patient_trend(
     from datetime import timedelta, timezone
 
     if metric_type not in ALLOWED_METRIC_TYPES:
-        raise HTTPException(status_code=400, detail=f"Invalid metric_type: {metric_type}")
+        raise HTTPException(
+            status_code=400, detail=f"Invalid metric_type: {metric_type}"
+        )
 
     patient = await db.get(PatientProfile, patient_id)
     if not patient or patient.tenant_id != tenant_id:
