@@ -18,6 +18,7 @@ import hashlib
 import hmac
 import logging
 from datetime import datetime, timezone
+from typing import Annotated, TypeVar
 
 import jwt
 from fastapi import Depends, Header, HTTPException, status
@@ -407,3 +408,21 @@ def check_org_admin():
         return org_user
 
     return _check
+
+
+# ── Service 依赖注入工厂 ──
+
+S = TypeVar("S")
+
+
+def ServiceDep(service_cls: type[S]):
+    """通用 Service 依赖工厂
+
+    用法：
+        PatientServiceDep = Annotated[PatientService, ServiceDep(PatientService)]
+    """
+
+    async def _factory(db: AsyncSession = Depends(get_db)) -> S:
+        return service_cls(db)
+
+    return Depends(_factory)

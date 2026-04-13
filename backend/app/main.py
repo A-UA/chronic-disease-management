@@ -72,6 +72,27 @@ for _plugin in ("llm", "embedding", "reranker", "parser", "chunker"):
 provider_service.validate_runtime_dependencies()
 
 
+# ── 业务异常处理器 ──
+from app.base.exceptions import BusinessError
+
+
+@app.exception_handler(BusinessError)
+async def business_error_handler(request: Request, exc: BusinessError):
+    """Service 层 BusinessError → HTTP 响应"""
+    status_map = {
+        "NOT_FOUND": 404,
+        "CONFLICT": 409,
+        "FORBIDDEN": 403,
+        "QUOTA_EXCEEDED": 402,
+        "VALIDATION_ERROR": 422,
+        "BUSINESS_ERROR": 400,
+    }
+    return SnowflakeJSONResponse(
+        status_code=status_map.get(exc.code, 400),
+        content={"detail": exc.message, "code": exc.code},
+    )
+
+
 # 注册异常处理器以保护大整数精度
 @app.exception_handler(HTTPException)
 async def custom_http_exception_handler(request: Request, exc: HTTPException):
