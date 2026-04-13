@@ -4,6 +4,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 
 import jwt as pyjwt
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.base import security
@@ -14,6 +15,7 @@ from app.models import (
     OrganizationUser,
     OrganizationUserRole,
     PasswordResetToken,
+    Role,
     Tenant,
     User,
 )
@@ -27,6 +29,8 @@ from app.repositories.org_user_repo import (
 from app.repositories.role_repo import PermissionRepository, RoleRepository
 from app.repositories.tenant_repo import TenantRepository
 from app.repositories.user_repo import UserRepository
+from app.schemas.user import UserRead
+from app.services.auth.email import send_reset_code_email
 from app.services.system.rbac import RBACService
 
 
@@ -71,9 +75,7 @@ class AuthService:
         )
         await self.org_user_repo.create(org_user)
 
-        from sqlalchemy import select
 
-        from app.models import Role
         stmt_role = select(Role).where(Role.code == "owner", Role.tenant_id.is_(None))
         r_owner = (await self.db.execute(stmt_role)).scalar_one_or_none()
         if r_owner:
@@ -206,8 +208,6 @@ class AuthService:
 
     async def get_me(self, *, user: User, org_id: int, tenant_id: int) -> dict:
         """当前用户信息 + 权限"""
-        from app.schemas.user import UserRead
-
         user_data = UserRead.model_validate(user)
         user_data.org_id = org_id
         user_data.tenant_id = tenant_id
@@ -286,7 +286,6 @@ class AuthService:
             await self.pwd_repo.create(token)
             await self.db.commit()
 
-            from app.services.auth.email import send_reset_code_email
             await send_reset_code_email(email, code)
 
         return {"message": "If the email exists, a reset code has been sent."}

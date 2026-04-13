@@ -4,7 +4,7 @@ from fastapi import UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.base.exceptions import NotFoundError
-from app.models import User
+from app.models import Chunk, User
 from app.repositories.kb_repo import (
     ChunkRepository,
     DocumentRepository,
@@ -71,8 +71,6 @@ class DocumentRuntimeService:
     async def get_document(self, document_id: int, tenant_id: int) -> dict:
         """获取文档信息"""
         doc = await self._get_doc(document_id, tenant_id)
-        # 简单抽象方法
-        from app.models import Chunk
         chunk_count = await self.chunk_repo.count(filters=[Chunk.document_id == document_id, Chunk.deleted_at.is_(None)])
 
         return {

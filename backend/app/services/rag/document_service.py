@@ -9,6 +9,8 @@ from app.base.config import settings
 from app.base.storage import get_storage_service
 from app.models import Document, KnowledgeBase, User
 from app.plugins.parser.base import DocumentParseError
+from app.repositories.kb_repo import DocumentRepository
+from app.repositories.patient_repo import PatientRepository
 from app.services.rag.provider_service import provider_service
 from app.services.rag.tasks import enqueue_delete_file_job, enqueue_process_document_job
 
@@ -51,7 +53,6 @@ async def upload_document_and_enqueue(
         raise HTTPException(status_code=403, detail="Not enough permissions")
 
     if patient_id is not None:
-        from app.repositories.patient_repo import PatientRepository
         patient = await PatientRepository(db).get_by_id(patient_id)
         if not patient or patient.tenant_id != tenant_id:
             raise HTTPException(status_code=404, detail="Patient profile not found")
@@ -123,5 +124,4 @@ async def delete_document_and_enqueue_cleanup(
             status_code=500, detail="Document cleanup enqueue failed"
         ) from exc
 
-    from app.repositories.kb_repo import DocumentRepository
     await DocumentRepository(db).delete(document)
