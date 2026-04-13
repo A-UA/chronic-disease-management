@@ -469,3 +469,22 @@ MenuServiceDep = Annotated[MenuService, ServiceDep(MenuService)]
 from app.services.system.rbac_service import RBACServiceExt
 
 RBACServiceDep = Annotated[RBACServiceExt, ServiceDep(RBACServiceExt)]
+
+# ── RAG 领域 ──
+from app.services.rag.kb_service import KBService
+
+KBServiceDep = Annotated[KBService, ServiceDep(KBService)]
+
+from app.services.rag.conversation_service import ConversationService
+
+ConversationServiceDep = Annotated[ConversationService, ServiceDep(ConversationService)]
+
+# ── Auth 领域 ──
+from app.services.auth.auth_service import AuthService
+
+AuthServiceDep = Annotated[AuthService, ServiceDep(AuthService)]
+
+# ── 独立适配器 ──
+from app.services.system.settings_adapter import SettingsServiceAdapter
+
+SettingsServiceDep = Annotated[SettingsServiceAdapter, ServiceDep(SettingsServiceAdapter)]

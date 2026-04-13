@@ -1,43 +1,36 @@
+"""系统设置端点 — 纯 HTTP 适配层"""
+
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends
 
-from app.routers.deps import get_db, get_platform_admin
+from app.base.exceptions import ValidationError
+from app.routers.deps import SettingsServiceDep, get_platform_admin
 from app.schemas.admin import DynamicSettings
-from app.services.system.settings import SettingsService
 
 router = APIRouter()
 
 
 @router.get("", response_model=DynamicSettings)
 async def get_settings(
+    service: SettingsServiceDep,
     _admin=Depends(get_platform_admin),
-    db: AsyncSession = Depends(get_db),
 ):
     """获取全站动态配置"""
-    return await SettingsService.get_all(db)
+    return await service.get_all()
 
 
 @router.put("", response_model=DynamicSettings)
 async def update_settings(
     data: dict[str, Any],
+    service: SettingsServiceDep,
     _admin=Depends(get_platform_admin),
-    db: AsyncSession = Depends(get_db),
 ):
-    """批量更新配置（支持部分更新）"""
+    """批量更新配置"""
     try:
-        # 获取当前所有设置
-        current = await SettingsService.get_all(db)
+        current = await service.get_all()
         current_dict = current.model_dump()
-
-        # 合并新旧值
         current_dict.update(data)
-
-        # 使用服务进行校验并保存
-        updated = await SettingsService.update(db, current_dict)
-        return updated
+        return await service.update(current_dict)
     except Exception as e:
-        raise HTTPException(
-            status_code=400, detail=f"Invalid settings format: {str(e)}"
-        )
+        raise ValidationError(f"Invalid settings format: {str(e)}")
