@@ -1,7 +1,8 @@
 """外部 API 服务"""
 
-from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.repositories.api_key_repo import ApiKeyRepository
 
 from app.ai.rag.prompt import build_rag_prompt
 from app.ai.rag.retrieval import retrieve_chunks
@@ -14,6 +15,7 @@ from app.services.system.quota import update_tenant_quota
 class ExternalApiService:
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.api_key_repo = ApiKeyRepository(db)
 
     async def chat_completions(self, *, api_key: ApiKey, kb_id: int, query: str, limit: int) -> dict:
         """处理外部请求并记录计费统计"""
@@ -48,12 +50,7 @@ class ExternalApiService:
 
         await update_tenant_quota(self.db, api_key.tenant_id, total_tokens)
 
-        stmt = (
-            update(ApiKey)
-            .where(ApiKey.id == api_key.id)
-            .values(token_used=ApiKey.token_used + total_tokens)
-        )
-        await self.db.execute(stmt)
+        await self.api_key_repo.increment_token_usage(api_key.id, total_tokens)
         await self.db.commit()
 
         return {

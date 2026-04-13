@@ -1,104 +1,72 @@
 """菜单管理业务服务"""
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
-from app.base.exceptions import ConflictError, NotFoundError, ValidationError
+from app.base.exceptions import ConflictError, NotFoundError
 from app.models import Menu
-from app.services.audit.service import fire_audit
+from app.repositories.menu_repo import MenuRepository
 
 
 class MenuService:
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.repo = MenuRepository(db)
 
-    async def list_menu_tree(self) -> list[Menu]:
-        """获取完整菜单树"""
-        stmt = (
-            select(Menu)
-            .where(Menu.parent_id.is_(None))
-            .options(selectinload(Menu.children).selectinload(Menu.children))
-            .order_by(Menu.sort)
-        )
-        result = await self.db.execute(stmt)
-        return list(result.scalars().all())
+    async def list_menus(self) -> list[Menu]:
+        """获取整个菜单树（扁平结构）"""
+        return await self.repo.list_all()
 
-    async def create_menu(
-        self, data: dict, *, user_id: int, org_id: int
-    ) -> Menu:
-        """创建菜单"""
+    async def get_menu(self, menu_id: int) -> Menu:
+        """获取单个菜单"""
+        menu = await self.repo.get_by_id(menu_id)
+        if not menu:
+            raise NotFoundError("Menu", menu_id)
+        return menu
+
+    async def create_menu(self, data: dict) -> Menu:
+        """创建菜单（全局）"""
         code = data.get("code")
-        stmt = select(Menu).where(Menu.code == code)
-        if (await self.db.execute(stmt)).scalar_one_or_none():
+        if code and await self.repo.check_code_exists(code):
             raise ConflictError("Menu code already exists")
 
-        parent_id = data.get("parent_id")
-        if parent_id:
-            parent = await self.db.get(Menu, parent_id)
-            if not parent:
-                raise NotFoundError("Parent menu", parent_id)
-
         menu = Menu(**data)
-        self.db.add(menu)
-        await self.db.flush()
-
-        fire_audit(
-            user_id=user_id,
-            org_id=org_id,
-            action="CREATE_MENU",
-            resource_type="menu",
-            resource_id=menu.id,
-            details=f"Created menu: {menu.name} ({menu.code})",
-        )
-
+        await self.repo.create(menu)
         await self.db.commit()
-        await self.db.refresh(menu)
         return menu
 
-    async def update_menu(
-        self, menu_id: int, data: dict, *, user_id: int, org_id: int
-    ) -> Menu:
-        """更新菜单"""
-        menu = await self.db.get(Menu, menu_id)
+    async def update_menu(self, menu_id: int, data: dict) -> Menu:
+        """更新菜单信息"""
+        menu = await self.repo.get_by_id(menu_id)
         if not menu:
             raise NotFoundError("Menu", menu_id)
 
-        if data.get("parent_id") and data["parent_id"] == menu_id:
-            raise ValidationError("Menu cannot be its own parent")
+        code = data.get("code")
+        if code and code != menu.code and await self.repo.check_code_exists(code, exclude_id=menu_id):
+            raise ConflictError("Menu code already exists")
 
-        for field, value in data.items():
-            setattr(menu, field, value)
-
-        fire_audit(
-            user_id=user_id,
-            org_id=org_id,
-            action="UPDATE_MENU",
-            resource_type="menu",
-            resource_id=menu.id,
-            details=f"Updated menu: {menu.name}",
-        )
-
+        await self.repo.update(menu, data)
         await self.db.commit()
-        await self.db.refresh(menu)
         return menu
 
-    async def delete_menu(
-        self, menu_id: int, *, user_id: int, org_id: int
-    ) -> None:
-        """删除菜单"""
-        menu = await self.db.get(Menu, menu_id)
+    async def delete_menu(self, menu_id: int) -> None:
+        """真删除菜单（需级联处理子菜单）"""
+        menu = await self.repo.get_by_id(menu_id)
         if not menu:
             raise NotFoundError("Menu", menu_id)
 
-        fire_audit(
-            user_id=user_id,
-            org_id=org_id,
-            action="DELETE_MENU",
-            resource_type="menu",
-            resource_id=menu.id,
-            details=f"Deleted menu: {menu.name} ({menu.code})",
-        )
+        # 把所有子项一起删除（级联依赖）
+        menus = await self.repo.list_all()
+        to_delete = [menu]
 
-        await self.db.delete(menu)
+        def collect_children(parent_id: int):
+            for m in menus:
+                if m.parent_id == parent_id:
+                    to_delete.append(m)
+                    collect_children(m.id)
+
+        collect_children(menu.id)
+
+        for m in reversed(to_delete):
+            await self.repo.delete(m)
+
         await self.db.commit()

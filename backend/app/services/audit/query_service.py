@@ -1,42 +1,59 @@
-"""审计查询业务服务"""
+"""审计日志查询业务服务"""
 
-from sqlalchemy import select
+from datetime import datetime
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import AuditLog
+from app.repositories.audit_repo import AuditRepository
 
 
 class AuditQueryService:
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.repo = AuditRepository(db)
 
-    async def list_audit_logs(
-        self, tenant_id: int, effective_org_id: int | None,
-        action: str | None, resource_type: str | None, skip: int, limit: int
-    ) -> list[AuditLog]:
-        """按租户/组织筛选审计日志"""
-        stmt = select(AuditLog).where(AuditLog.tenant_id == tenant_id)
-        if effective_org_id is not None:
-            stmt = stmt.where(AuditLog.org_id == effective_org_id)
-        if action:
-            stmt = stmt.where(AuditLog.action == action)
-        if resource_type:
-            stmt = stmt.where(AuditLog.resource_type == resource_type)
+    async def query_tenant_logs(
+        self,
+        tenant_id: int,
+        org_id: int | None = None,
+        user_id: int | None = None,
+        action: str | None = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        skip: int = 0,
+        limit: int = 50,
+    ) -> dict:
+        """租户级审计日志查询"""
+        total, logs = await self.repo.list_audit_logs(
+            tenant_id=tenant_id,
+            org_id=org_id,
+            user_id=user_id,
+            action=action,
+            start_time=start_time,
+            end_time=end_time,
+            skip=skip,
+            limit=limit,
+        )
+        return {"total": total, "items": logs}
 
-        stmt = stmt.offset(skip).limit(limit).order_by(AuditLog.created_at.desc())
-        result = await self.db.execute(stmt)
-        return list(result.scalars().all())
-
-    async def list_global_audit_logs(
-        self, action: str | None, org_id_filter: int | None, skip: int, limit: int
-    ) -> list[AuditLog]:
-        """全平台查询审计日志"""
-        stmt = select(AuditLog)
-        if action:
-            stmt = stmt.where(AuditLog.action == action)
-        if org_id_filter:
-            stmt = stmt.where(AuditLog.org_id == org_id_filter)
-
-        stmt = stmt.offset(skip).limit(limit).order_by(AuditLog.created_at.desc())
-        result = await self.db.execute(stmt)
-        return list(result.scalars().all())
+    async def query_platform_logs(
+        self,
+        tenant_id: int | None = None,
+        user_id: int | None = None,
+        action: str | None = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        skip: int = 0,
+        limit: int = 50,
+    ) -> dict:
+        """全平台审计日志查询 (Owner 专用)"""
+        total, logs = await self.repo.list_audit_logs(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action=action,
+            start_time=start_time,
+            end_time=end_time,
+            skip=skip,
+            limit=limit,
+        )
+        return {"total": total, "items": logs}

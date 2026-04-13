@@ -1,7 +1,6 @@
-from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.rbac import Permission, Role, RoleConstraint
+from app.repositories.role_repo import RoleRepository, PermissionRepository, RoleConstraintRepository
 
 
 class RBACService:
@@ -14,27 +13,8 @@ class RBACService:
         """
         if not direct_role_ids:
             return set()
-
-        # 定义递归 CTE 查询所有父角色
-        query = text("""
-            WITH RECURSIVE role_hierarchy AS (
-                -- 初始：直接关联的角色
-                SELECT id, parent_role_id
-                FROM roles
-                WHERE id = ANY(:role_ids)
-
-                UNION
-
-                -- 递归：查找父角色
-                SELECT r.id, r.parent_role_id
-                FROM roles r
-                INNER JOIN role_hierarchy rh ON rh.parent_role_id = r.id
-            )
-            SELECT id FROM role_hierarchy;
-        """)
-
-        result = await db.execute(query, {"role_ids": direct_role_ids})
-        return {row[0] for row in result.fetchall()}
+        repo = RoleRepository(db)
+        return await repo.get_all_role_ids(direct_role_ids)
 
     @staticmethod
     async def get_effective_permissions(
@@ -47,15 +27,8 @@ class RBACService:
         if not all_role_ids:
             return set()
 
-        # 聚合所有角色的权限
-        query = (
-            select(Permission.code)
-            .join(Permission.roles)
-            .where(Role.id.in_(list(all_role_ids)))
-        )
-
-        result = await db.execute(query)
-        return {row[0] for row in result.fetchall()}
+        repo = PermissionRepository(db)
+        return await repo.get_codes_by_role_ids(list(all_role_ids))
 
     @staticmethod
     async def check_ssd_violation(
@@ -65,13 +38,8 @@ class RBACService:
         检查静态责任分离 (SSD) 冲突
         如果存在冲突，返回冲突描述字符串，否则返回 None
         """
-        stmt = select(RoleConstraint).where(
-            RoleConstraint.constraint_type == "SSD",
-            (RoleConstraint.tenant_id == tenant_id)
-            | (RoleConstraint.tenant_id.is_(None)),
-        )
-        result = await db.execute(stmt)
-        constraints = result.scalars().all()
+        repo = RoleConstraintRepository(db)
+        constraints = await repo.get_ssd_constraints(tenant_id)
 
         role_set = set(role_ids)
         for c in constraints:

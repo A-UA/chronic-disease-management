@@ -93,14 +93,9 @@ async def check_api_key_rate_limit(api_key_id: int, qps_limit: int):
 
 async def update_tenant_quota(db: AsyncSession, tenant_id: int, tokens_consumed: int):
     """更新租户 Token 消耗量"""
-    from sqlalchemy import update
-
-    stmt = (
-        update(Tenant)
-        .where(Tenant.id == tenant_id)
-        .values(quota_tokens_used=Tenant.quota_tokens_used + tokens_consumed)
-    )
-    await db.execute(stmt)
+    from app.repositories.tenant_repo import TenantRepository
+    repo = TenantRepository(db)
+    await repo.increment_token_usage(tenant_id, tokens_consumed)
 
 
 # 保留旧函数名作为兼容别名

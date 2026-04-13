@@ -1,16 +1,21 @@
 """家属关联业务服务"""
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.base.exceptions import ForbiddenError, NotFoundError
-from app.models import PatientFamilyLink, PatientProfile, User
+from app.models import PatientFamilyLink
+from app.repositories.family_repo import FamilyRepository
+from app.repositories.patient_repo import PatientRepository
+from app.repositories.user_repo import UserRepository
 from app.services.audit.service import audit_action
 
 
 class FamilyService:
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.repo = FamilyRepository(db)
+        self.patient_repo = PatientRepository(db)
+        self.user_repo = UserRepository(db)
 
     async def create_link(
         self,
@@ -24,24 +29,14 @@ class FamilyService:
         access_level: int = 1,
     ) -> PatientFamilyLink:
         """创建家属关联"""
-        # 1. 验证患者属于当前用户
-        stmt = select(PatientProfile).where(
-            PatientProfile.id == patient_id,
-            PatientProfile.org_id == org_id,
-            PatientProfile.user_id == user_id,
-        )
-        result = await self.db.execute(stmt)
-        if not result.scalar_one_or_none():
+        patient = await self.patient_repo.get_by_id(patient_id)
+        if not patient or patient.org_id != org_id or patient.user_id != user_id:
             raise ForbiddenError("Not authorized to link this patient")
 
-        # 2. 查找家属用户
-        stmt_user = select(User).where(User.email == family_user_email)
-        res_user = await self.db.execute(stmt_user)
-        family_user = res_user.scalar_one_or_none()
+        family_user = await self.user_repo.get_by_email(family_user_email)
         if not family_user:
             raise NotFoundError("Family user")
 
-        # 3. 创建关联
         link = PatientFamilyLink(
             tenant_id=tenant_id,
             patient_id=patient_id,
@@ -50,7 +45,7 @@ class FamilyService:
             access_level=access_level,
             status="active",
         )
-        self.db.add(link)
+        await self.repo.create(link)
         await self.db.commit()
         await self.db.refresh(link)
         return link
@@ -59,12 +54,7 @@ class FamilyService:
         self, user_id: int
     ) -> list[PatientFamilyLink]:
         """获取关联的患者列表"""
-        stmt = select(PatientFamilyLink).where(
-            PatientFamilyLink.family_user_id == user_id,
-            PatientFamilyLink.status == "active",
-        )
-        result = await self.db.execute(stmt)
-        return list(result.scalars().all())
+        return await self.repo.list_by_family_user(user_id)
 
     async def get_linked_patient_profile(
         self,
@@ -72,25 +62,14 @@ class FamilyService:
         user_id: int,
     ) -> dict:
         """查看关联的患者档案"""
-        # 1. 验证关联
-        stmt = select(PatientFamilyLink).where(
-            PatientFamilyLink.patient_id == patient_id,
-            PatientFamilyLink.family_user_id == user_id,
-            PatientFamilyLink.status == "active",
-        )
-        result = await self.db.execute(stmt)
-        link = result.scalar_one_or_none()
+        link = await self.repo.get_active_link(patient_id, user_id)
         if not link:
             raise ForbiddenError("No active family link for this patient")
 
-        # 2. 获取患者档案
-        stmt_p = select(PatientProfile).where(PatientProfile.id == patient_id)
-        res_p = await self.db.execute(stmt_p)
-        patient = res_p.scalar_one_or_none()
+        patient = await self.patient_repo.get_by_id(patient_id)
         if not patient:
             raise NotFoundError("Patient profile")
 
-        # 3. 审计日志
         await audit_action(
             self.db,
             user_id=user_id,
@@ -112,14 +91,9 @@ class FamilyService:
 
     async def unlink(self, patient_id: int, user_id: int) -> None:
         """解除家属关联"""
-        stmt = select(PatientFamilyLink).where(
-            PatientFamilyLink.patient_id == patient_id,
-            PatientFamilyLink.family_user_id == user_id,
-        )
-        result = await self.db.execute(stmt)
-        link = result.scalar_one_or_none()
+        link = await self.repo.get_link(patient_id, user_id)
         if not link:
             raise NotFoundError("Family link")
 
-        await self.db.delete(link)
+        await self.repo.delete(link)
         await self.db.commit()

@@ -4,9 +4,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 
 import jwt as pyjwt
-from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.base import security
 from app.base.config import settings
@@ -16,23 +14,36 @@ from app.models import (
     OrganizationUser,
     OrganizationUserRole,
     PasswordResetToken,
-    Permission,
-    Role,
     Tenant,
     User,
 )
-from app.models.menu import Menu
+from app.repositories.auth_repo import AuthRepository, PasswordResetTokenRepository
+from app.repositories.menu_repo import MenuRepository
+from app.repositories.org_repo import OrganizationRepository
+from app.repositories.org_user_repo import OrganizationUserRepository, OrganizationUserRoleRepository
+from app.repositories.role_repo import RoleRepository, PermissionRepository
+from app.repositories.tenant_repo import TenantRepository
+from app.repositories.user_repo import UserRepository
 from app.services.system.rbac import RBACService
 
 
 class AuthService:
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.user_repo = UserRepository(db)
+        self.tenant_repo = TenantRepository(db)
+        self.org_repo = OrganizationRepository(db)
+        self.org_user_repo = OrganizationUserRepository(db)
+        self.org_user_role_repo = OrganizationUserRoleRepository(db)
+        self.role_repo = RoleRepository(db)
+        self.menu_repo = MenuRepository(db)
+        self.auth_repo = AuthRepository(db)
+        self.pwd_repo = PasswordResetTokenRepository(db)
+        self.perm_repo = PermissionRepository(db)
 
     async def register(self, *, email: str, password: str, name: str | None) -> dict:
         """注册并创建默认租户+组织"""
-        stmt = select(User).where(User.email == email)
-        if (await self.db.execute(stmt)).scalar_one_or_none():
+        if await self.user_repo.get_by_email(email):
             raise ValidationError("The user with this email already exists.")
 
         user = User(
@@ -40,43 +51,41 @@ class AuthService:
             password_hash=security.get_password_hash(password),
             name=name,
         )
-        self.db.add(user)
-        await self.db.flush()
+        await self.user_repo.create(user)
 
         tenant = Tenant(
             name=f"{user.name or user.email}'s Workspace",
             slug=f"ws-{user.id}",
             plan_type="free",
         )
-        self.db.add(tenant)
-        await self.db.flush()
+        await self.tenant_repo.create(tenant)
 
         org = Organization(tenant_id=tenant.id, name="默认部门", code="DEFAULT")
-        self.db.add(org)
-        await self.db.flush()
+        await self.org_repo.create(org)
 
         org_user = OrganizationUser(
             tenant_id=tenant.id, org_id=org.id, user_id=user.id
         )
-        self.db.add(org_user)
+        await self.org_user_repo.create(org_user)
 
-        # 分配 owner 角色
+        owner_role = await self.role_repo.get_staff_role(tenant_id=tenant.id) # fallback, maybe owner
+        from sqlalchemy import select
+        from app.models import Role
         stmt_role = select(Role).where(Role.code == "owner", Role.tenant_id.is_(None))
-        owner_role = (await self.db.execute(stmt_role)).scalar_one_or_none()
-        if owner_role:
-            self.db.add(
+        r_owner = (await self.db.execute(stmt_role)).scalar_one_or_none()
+        if r_owner:
+            await self.org_user_role_repo.create(
                 OrganizationUserRole(
-                    tenant_id=tenant.id, org_id=org.id, user_id=user.id, role_id=owner_role.id
+                    tenant_id=tenant.id, org_id=org.id, user_id=user.id, role_id=r_owner.id
                 )
             )
 
-        # 第一个用户自动分配 platform_admin
-        user_count = (await self.db.execute(select(func.count(User.id)))).scalar()
+        user_count = await self.user_repo.count()
         if user_count == 1:
             stmt_pa = select(Role).where(Role.code == "platform_admin", Role.tenant_id.is_(None))
             pa_role = (await self.db.execute(stmt_pa)).scalar_one_or_none()
             if pa_role:
-                self.db.add(
+                await self.org_user_role_repo.create(
                     OrganizationUserRole(
                         tenant_id=tenant.id, org_id=org.id, user_id=user.id, role_id=pa_role.id
                     )
@@ -88,23 +97,11 @@ class AuthService:
 
     async def login(self, *, username: str, password: str) -> dict:
         """登录（含多部门选择）"""
-        stmt = select(User).where(User.email == username)
-        user = (await self.db.execute(stmt)).scalar_one_or_none()
+        user = await self.user_repo.get_by_email(username)
         if not user or not security.verify_password(password, user.password_hash):
             raise ValidationError("Incorrect email or password")
 
-        stmt_orgs = (
-            select(OrganizationUser)
-            .join(Organization, Organization.id == OrganizationUser.org_id)
-            .join(Tenant, Tenant.id == Organization.tenant_id)
-            .options(
-                selectinload(OrganizationUser.organization),
-                selectinload(OrganizationUser.rbac_roles),
-            )
-            .where(OrganizationUser.user_id == user.id, Tenant.status == "active")
-        )
-        org_users = (await self.db.execute(stmt_orgs)).scalars().all()
-
+        org_users = await self.auth_repo.get_user_orgs_with_tenant(user.id)
         if len(org_users) == 0:
             raise ValidationError("User is not a member of any active organization")
 
@@ -126,18 +123,13 @@ class AuthService:
                 "require_org_selection": False,
             }
 
-        # 多部门
         selection_token = security.create_selection_token(user.id)
         org_list = [
             {
                 "id": ou.organization.id,
                 "name": ou.organization.name,
                 "tenant_id": ou.organization.tenant_id,
-                "tenant_name": (
-                    ou.organization.tenant.name
-                    if hasattr(ou.organization, "tenant") and ou.organization.tenant
-                    else None
-                ),
+                "tenant_name": getattr(ou.organization.tenant, "name", None) if hasattr(ou.organization, "tenant") else None,
             }
             for ou in org_users
         ]
@@ -161,16 +153,11 @@ class AuthService:
         except pyjwt.PyJWTError:
             raise ValidationError("Invalid or expired selection token")
 
-        stmt = (
-            select(OrganizationUser)
-            .where(OrganizationUser.user_id == user_id, OrganizationUser.org_id == org_id)
-            .options(selectinload(OrganizationUser.rbac_roles))
-        )
-        ou = (await self.db.execute(stmt)).scalar_one_or_none()
+        ou = await self.auth_repo.get_org_user_with_roles(user_id, org_id)
         if not ou:
             raise ForbiddenError("User is not a member of this organization")
 
-        org = await self.db.get(Organization, org_id)
+        org = await self.org_repo.get_by_id(org_id)
         role_codes = [r.code for r in ou.rbac_roles]
         token = security.create_access_token(
             user_id,
@@ -187,16 +174,11 @@ class AuthService:
 
     async def switch_org(self, *, user_id: int, org_id: int) -> dict:
         """切换部门"""
-        stmt = (
-            select(OrganizationUser)
-            .where(OrganizationUser.user_id == user_id, OrganizationUser.org_id == org_id)
-            .options(selectinload(OrganizationUser.rbac_roles))
-        )
-        ou = (await self.db.execute(stmt)).scalar_one_or_none()
+        ou = await self.auth_repo.get_org_user_with_roles(user_id, org_id)
         if not ou:
             raise ForbiddenError("User is not a member of this organization")
 
-        org = await self.db.get(Organization, org_id)
+        org = await self.org_repo.get_by_id(org_id)
         role_codes = [r.code for r in ou.rbac_roles]
         token = security.create_access_token(
             user_id,
@@ -213,14 +195,7 @@ class AuthService:
 
     async def list_my_orgs(self, user_id: int) -> list[dict]:
         """当前用户可用部门列表"""
-        stmt = (
-            select(OrganizationUser)
-            .join(Organization, Organization.id == OrganizationUser.org_id)
-            .join(Tenant, Tenant.id == Organization.tenant_id)
-            .options(selectinload(OrganizationUser.organization))
-            .where(OrganizationUser.user_id == user_id, Tenant.status == "active")
-        )
-        org_users = (await self.db.execute(stmt)).scalars().all()
+        org_users = await self.auth_repo.get_user_orgs_with_tenant(user_id)
         return [
             {"id": ou.organization.id, "name": ou.organization.name, "tenant_id": ou.organization.tenant_id}
             for ou in org_users
@@ -234,13 +209,7 @@ class AuthService:
         user_data.org_id = org_id
         user_data.tenant_id = tenant_id
 
-        stmt = (
-            select(OrganizationUser)
-            .where(OrganizationUser.user_id == user.id, OrganizationUser.org_id == org_id)
-            .options(selectinload(OrganizationUser.rbac_roles))
-        )
-        org_user = (await self.db.execute(stmt)).scalar_one_or_none()
-
+        org_user = await self.auth_repo.get_org_user_with_roles(user.id, org_id)
         if org_user and org_user.rbac_roles:
             role_ids = [r.id for r in org_user.rbac_roles]
             user_data.permissions = list(
@@ -256,26 +225,8 @@ class AuthService:
     ) -> list[dict]:
         """动态导航菜单树"""
         role_ids = [r.id for r in org_user.rbac_roles]
-        all_role_ids = await RBACService.get_all_role_ids(self.db, role_ids)
-
-        stmt = (
-            select(Permission.code)
-            .join(Permission.roles)
-            .where(Role.id.in_(list(all_role_ids)))
-            .distinct()
-        )
-        user_perm_codes = {row[0] for row in (await self.db.execute(stmt)).all()}
-
-        stmt_menus = (
-            select(Menu)
-            .where(
-                Menu.is_enabled == True,
-                Menu.deleted_at.is_(None),
-                (Menu.tenant_id.is_(None)) | (Menu.tenant_id == tenant_id),
-            )
-            .order_by(Menu.sort)
-        )
-        all_menus = (await self.db.execute(stmt_menus)).scalars().all()
+        user_perm_codes = await self.perm_repo.get_codes_by_role_ids(list(all_role_ids))
+        all_menus = await self.menu_repo.list_active(tenant_id)
 
         visible_menus = [
             m for m in all_menus if not m.permission_code or m.permission_code in user_perm_codes
@@ -312,27 +263,24 @@ class AuthService:
         """修改密码"""
         if not security.verify_password(current_password, user.password_hash):
             raise ValidationError("Incorrect current password")
-        user.password_hash = security.get_password_hash(new_password)
+        await self.user_repo.update(user, {"password_hash": security.get_password_hash(new_password)})
         await self.db.commit()
         return {"message": "Password updated successfully"}
 
     async def update_profile(self, *, user: User, data: dict) -> dict:
         """修改用户基本信息"""
-        for field, value in data.items():
-            setattr(user, field, value)
+        await self.user_repo.update(user, data)
         await self.db.commit()
         return {"status": "ok", "name": user.name}
 
     async def forgot_password(self, email: str) -> dict:
         """请求密码重置"""
-        stmt = select(User).where(User.email == email)
-        user = (await self.db.execute(stmt)).scalar_one_or_none()
-
+        user = await self.user_repo.get_by_email(email)
         if user:
             code = f"{secrets.randbelow(1000000):06d}"
             expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
             token = PasswordResetToken(user_id=user.id, token=code, expires_at=expires_at)
-            self.db.add(token)
+            await self.pwd_repo.create(token)
             await self.db.commit()
 
             from app.services.auth.email import send_reset_code_email
@@ -342,17 +290,7 @@ class AuthService:
 
     async def reset_password(self, *, email: str, code: str, new_password: str) -> dict:
         """使用验证码重置密码"""
-        stmt = (
-            select(PasswordResetToken)
-            .join(User, User.id == PasswordResetToken.user_id)
-            .where(
-                User.email == email,
-                PasswordResetToken.token == code,
-                PasswordResetToken.used == False,
-            )
-            .order_by(PasswordResetToken.created_at.desc())
-        )
-        reset_token = (await self.db.execute(stmt)).scalar_one_or_none()
+        reset_token = await self.pwd_repo.get_valid_token(email, code)
         if not reset_token:
             raise ValidationError("Invalid or expired reset code")
 
@@ -366,7 +304,7 @@ class AuthService:
             raise ValidationError("Reset code has expired")
 
         user = await self.db.get(User, reset_token.user_id)
-        user.password_hash = security.get_password_hash(new_password)
-        reset_token.used = True
+        await self.user_repo.update(user, {"password_hash": security.get_password_hash(new_password)})
+        await self.pwd_repo.update(reset_token, {"used": True})
         await self.db.commit()
         return {"message": "Password has been reset successfully"}

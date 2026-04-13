@@ -1,120 +1,86 @@
 """知识库管理业务服务"""
 
-from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.base.exceptions import ForbiddenError, NotFoundError
-from app.models import Chunk, Document, KnowledgeBase
+from app.base.exceptions import NotFoundError
+from app.models import KnowledgeBase
+from app.repositories.kb_repo import ChunkRepository, DocumentRepository, KnowledgeBaseRepository
 
 
 class KBService:
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.repo = KnowledgeBaseRepository(db)
+        self.doc_repo = DocumentRepository(db)
+        self.chunk_repo = ChunkRepository(db)
 
-    async def create_kb(
-        self, *, tenant_id: int, org_id: int, created_by: int, name: str, description: str | None
-    ) -> dict:
-        """创建知识库"""
-        kb = KnowledgeBase(
-            tenant_id=tenant_id, org_id=org_id, created_by=created_by, name=name, description=description
-        )
-        self.db.add(kb)
-        await self.db.commit()
-        await self.db.refresh(kb)
+    async def _kb_read(self, kb: KnowledgeBase) -> dict:
+        """构建知识库视图 (带统计指标)"""
+        doc_count = await self.doc_repo.count_by_kb(kb.id)
+        token_count = await self.chunk_repo.get_token_count_by_kb(kb.id)
+        
         return {
-            "id": kb.id, "name": kb.name, "description": kb.description,
-            "org_id": kb.org_id, "document_count": 0, "chunk_count": 0, "created_at": kb.created_at,
+            "id": kb.id,
+            "tenant_id": kb.tenant_id,
+            "org_id": kb.org_id,
+            "name": kb.name,
+            "description": kb.description,
+            "created_at": kb.created_at,
+            "updated_at": kb.updated_at,
+            "document_count": doc_count,
+            "token_count": token_count,
         }
 
     async def list_kbs(
-        self, tenant_id: int, org_id: int | None = None, skip: int = 0, limit: int = 100
-    ) -> list[dict]:
-        """列出知识库（含聚合统计）"""
-        doc_count_sq = (
-            select(Document.kb_id, func.count(Document.id).label("document_count"))
-            .where(Document.deleted_at.is_(None))
-            .group_by(Document.kb_id)
-            .subquery()
-        )
-        chunk_count_sq = (
-            select(Chunk.kb_id, func.count(Chunk.id).label("chunk_count"))
-            .where(Chunk.deleted_at.is_(None))
-            .group_by(Chunk.kb_id)
-            .subquery()
+        self,
+        tenant_id: int,
+        effective_org_id: int | None = None,
+        search: str | None = None,
+        skip: int = 0,
+        limit: int = 50,
+    ) -> dict:
+        """列出知识库"""
+        total, kbs = await self.repo.list_by_tenant(
+            tenant_id=tenant_id, effective_org_id=effective_org_id, search=search, skip=skip, limit=limit
         )
 
-        stmt = (
-            select(
-                KnowledgeBase,
-                func.coalesce(doc_count_sq.c.document_count, 0).label("document_count"),
-                func.coalesce(chunk_count_sq.c.chunk_count, 0).label("chunk_count"),
-            )
-            .outerjoin(doc_count_sq, KnowledgeBase.id == doc_count_sq.c.kb_id)
-            .outerjoin(chunk_count_sq, KnowledgeBase.id == chunk_count_sq.c.kb_id)
-            .where(KnowledgeBase.tenant_id == tenant_id)
-        )
-        if org_id is not None:
-            stmt = stmt.where(KnowledgeBase.org_id == org_id)
-        stmt = stmt.offset(skip).limit(limit)
+        kb_reads = [await self._kb_read(kb) for kb in kbs]
+        return {"total": total, "items": kb_reads}
 
-        result = await self.db.execute(stmt)
-        return [
-            {
-                "id": kb.id, "name": kb.name, "description": kb.description,
-                "org_id": kb.org_id, "document_count": doc_cnt,
-                "chunk_count": chunk_cnt, "created_at": kb.created_at,
-            }
-            for kb, doc_cnt, chunk_cnt in result.all()
-        ]
-
-    async def _get_kb(self, kb_id: int, tenant_id: int, org_id: int | None) -> KnowledgeBase:
-        """获取并校验知识库"""
-        kb = await self.db.get(KnowledgeBase, kb_id)
+    async def get_kb(self, kb_id: int, tenant_id: int) -> dict:
+        """获取知识库详情"""
+        kb = await self.repo.get_by_id(kb_id)
         if not kb or kb.tenant_id != tenant_id:
             raise NotFoundError("Knowledge base", kb_id)
-        if org_id is not None and kb.org_id != org_id:
-            raise ForbiddenError("Not enough permissions")
-        return kb
+        return await self._kb_read(kb)
+
+    async def create_kb(
+        self, tenant_id: int, org_id: int, data: dict, created_by: int = 0
+    ) -> dict:
+        """创建知识库"""
+        kb = KnowledgeBase(tenant_id=tenant_id, org_id=org_id, created_by=created_by, **data)
+        await self.repo.create(kb)
+        await self.db.commit()
+        return await self._kb_read(kb)
 
     async def update_kb(
-        self, kb_id: int, tenant_id: int, org_id: int | None, data: dict
+        self, kb_id: int, tenant_id: int, data: dict
     ) -> dict:
         """更新知识库"""
-        kb = await self._get_kb(kb_id, tenant_id, org_id)
-        for field, value in data.items():
-            setattr(kb, field, value)
+        kb = await self.repo.get_by_id(kb_id)
+        if not kb or kb.tenant_id != tenant_id:
+            raise NotFoundError("Knowledge base", kb_id)
+
+        await self.repo.update(kb, data)
         await self.db.commit()
-        await self.db.refresh(kb)
+        return await self._kb_read(kb)
 
-        doc_count = (await self.db.execute(
-            select(func.count(Document.id)).where(Document.kb_id == kb_id, Document.deleted_at.is_(None))
-        )).scalar() or 0
-        chunk_count = (await self.db.execute(
-            select(func.count(Chunk.id)).where(Chunk.kb_id == kb_id, Chunk.deleted_at.is_(None))
-        )).scalar() or 0
-
-        return {
-            "id": kb.id, "name": kb.name, "description": kb.description,
-            "org_id": kb.org_id, "document_count": doc_count,
-            "chunk_count": chunk_count, "created_at": kb.created_at,
-        }
-
-    async def delete_kb(self, kb_id: int, tenant_id: int, org_id: int | None) -> None:
+    async def delete_kb(self, kb_id: int, tenant_id: int) -> None:
         """删除知识库"""
-        kb = await self._get_kb(kb_id, tenant_id, org_id)
-        await self.db.delete(kb)
-        await self.db.commit()
+        kb = await self.repo.get_by_id(kb_id)
+        if not kb or kb.tenant_id != tenant_id:
+            raise NotFoundError("Knowledge base", kb_id)
 
-    async def get_kb_stats(self, kb_id: int, tenant_id: int, org_id: int | None) -> dict:
-        """知识库统计"""
-        kb = await self._get_kb(kb_id, tenant_id, org_id)
-        doc_count = (await self.db.execute(
-            select(func.count(Document.id)).where(Document.kb_id == kb_id)
-        )).scalar() or 0
-        chunk_count = (await self.db.execute(
-            select(func.count(Chunk.id)).where(Chunk.kb_id == kb_id)
-        )).scalar() or 0
-        total_tokens = (await self.db.execute(
-            select(func.coalesce(func.sum(Chunk.metadata_["token_count"].as_integer()), 0)).where(Chunk.kb_id == kb_id)
-        )).scalar() or 0
-        return {"kb_id": kb_id, "document_count": doc_count, "chunk_count": chunk_count, "total_tokens": total_tokens}
+        # 关联的 documents 会通过 DB 外键或者应用侧的清理任务被删
+        await self.repo.delete(kb)
+        await self.db.commit()
