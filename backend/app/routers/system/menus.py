@@ -1,14 +1,14 @@
-"""菜单管理 CRUD 端点"""
+"""菜单管理端点 — 纯 HTTP 适配层"""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
-from app.models import Menu, OrganizationUser
-from app.routers.deps import check_permission, get_current_org_id, get_db
-from app.services.audit.service import fire_audit
+from app.models import OrganizationUser
+from app.routers.deps import (
+    MenuServiceDep,
+    check_permission,
+    get_current_org_id,
+)
 
 router = APIRouter()
 
@@ -63,112 +63,47 @@ class MenuRead(BaseModel):
 
 @router.get("", response_model=list[MenuRead])
 async def list_menus(
+    service: MenuServiceDep,
     _perm=Depends(check_permission("menu:manage")),
-    db: AsyncSession = Depends(get_db),
 ):
-    """[管理员] 获取完整菜单树（管理视图，含不可见菜单）"""
-    stmt = (
-        select(Menu)
-        .where(Menu.parent_id.is_(None))
-        .options(selectinload(Menu.children).selectinload(Menu.children))
-        .order_by(Menu.sort)
-    )
-    result = await db.execute(stmt)
-    return result.scalars().all()
+    """[管理员] 获取完整菜单树"""
+    return await service.list_menu_tree()
 
 
 @router.post("", response_model=MenuRead)
 async def create_menu(
     data: MenuCreate,
+    service: MenuServiceDep,
     org_id: int = Depends(get_current_org_id),
     _perm: OrganizationUser = Depends(check_permission("menu:manage")),
-    db: AsyncSession = Depends(get_db),
 ):
     """[管理员] 创建菜单"""
-    # code 唯一性检查
-    stmt = select(Menu).where(Menu.code == data.code)
-    if (await db.execute(stmt)).scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Menu code already exists")
-
-    # 如指定了 parent_id，验证父菜单存在
-    if data.parent_id:
-        parent = await db.get(Menu, data.parent_id)
-        if not parent:
-            raise HTTPException(status_code=400, detail="Parent menu not found")
-
-    menu = Menu(**data.model_dump())
-    db.add(menu)
-    await db.flush()
-
-    fire_audit(
-        user_id=_perm.user_id,
-        org_id=org_id,
-        action="CREATE_MENU",
-        resource_type="menu",
-        resource_id=menu.id,
-        details=f"Created menu: {menu.name} ({menu.code})",
+    return await service.create_menu(
+        data.model_dump(), user_id=_perm.user_id, org_id=org_id
     )
-
-    await db.commit()
-    await db.refresh(menu)
-    return menu
 
 
 @router.put("/{menu_id}", response_model=MenuRead)
 async def update_menu(
     menu_id: int,
     data: MenuUpdate,
+    service: MenuServiceDep,
     org_id: int = Depends(get_current_org_id),
     _perm: OrganizationUser = Depends(check_permission("menu:manage")),
-    db: AsyncSession = Depends(get_db),
 ):
     """[管理员] 更新菜单"""
-    menu = await db.get(Menu, menu_id)
-    if not menu:
-        raise HTTPException(status_code=404, detail="Menu not found")
-
-    # 防止自引用
-    if data.parent_id and data.parent_id == menu_id:
-        raise HTTPException(status_code=400, detail="Menu cannot be its own parent")
-
-    for field, value in data.model_dump(exclude_unset=True).items():
-        setattr(menu, field, value)
-
-    fire_audit(
-        user_id=_perm.user_id,
-        org_id=org_id,
-        action="UPDATE_MENU",
-        resource_type="menu",
-        resource_id=menu.id,
-        details=f"Updated menu: {menu.name}",
+    return await service.update_menu(
+        menu_id, data.model_dump(exclude_unset=True), user_id=_perm.user_id, org_id=org_id
     )
-
-    await db.commit()
-    await db.refresh(menu)
-    return menu
 
 
 @router.delete("/{menu_id}")
 async def delete_menu(
     menu_id: int,
+    service: MenuServiceDep,
     org_id: int = Depends(get_current_org_id),
     _perm: OrganizationUser = Depends(check_permission("menu:manage")),
-    db: AsyncSession = Depends(get_db),
 ):
-    """[管理员] 删除菜单（含子菜单级联删除）"""
-    menu = await db.get(Menu, menu_id)
-    if not menu:
-        raise HTTPException(status_code=404, detail="Menu not found")
-
-    fire_audit(
-        user_id=_perm.user_id,
-        org_id=org_id,
-        action="DELETE_MENU",
-        resource_type="menu",
-        resource_id=menu.id,
-        details=f"Deleted menu: {menu.name} ({menu.code})",
-    )
-
-    await db.delete(menu)
-    await db.commit()
+    """[管理员] 删除菜单"""
+    await service.delete_menu(menu_id, user_id=_perm.user_id, org_id=org_id)
     return {"status": "ok"}

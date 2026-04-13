@@ -457,3 +457,15 @@ UserServiceDep = Annotated[UserService, ServiceDep(UserService)]
 from app.services.system.tenant_service import TenantService
 
 TenantServiceDep = Annotated[TenantService, ServiceDep(TenantService)]
+
+from app.services.system.dashboard_service import DashboardService
+
+DashboardServiceDep = Annotated[DashboardService, ServiceDep(DashboardService)]
+
+from app.services.system.menu_service import MenuService
+
+MenuServiceDep = Annotated[MenuService, ServiceDep(MenuService)]
+
+from app.services.system.rbac_service import RBACServiceExt
+
+RBACServiceDep = Annotated[RBACServiceExt, ServiceDep(RBACServiceExt)]
