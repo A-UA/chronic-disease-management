@@ -479,6 +479,14 @@ from app.services.rag.conversation_service import ConversationService
 
 ConversationServiceDep = Annotated[ConversationService, ServiceDep(ConversationService)]
 
+from app.services.rag.chat_runtime_service import ChatRuntimeService
+
+ChatRuntimeServiceDep = Annotated[ChatRuntimeService, ServiceDep(ChatRuntimeService)]
+
+from app.services.rag.document_runtime_service import DocumentRuntimeService
+
+DocumentRuntimeServiceDep = Annotated[DocumentRuntimeService, ServiceDep(DocumentRuntimeService)]
+
 # ── Auth 领域 ──
 from app.services.auth.auth_service import AuthService
 
@@ -488,3 +496,20 @@ AuthServiceDep = Annotated[AuthService, ServiceDep(AuthService)]
 from app.services.system.settings_adapter import SettingsServiceAdapter
 
 SettingsServiceDep = Annotated[SettingsServiceAdapter, ServiceDep(SettingsServiceAdapter)]
+
+# ── 补充模块 ──
+from app.services.system.api_key_service import ApiKeyService
+
+ApiKeyServiceDep = Annotated[ApiKeyService, ServiceDep(ApiKeyService)]
+
+from app.services.system.usage_service import UsageService
+
+UsageServiceDep = Annotated[UsageService, ServiceDep(UsageService)]
+
+from app.services.system.external_api_service import ExternalApiService
+
+ExternalApiServiceDep = Annotated[ExternalApiService, ServiceDep(ExternalApiService)]
+
+from app.services.audit.query_service import AuditQueryService
+
+AuditQueryServiceDep = Annotated[AuditQueryService, ServiceDep(AuditQueryService)]

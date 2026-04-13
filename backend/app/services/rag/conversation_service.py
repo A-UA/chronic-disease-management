@@ -23,7 +23,7 @@ class ConversationService:
     async def list_conversations(
         self, user_id: int, tenant_id: int, skip: int = 0, limit: int = 50
     ) -> list[Conversation]:
-        """列出用户对话"""
+        """列出用户个人对话"""
         stmt = (
             select(Conversation)
             .where(Conversation.user_id == user_id, Conversation.tenant_id == tenant_id)
@@ -31,6 +31,17 @@ class ConversationService:
             .offset(skip)
             .limit(limit)
         )
+        result = await self.db.execute(stmt)
+        return list(result.scalars().all())
+
+    async def list_all_conversations(
+        self, tenant_id: int, effective_org_id: int | None, skip: int = 0, limit: int = 50
+    ) -> list[Conversation]:
+        """[管理员] 平台/组织全局对话"""
+        stmt = select(Conversation).where(Conversation.tenant_id == tenant_id)
+        if effective_org_id is not None:
+            stmt = stmt.where(Conversation.org_id == effective_org_id)
+        stmt = stmt.offset(skip).limit(limit).order_by(Conversation.created_at.desc())
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
