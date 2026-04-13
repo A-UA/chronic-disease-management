@@ -426,3 +426,9 @@ def ServiceDep(service_cls: type[S]):
         return service_cls(db)
 
     return Depends(_factory)
+
+
+# ── Patient 领域 ──
+from app.services.patient.patient_service import PatientService
+
+PatientServiceDep = Annotated[PatientService, ServiceDep(PatientService)]

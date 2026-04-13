@@ -27,3 +27,13 @@ class PatientProfileRead(PatientProfileBase):
     org_id: int
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PatientProfileAdminCreate(BaseModel):
+    """管理员创建患者档案"""
+
+    user_id: int
+    real_name: str
+    gender: str | None = None
+    birth_date: str | None = None
+    medical_history: dict | None = None
