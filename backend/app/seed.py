@@ -347,7 +347,7 @@ async def seed_rbac(db):
     for r_code, r_name, r_desc, p_codes, _ in ROLES:
         stmt = (
             select(Role)
-            .where(Role.code == r_code, Role.tenant_id == None)
+            .where(Role.code == r_code, Role.tenant_id.is_(None))
             .options(selectinload(Role.permissions))
         )
         role = (await db.execute(stmt)).scalar_one_or_none()

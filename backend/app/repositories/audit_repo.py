@@ -1,4 +1,5 @@
 from datetime import datetime
+
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,7 +23,7 @@ class AuditRepository(BaseRepository[AuditLog]):
         limit: int = 50,
     ) -> tuple[int, list[AuditLog]]:
         base = select(self.model)
-        
+
         if tenant_id is not None:
             base = base.where(self.model.tenant_id == tenant_id)
         if org_id is not None:

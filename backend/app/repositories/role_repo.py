@@ -2,7 +2,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models import Role, Permission, RoleConstraint
+from app.models import Permission, Role, RoleConstraint
 from app.repositories.base import BaseRepository
 
 
@@ -98,12 +98,13 @@ class RoleConstraintRepository(BaseRepository[RoleConstraint]):
         )
         return list((await self.db.execute(stmt)).scalars().all())
 
-from app.models.rbac import Resource, Action
+from app.models.rbac import Action, Resource
+
 
 class ResourceRepository(BaseRepository[Resource]):
     def __init__(self, db: AsyncSession):
         super().__init__(db, Resource)
-        
+
     async def list_all(self):
         return list((await self.db.execute(select(self.model))).scalars().all())
 

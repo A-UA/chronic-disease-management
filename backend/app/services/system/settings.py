@@ -2,7 +2,6 @@
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.base.exceptions import NotFoundError
 from app.models import SystemSettings
 from app.repositories.settings_repo import SettingsRepository
 
@@ -26,6 +25,6 @@ class SettingsServiceAdapter:
             else:
                 new_setting = SystemSettings(key=key, value=value, description="")
                 await self.repo.create(new_setting)
-        
+
         await self.db.commit()
         return await self.get_all_settings()

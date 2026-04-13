@@ -5,8 +5,11 @@ from sqlalchemy.sql import func as sqlfunc
 
 from app.base import security
 from app.base.exceptions import ConflictError, NotFoundError
-from app.models import OrganizationUser, OrganizationUserRole, Role, User
-from app.repositories.org_user_repo import OrganizationUserRepository, OrganizationUserRoleRepository
+from app.models import OrganizationUser, OrganizationUserRole, User
+from app.repositories.org_user_repo import (
+    OrganizationUserRepository,
+    OrganizationUserRoleRepository,
+)
 from app.repositories.role_repo import RoleRepository
 from app.repositories.user_repo import UserRepository
 from app.schemas.admin import UserAdminRead
@@ -111,10 +114,10 @@ class UserService:
         if "email" in data and data["email"] and data["email"] != user.email:
             if await self.repo.get_by_email(data["email"], exclude_id=user_id):
                 raise ConflictError("Email already in use")
-        
+
         await self.repo.update(user, data)
         await self.db.commit()
-        
+
         return await self._user_read(user)
 
     async def update_user_status(self, user_id: int, is_active: bool) -> None:
@@ -122,7 +125,7 @@ class UserService:
         user = await self.repo.get_by_id(user_id)
         if not user:
             raise NotFoundError("User", user_id)
-        
+
         await self.repo.update(user, {"deleted_at": None if is_active else sqlfunc.now()})
         await self.db.commit()
 

@@ -1,5 +1,5 @@
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import func, select
 
 from app.models import Menu
 from app.repositories.base import BaseRepository

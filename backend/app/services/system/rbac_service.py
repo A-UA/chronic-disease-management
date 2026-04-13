@@ -103,8 +103,6 @@ class RBACServiceExt:
         )
 
         if permission_ids:
-            perms = await self.perm_repo.get_perms_by_codes([]) # Not correct by ID but just hack it or add get_by_ids to repo
-            # wait, I added `get_perms_by_codes`, I should add `get_by_ids` in list.
             roles_perms = []
             for p_id in permission_ids:
                 p = await self.perm_repo.get_by_id(p_id)
@@ -137,8 +135,9 @@ class RBACServiceExt:
         role_ids: list[int],
     ) -> dict:
         """为组织成员授权（含 SSD 约束校验）"""
-        from app.services.system.rbac import RBACService
         from sqlalchemy import select
+
+        from app.services.system.rbac import RBACService
 
         stmt_v = select(Role).where(
             Role.id.in_(role_ids),
@@ -153,7 +152,7 @@ class RBACServiceExt:
             raise ForbiddenError(conflict_msg)
 
         from sqlalchemy import delete
-        
+
         # In a real enterprise app, delete should also be abstracted, but `execute(delete(...))` inline
         # inside the repo. Let's add a `delete_by_user` inside `org_user_repo_roles`.
         # For now, just keep delete syntax cleaner.
@@ -198,6 +197,7 @@ class RBACServiceExt:
             role.description = data["description"]
         if "permission_ids" in data and data["permission_ids"] is not None:
             from sqlalchemy import select
+
             from app.models import Permission
             stmt = select(Permission).where(Permission.id.in_(data["permission_ids"]))
             perms = (await self.db.execute(stmt)).scalars().all()

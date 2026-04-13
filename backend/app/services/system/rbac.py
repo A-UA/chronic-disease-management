@@ -1,6 +1,10 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.repositories.role_repo import RoleRepository, PermissionRepository, RoleConstraintRepository
+from app.repositories.role_repo import (
+    PermissionRepository,
+    RoleConstraintRepository,
+    RoleRepository,
+)
 
 
 class RBACService:

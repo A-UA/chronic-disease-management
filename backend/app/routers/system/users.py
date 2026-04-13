@@ -1,6 +1,5 @@
 """用户管理端点 — 纯 HTTP 适配层"""
 
-from typing import Any
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel

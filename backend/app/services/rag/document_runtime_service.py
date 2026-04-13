@@ -1,12 +1,15 @@
 """文档运行时业务服务"""
 
 from fastapi import UploadFile
-from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.base.exceptions import NotFoundError
 from app.models import User
-from app.repositories.kb_repo import ChunkRepository, DocumentRepository, KnowledgeBaseRepository
+from app.repositories.kb_repo import (
+    ChunkRepository,
+    DocumentRepository,
+    KnowledgeBaseRepository,
+)
 from app.services.rag.document_service import (
     delete_document_and_enqueue_cleanup,
     upload_document_and_enqueue,

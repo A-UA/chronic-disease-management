@@ -2,12 +2,11 @@
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.repositories.api_key_repo import ApiKeyRepository
-
 from app.ai.rag.prompt import build_rag_prompt
 from app.ai.rag.retrieval import retrieve_chunks
 from app.ai.rag.tokens import count_tokens
 from app.models import ApiKey, UsageLog
+from app.repositories.api_key_repo import ApiKeyRepository
 from app.services.rag.provider_service import provider_service
 from app.services.system.quota import update_tenant_quota
 

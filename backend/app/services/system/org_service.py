@@ -16,7 +16,10 @@ from app.models import (
 )
 from app.repositories.org_invitation_repo import OrganizationInvitationRepository
 from app.repositories.org_repo import OrganizationRepository
-from app.repositories.org_user_repo import OrganizationUserRepository, OrganizationUserRoleRepository
+from app.repositories.org_user_repo import (
+    OrganizationUserRepository,
+    OrganizationUserRoleRepository,
+)
 from app.repositories.role_repo import RoleRepository
 from app.repositories.user_repo import UserRepository
 

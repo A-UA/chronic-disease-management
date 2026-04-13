@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.base import security
 from app.base.config import settings
-from app.base.exceptions import ForbiddenError, NotFoundError, ValidationError
+from app.base.exceptions import ForbiddenError, ValidationError
 from app.models import (
     Organization,
     OrganizationUser,
@@ -20,8 +20,11 @@ from app.models import (
 from app.repositories.auth_repo import AuthRepository, PasswordResetTokenRepository
 from app.repositories.menu_repo import MenuRepository
 from app.repositories.org_repo import OrganizationRepository
-from app.repositories.org_user_repo import OrganizationUserRepository, OrganizationUserRoleRepository
-from app.repositories.role_repo import RoleRepository, PermissionRepository
+from app.repositories.org_user_repo import (
+    OrganizationUserRepository,
+    OrganizationUserRoleRepository,
+)
+from app.repositories.role_repo import PermissionRepository, RoleRepository
 from app.repositories.tenant_repo import TenantRepository
 from app.repositories.user_repo import UserRepository
 from app.services.system.rbac import RBACService
@@ -68,8 +71,8 @@ class AuthService:
         )
         await self.org_user_repo.create(org_user)
 
-        owner_role = await self.role_repo.get_staff_role(tenant_id=tenant.id) # fallback, maybe owner
         from sqlalchemy import select
+
         from app.models import Role
         stmt_role = select(Role).where(Role.code == "owner", Role.tenant_id.is_(None))
         r_owner = (await self.db.execute(stmt_role)).scalar_one_or_none()
@@ -223,8 +226,8 @@ class AuthService:
     async def get_menu_tree(
         self, *, org_user: OrganizationUser, tenant_id: int
     ) -> list[dict]:
-        """动态导航菜单树"""
         role_ids = [r.id for r in org_user.rbac_roles]
+        all_role_ids = await self.role_repo.get_all_role_ids(role_ids)
         user_perm_codes = await self.perm_repo.get_codes_by_role_ids(list(all_role_ids))
         all_menus = await self.menu_repo.list_active(tenant_id)
 

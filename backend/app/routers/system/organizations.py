@@ -8,7 +8,6 @@ from app.models import User
 from app.routers.deps import (
     OrgServiceDep,
     check_permission,
-    get_current_org_id,
     get_current_tenant_id,
     get_current_user,
 )

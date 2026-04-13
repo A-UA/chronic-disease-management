@@ -1,14 +1,14 @@
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from sqlalchemy.orm import selectinload
 
-from app.models import KnowledgeBase, Document, Chunk
+from app.models import Chunk, Document, KnowledgeBase
 from app.repositories.base import BaseRepository
+
 
 class KnowledgeBaseRepository(BaseRepository[KnowledgeBase]):
     def __init__(self, db: AsyncSession):
         super().__init__(db, KnowledgeBase)
-        
+
     async def list_by_tenant(self, tenant_id: int, effective_org_id: int | None, search: str | None = None, skip: int = 0, limit: int = 50) -> tuple[int, list[KnowledgeBase]]:
         base = select(self.model).where(self.model.tenant_id == tenant_id)
         if effective_org_id is not None:
@@ -34,7 +34,7 @@ class DocumentRepository(BaseRepository[Document]):
 class ChunkRepository(BaseRepository[Chunk]):
     def __init__(self, db: AsyncSession):
         super().__init__(db, Chunk)
-        
+
     async def get_token_count_by_kb(self, kb_id: int) -> int:
         stmt = (
             select(func.sum(self.model.token_count))

@@ -4,7 +4,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.base.exceptions import NotFoundError
 from app.models import KnowledgeBase
-from app.repositories.kb_repo import ChunkRepository, DocumentRepository, KnowledgeBaseRepository
+from app.repositories.kb_repo import (
+    ChunkRepository,
+    DocumentRepository,
+    KnowledgeBaseRepository,
+)
 
 
 class KBService:
@@ -18,7 +22,7 @@ class KBService:
         """构建知识库视图 (带统计指标)"""
         doc_count = await self.doc_repo.count_by_kb(kb.id)
         token_count = await self.chunk_repo.get_token_count_by_kb(kb.id)
-        
+
         return {
             "id": kb.id,
             "tenant_id": kb.tenant_id,

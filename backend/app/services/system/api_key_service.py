@@ -40,7 +40,7 @@ class ApiKeyService:
             token_quota=data.get("token_quota"),
             expires_at=data.get("expires_at"),
         )
-        
+
         await self.repo.create(api_key)
         await self.db.commit()
 

@@ -29,7 +29,7 @@ class DashboardService:
         """普通租户：获取本租户大盘统计数据"""
         # 注意：这里暂未精细到按部门 (org_id) 过滤，全租户共享
         stats = await self.repo.get_tenant_stats(tenant_id)
-        
+
         # 简单模拟获取近 7 天趋势
         end_date = datetime.utcnow()
         start_date = end_date - timedelta(days=7)

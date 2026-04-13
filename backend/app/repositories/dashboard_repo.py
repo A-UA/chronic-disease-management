@@ -1,8 +1,7 @@
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import DashboardMetric, Organization, PatientProfile, Tenant, User
-from app.repositories.base import BaseRepository
+from app.models import Organization, PatientProfile, Tenant, User
 
 
 class DashboardRepository:
