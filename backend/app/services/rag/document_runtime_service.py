@@ -5,7 +5,8 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.base.exceptions import NotFoundError
-from app.models import Chunk, Document, KnowledgeBase, User
+from app.models import User
+from app.repositories.kb_repo import ChunkRepository, DocumentRepository, KnowledgeBaseRepository
 from app.services.rag.document_service import (
     delete_document_and_enqueue_cleanup,
     upload_document_and_enqueue,
@@ -15,6 +16,9 @@ from app.services.rag.document_service import (
 class DocumentRuntimeService:
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.kb_repo = KnowledgeBaseRepository(db)
+        self.doc_repo = DocumentRepository(db)
+        self.chunk_repo = ChunkRepository(db)
 
     async def upload_document(
         self, *, kb_id: int, file: UploadFile, patient_id: int | None,
@@ -31,43 +35,32 @@ class DocumentRuntimeService:
         patient_id: int | None, skip: int = 0, limit: int = 50
     ) -> list[dict]:
         """列出知识库文档"""
-        kb = await self.db.get(KnowledgeBase, kb_id)
+        kb = await self.kb_repo.get_by_id(kb_id)
         if not kb or kb.tenant_id != tenant_id:
             raise NotFoundError("Knowledge base", kb_id)
 
-        chunk_count_sq = (
-            select(Chunk.document_id, func.count(Chunk.id).label("chunk_count"))
-            .where(Chunk.deleted_at.is_(None))
-            .group_by(Chunk.document_id)
-            .subquery()
+        docs = await self.doc_repo.list_with_chunk_count(
+            kb_id=kb_id,
+            tenant_id=tenant_id,
+            org_id=effective_org_id,
+            patient_id=patient_id,
+            skip=skip,
+            limit=limit,
         )
-
-        stmt = (
-            select(Document, func.coalesce(chunk_count_sq.c.chunk_count, 0).label("chunk_count"))
-            .outerjoin(chunk_count_sq, Document.id == chunk_count_sq.c.document_id)
-            .where(Document.kb_id == kb_id, Document.tenant_id == tenant_id)
-        )
-        if effective_org_id is not None:
-            stmt = stmt.where(Document.org_id == effective_org_id)
-        if patient_id is not None:
-            stmt = stmt.where(Document.patient_id == patient_id)
-
-        stmt = stmt.offset(skip).limit(limit).order_by(Document.created_at.desc())
-        result = await self.db.execute(stmt)
 
         return [
             {
                 "id": doc.id, "kb_id": doc.kb_id, "org_id": doc.org_id, "uploader_id": doc.uploader_id,
                 "patient_id": doc.patient_id, "file_name": doc.file_name, "file_type": doc.file_type,
                 "file_size": doc.file_size, "minio_url": doc.minio_url, "status": doc.status,
-                "failed_reason": doc.failed_reason, "chunk_count": chunk_cnt,
+                "failed_reason": doc.failed_reason, "chunk_count": doc.chunk_count,
                 "created_at": doc.created_at, "updated_at": doc.updated_at,
             }
-            for doc, chunk_cnt in result.all()
+            for doc in docs
         ]
 
-    async def _get_doc(self, document_id: int, tenant_id: int) -> Document:
-        doc = await self.db.get(Document, document_id)
+    async def _get_doc(self, document_id: int, tenant_id: int):
+        doc = await self.doc_repo.get_by_id(document_id)
         if not doc or doc.tenant_id != tenant_id:
             raise NotFoundError("Document", document_id)
         return doc
@@ -75,9 +68,9 @@ class DocumentRuntimeService:
     async def get_document(self, document_id: int, tenant_id: int) -> dict:
         """获取文档信息"""
         doc = await self._get_doc(document_id, tenant_id)
-        chunk_count = (await self.db.execute(
-            select(func.count(Chunk.id)).where(Chunk.document_id == document_id, Chunk.deleted_at.is_(None))
-        )).scalar() or 0
+        # 简单抽象方法
+        from app.models import Chunk
+        chunk_count = await self.chunk_repo.count(filters=[Chunk.document_id == document_id, Chunk.deleted_at.is_(None)])
 
         return {
             "id": doc.id, "kb_id": doc.kb_id, "org_id": doc.org_id, "uploader_id": doc.uploader_id,

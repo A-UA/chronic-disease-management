@@ -52,12 +52,9 @@ async def upload_document_and_enqueue(
         raise HTTPException(status_code=403, detail="Not enough permissions")
 
     if patient_id is not None:
-        patient_stmt = select(PatientProfile.id).where(
-            PatientProfile.id == patient_id,
-            PatientProfile.tenant_id == tenant_id,
-        )
-        patient_result = await db.execute(patient_stmt)
-        if patient_result.scalar_one_or_none() is None:
+        from app.repositories.patient_repo import PatientRepository
+        patient = await PatientRepository(db).get_by_id(patient_id)
+        if not patient or patient.tenant_id != tenant_id:
             raise HTTPException(status_code=404, detail="Patient profile not found")
 
     file_bytes = await _read_upload_bytes(file)
@@ -127,5 +124,5 @@ async def delete_document_and_enqueue_cleanup(
             status_code=500, detail="Document cleanup enqueue failed"
         ) from exc
 
-    await db.execute(delete(Document).where(Document.id == document.id))
-    await db.commit()
+    from app.repositories.kb_repo import DocumentRepository
+    await DocumentRepository(db).delete(document)
