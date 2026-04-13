@@ -432,3 +432,15 @@ def ServiceDep(service_cls: type[S]):
 from app.services.patient.patient_service import PatientService
 
 PatientServiceDep = Annotated[PatientService, ServiceDep(PatientService)]
+
+from app.services.patient.health_metric_service import HealthMetricService
+
+HealthMetricServiceDep = Annotated[HealthMetricService, ServiceDep(HealthMetricService)]
+
+from app.services.patient.manager_service import ManagerService
+
+ManagerServiceDep = Annotated[ManagerService, ServiceDep(ManagerService)]
+
+from app.services.patient.family_service import FamilyService
+
+FamilyServiceDep = Annotated[FamilyService, ServiceDep(FamilyService)]
