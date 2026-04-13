@@ -77,3 +77,9 @@ class OrganizationInvitationRead(BaseModel):
     expires_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class AddMemberRequest(BaseModel):
+    user_id: int
+    role_ids: list[int] = []
+    user_type: str = "staff"

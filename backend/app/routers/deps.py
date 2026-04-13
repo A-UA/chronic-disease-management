@@ -444,3 +444,16 @@ ManagerServiceDep = Annotated[ManagerService, ServiceDep(ManagerService)]
 from app.services.patient.family_service import FamilyService
 
 FamilyServiceDep = Annotated[FamilyService, ServiceDep(FamilyService)]
+
+# ── System 领域 ──
+from app.services.system.org_service import OrgService
+
+OrgServiceDep = Annotated[OrgService, ServiceDep(OrgService)]
+
+from app.services.system.user_service import UserService
+
+UserServiceDep = Annotated[UserService, ServiceDep(UserService)]
+
+from app.services.system.tenant_service import TenantService
+
+TenantServiceDep = Annotated[TenantService, ServiceDep(TenantService)]
