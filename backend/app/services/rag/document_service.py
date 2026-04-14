@@ -125,3 +125,4 @@ async def delete_document_and_enqueue_cleanup(
         ) from exc
 
     await DocumentRepository(db).delete(document)
+    await db.commit()

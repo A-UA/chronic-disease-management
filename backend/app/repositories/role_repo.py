@@ -47,6 +47,25 @@ class RoleRepository(BaseRepository[Role]):
             stmt = stmt.where(self.model.id != exclude_id)
         return (await self.db.execute(stmt)).scalar_one_or_none() is not None
 
+    async def get_all_role_ids(self, direct_role_ids: list[int]) -> set[int]:
+        from sqlalchemy import text
+        if not direct_role_ids:
+            return set()
+        query = text("""
+            WITH RECURSIVE role_hierarchy AS (
+                SELECT id, parent_role_id
+                FROM roles
+                WHERE id = ANY(:role_ids)
+                UNION
+                SELECT r.id, r.parent_role_id
+                FROM roles r
+                INNER JOIN role_hierarchy rh ON rh.parent_role_id = r.id
+            )
+            SELECT id FROM role_hierarchy;
+        """)
+        result = await self.db.execute(query, {"role_ids": direct_role_ids})
+        return {row[0] for row in result.fetchall()}
+
 class PermissionRepository(BaseRepository[Permission]):
     def __init__(self, db: AsyncSession):
         super().__init__(db, Permission)
@@ -67,25 +86,6 @@ class PermissionRepository(BaseRepository[Permission]):
             .distinct()
         )
         return {row[0] for row in (await self.db.execute(stmt)).all()}
-
-    async def get_all_role_ids(self, direct_role_ids: list[int]) -> set[int]:
-        from sqlalchemy import text
-        if not direct_role_ids:
-            return set()
-        query = text("""
-            WITH RECURSIVE role_hierarchy AS (
-                SELECT id, parent_role_id
-                FROM roles
-                WHERE id = ANY(:role_ids)
-                UNION
-                SELECT r.id, r.parent_role_id
-                FROM roles r
-                INNER JOIN role_hierarchy rh ON rh.parent_role_id = r.id
-            )
-            SELECT id FROM role_hierarchy;
-        """)
-        result = await self.db.execute(query, {"role_ids": direct_role_ids})
-        return {row[0] for row in result.fetchall()}
 
 class RoleConstraintRepository(BaseRepository[RoleConstraint]):
     def __init__(self, db: AsyncSession):

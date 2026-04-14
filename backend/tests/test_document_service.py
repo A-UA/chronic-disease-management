@@ -55,10 +55,17 @@ class FakeDeleteDB:
     def __init__(self):
         self.executed = []
         self.commits = 0
+        self.deleted = []
 
     async def execute(self, stmt):
         self.executed.append(stmt)
         return None
+
+    async def delete(self, obj):
+        self.deleted.append(obj)
+        
+    async def flush(self):
+        pass
 
     async def commit(self):
         self.commits += 1
@@ -224,7 +231,7 @@ async def test_delete_document_and_enqueue_cleanup_deletes_after_queue_submissio
 
     assert calls == ["minio://report.pdf"]
     assert fake_db.commits == 1
-    assert len(fake_db.executed) == 1
+    assert len(fake_db.deleted) == 1
 
 
 @pytest.mark.asyncio

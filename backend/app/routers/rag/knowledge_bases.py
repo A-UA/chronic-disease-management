@@ -65,7 +65,8 @@ async def list_knowledge_bases(
     effective_org_id: int | None = Depends(get_effective_org_id),
 ) -> Any:
     """列出知识库"""
-    return await service.list_kbs(tenant_id, effective_org_id, skip, limit)
+    res = await service.list_kbs(tenant_id, effective_org_id, skip, limit)
+    return res["items"]
 
 
 @router.put("/{kb_id}", response_model=KBRead)

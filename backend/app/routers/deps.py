@@ -493,9 +493,9 @@ from app.services.auth.auth_service import AuthService
 AuthServiceDep = Annotated[AuthService, ServiceDep(AuthService)]
 
 # ── 独立适配器 ──
-from app.services.system.settings_adapter import SettingsServiceAdapter
+from app.services.system.settings import SettingsService
 
-SettingsServiceDep = Annotated[SettingsServiceAdapter, ServiceDep(SettingsServiceAdapter)]
+SettingsServiceDep = Annotated[SettingsService, ServiceDep(SettingsService)]
 
 # ── 补充模块 ──
 from app.services.system.api_key_service import ApiKeyService
