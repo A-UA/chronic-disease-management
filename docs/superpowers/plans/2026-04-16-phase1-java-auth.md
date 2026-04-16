@@ -6,7 +6,7 @@
 
 **Architecture:** Gateway 使用 Spring Cloud Gateway，负责 JWT 校验和路由转发。auth-service 是独立的 Spring Boot 应用，包含认证、用户、组织、RBAC、菜单等业务模块。Gateway 解析 JWT 后将身份信息注入 HTTP Header 转发给下游服务。
 
-**Tech Stack:** Java 17+, Spring Boot 3.x, Spring Cloud Gateway, Spring Data JPA, jjwt, BCrypt, Gradle (Kotlin DSL), PostgreSQL 16
+**Tech Stack:** Java 17+, Spring Boot 3.x, Spring Cloud Gateway, Spring Data JPA, jjwt, BCrypt, Maven, PostgreSQL 16
 
 **设计文档:** `docs/superpowers/specs/2026-04-16-microservice-architecture-design.md`
 
@@ -29,18 +29,16 @@
 
 ```
 backend-java/
-├── settings.gradle.kts
-├── build.gradle.kts                  # 根项目（依赖版本管理）
+├── pom.xml                           # 父 POM（依赖版本管理 + 模块声明）
 ├── gateway/
-│   ├── build.gradle.kts
+│   ├── pom.xml
 │   └── src/main/java/com/cdm/gateway/
 │       ├── GatewayApplication.java
-│       ├── filter/JwtAuthFilter.java
-│       └── config/RouteConfig.java
+│       └── filter/JwtAuthFilter.java
 │   └── src/main/resources/
 │       └── application.yml
 ├── auth-service/
-│   ├── build.gradle.kts
+│   ├── pom.xml
 │   └── src/main/java/com/cdm/auth/
 │       ├── AuthServiceApplication.java
 │       ├── config/SecurityConfig.java
@@ -48,11 +46,12 @@ backend-java/
 │       │   ├── AuthController.java
 │       │   ├── AuthService.java
 │       │   ├── JwtProvider.java
+│       │   ├── SnowflakeIdGenerator.java
 │       │   └── dto/
 │       │       ├── LoginRequest.java
-│       │       ├── LoginResponse.java
 │       │       ├── RegisterRequest.java
 │       │       ├── SelectOrgRequest.java
+│       │       ├── SwitchOrgRequest.java
 │       │       └── UserReadDto.java
 │       ├── user/
 │       │   ├── UserEntity.java
@@ -63,6 +62,7 @@ backend-java/
 │       │   ├── OrganizationUserRoleEntity.java
 │       │   ├── OrganizationRepository.java
 │       │   ├── OrganizationUserRepository.java
+│       │   ├── OrganizationUserRoleRepository.java
 │       │   └── TenantEntity.java
 │       ├── rbac/
 │       │   ├── RoleEntity.java
@@ -71,8 +71,7 @@ backend-java/
 │       │   └── PermissionRepository.java
 │       ├── menu/
 │       │   ├── MenuEntity.java
-│       │   ├── MenuRepository.java
-│       │   └── MenuService.java
+│       │   └── MenuRepository.java
 │       └── common/
 │           ├── BaseEntity.java
 │           ├── BusinessException.java
@@ -85,119 +84,231 @@ backend-java/
 
 ---
 
-## Task 1: 初始化 Gradle 多模块项目
+## Task 1: 初始化 Maven 多模块项目
 
 **Files:**
-- Create: `backend-java/settings.gradle.kts`
-- Create: `backend-java/build.gradle.kts`
-- Create: `backend-java/gateway/build.gradle.kts`
-- Create: `backend-java/auth-service/build.gradle.kts`
+- Create: `backend-java/pom.xml`
+- Create: `backend-java/gateway/pom.xml`
+- Create: `backend-java/auth-service/pom.xml`
+- Create: `backend-java/.gitignore`
 
-- [ ] **Step 1: 创建根项目 settings.gradle.kts**
+- [ ] **Step 1: 创建父 POM（统一版本管理 + 模块声明）**
 
-```kotlin
-// backend-java/settings.gradle.kts
-rootProject.name = "cdm-backend-java"
+```xml
+<!-- backend-java/pom.xml -->
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-include("gateway")
-include("auth-service")
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.4.4</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.cdm</groupId>
+    <artifactId>cdm-backend-java</artifactId>
+    <version>0.1.0</version>
+    <packaging>pom</packaging>
+    <name>CDM Backend Java</name>
+
+    <modules>
+        <module>gateway</module>
+        <module>auth-service</module>
+    </modules>
+
+    <properties>
+        <java.version>17</java.version>
+        <spring-cloud.version>2024.0.1</spring-cloud.version>
+        <jjwt.version>0.12.6</jjwt.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <!-- 全局：Lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <!-- 全局：测试 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>
 ```
 
-- [ ] **Step 2: 创建根项目 build.gradle.kts（统一版本管理）**
+- [ ] **Step 2: 创建 gateway/pom.xml**
 
-```kotlin
-// backend-java/build.gradle.kts
-plugins {
-    java
-    id("org.springframework.boot") version "3.4.4" apply false
-    id("io.spring.dependency-management") version "1.1.7" apply false
-}
+```xml
+<!-- backend-java/gateway/pom.xml -->
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-allprojects {
-    group = "com.cdm"
-    version = "0.1.0"
+    <parent>
+        <groupId>com.cdm</groupId>
+        <artifactId>cdm-backend-java</artifactId>
+        <version>0.1.0</version>
+    </parent>
 
-    repositories {
-        mavenCentral()
-    }
-}
+    <artifactId>gateway</artifactId>
+    <name>CDM Gateway</name>
 
-subprojects {
-    apply(plugin = "java")
-    apply(plugin = "org.springframework.boot")
-    apply(plugin = "io.spring.dependency-management")
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-gateway</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>${jjwt.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+    </dependencies>
 
-    java {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    extra["springCloudVersion"] = "2024.0.1"
-
-    the<io.spring.gradle.dependencymanagement.dsl.DependencyManagementExtension>().apply {
-        imports {
-            mavenBom("org.springframework.cloud:spring-cloud-dependencies:${property("springCloudVersion")}")
-        }
-    }
-
-    dependencies {
-        "compileOnly"("org.projectlombok:lombok")
-        "annotationProcessor"("org.projectlombok:lombok")
-        "testImplementation"("org.springframework.boot:spring-boot-starter-test")
-    }
-
-    tasks.withType<Test> {
-        useJUnitPlatform()
-    }
-}
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>
 ```
 
-- [ ] **Step 3: 创建 gateway/build.gradle.kts**
+- [ ] **Step 3: 创建 auth-service/pom.xml**
 
-```kotlin
-// backend-java/gateway/build.gradle.kts
-dependencies {
-    implementation("org.springframework.cloud:spring-cloud-starter-gateway")
-    implementation("io.jsonwebtoken:jjwt-api:0.12.6")
-    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
-    runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
-}
+```xml
+<!-- backend-java/auth-service/pom.xml -->
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.cdm</groupId>
+        <artifactId>cdm-backend-java</artifactId>
+        <version>0.1.0</version>
+    </parent>
+
+    <artifactId>auth-service</artifactId>
+    <name>CDM Auth Service</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>${jjwt.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
 ```
 
-- [ ] **Step 4: 创建 auth-service/build.gradle.kts**
-
-```kotlin
-// backend-java/auth-service/build.gradle.kts
-dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    implementation("org.springframework.boot:spring-boot-starter-validation")
-    implementation("org.springframework.boot:spring-boot-starter-security")
-    implementation("io.jsonwebtoken:jjwt-api:0.12.6")
-    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
-    runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
-    runtimeOnly("org.postgresql:postgresql")
-}
-```
-
-- [ ] **Step 5: 创建 .gitignore**
+- [ ] **Step 4: 创建 .gitignore**
 
 ```gitignore
 # backend-java/.gitignore
-build/
-.gradle/
+target/
 *.class
 *.jar
 .idea/
 *.iml
+.mvn/
 ```
 
-- [ ] **Step 6: 提交**
+- [ ] **Step 5: 提交**
 
 ```powershell
 cd d:\codes\chronic-disease-management
 git add backend-java/
-git commit -m "feat(java): 初始化 Gradle 多模块项目骨架"
+git commit -m "feat(java): 初始化 Maven 多模块项目骨架"
 ```
 
 ---
@@ -1599,37 +1710,40 @@ git commit -m "feat(java): auth-service 认证服务（登录/注册/菜单树/J
 
 ## Task 6: 构建与冒烟验证
 
-- [ ] **Step 1: 构建 Gateway**
+- [ ] **Step 1: 全量构建（跳过测试）**
 
 ```powershell
 cd d:\codes\chronic-disease-management\backend-java
-.\gradlew :gateway:build -x test
+mvn clean package -DskipTests
 ```
 
-Expected: BUILD SUCCESSFUL
+Expected: BUILD SUCCESS，gateway/target/ 和 auth-service/target/ 各生成一个可执行 jar
 
-- [ ] **Step 2: 构建 auth-service**
-
-```powershell
-cd d:\codes\chronic-disease-management\backend-java
-.\gradlew :auth-service:build -x test
-```
-
-Expected: BUILD SUCCESSFUL
-
-- [ ] **Step 3: 启动并验证 Gateway 健康**
+- [ ] **Step 2: 启动 auth-service**
 
 ```powershell
 cd d:\codes\chronic-disease-management\backend-java
-# 先设置环境变量
 $env:JWT_SECRET = "your-jwt-secret-here-must-match-python"
-.\gradlew :gateway:bootRun
+java -jar auth-service/target/auth-service-0.1.0.jar
 ```
 
-在另一个终端验证：
+Expected: 控制台输出 "Started AuthServiceApplication" 且监听 8010 端口
+
+- [ ] **Step 3: 启动 Gateway 并验证**
+
+在另一个终端：
 ```powershell
-curl http://localhost:8000/actuator/health
+cd d:\codes\chronic-disease-management\backend-java
+$env:JWT_SECRET = "your-jwt-secret-here-must-match-python"
+java -jar gateway/target/gateway-0.1.0.jar
 ```
+
+验证 Gateway 路由是否就绪：
+```powershell
+curl http://localhost:8000/api/v1/auth/login/access-token -Method POST -ContentType "application/json" -Body '{"username":"test@test.com","password":"test"}'
+```
+
+Expected: 返回 422（用户不存在），说明 Gateway → auth-service 链路联通
 
 - [ ] **Step 4: 提交最终状态**
 

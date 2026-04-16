@@ -77,8 +77,7 @@ chronic-disease-management/
 │   ├── patient-service/          # 患者/健康指标微服务
 │   ├── chat-service/             # 对话管理微服务
 │   ├── common-lib/               # 共享库
-│   ├── settings.gradle.kts
-│   └── build.gradle.kts
+│   └── pom.xml                   # 父 POM
 │
 ├── backend-nestjs/               # NestJS 微服务集群
 │   ├── gateway/                  # API 网关（Nest HTTP 应用）
@@ -258,7 +257,7 @@ Java/NestJS ←────┘
 | 网关 | Spring Cloud Gateway |
 | 安全 | Spring Security + jjwt |
 | ORM | Spring Data JPA + Hibernate |
-| 构建 | Gradle (Kotlin DSL), 多模块 |
+| 构建 | Maven, 多模块 |
 | HTTP 客户端 | WebClient (WebFlux) |
 | 校验 | Jakarta Validation |
 | 文档 | SpringDoc OpenAPI |
@@ -422,7 +421,7 @@ export class PatientProxyController {
 | 内部通信 | HTTP（服务间 REST 调用） | TCP（NestJS 原生微服务协议） |
 | 鉴权传递 | 篡改 Header 透传 | 打包进 Payload 对象直接传递 |
 | ORM | JPA / Hibernate | TypeORM |
-| 共享库 | Gradle 子模块 | npm 包 (pnpm workspace) |
+| 共享库 | Maven 子模块 | npm 包 (pnpm workspace) |
 | 异常体系 | @ControllerAdvice | RpcExceptionFilter |
 
 ## 8. 基础设施
