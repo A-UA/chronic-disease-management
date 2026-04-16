@@ -11,3 +11,12 @@ spring:
     hibernate:
       ddl-auto: none
     show-sql: true
+
+minio:
+  endpoint: http://localhost:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket-name: cdm-docs
+
+agent:
+  url: http://localhost:8000
