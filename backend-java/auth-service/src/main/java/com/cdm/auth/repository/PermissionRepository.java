@@ -7,6 +7,6 @@ import java.util.List;
 import java.util.Set;
 
 public interface PermissionRepository extends JpaRepository<PermissionEntity, Long> {
-    @Query("SELECT p.code FROM PermissionEntity p JOIN p.roles r WHERE r.id IN :roleIds")
+    @Query("SELECT p.code FROM RoleEntity r JOIN r.permissions p WHERE r.id IN :roleIds")
     Set<String> findCodesByRoleIds(List<Long> roleIds);
 }
