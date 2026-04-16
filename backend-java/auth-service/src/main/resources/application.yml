@@ -1,9 +1,18 @@
 server:
   port: 8010
 
+sa-token:
+  token-name: Authorization
+  token-prefix: Bearer
+  timeout: 604800
+  jwt-secret-key: ${JWT_SECRET:your-jwt-secret-here-must-be-32-chars-long}
+  is-read-header: true
+  is-read-cookie: false
+  is-print: false
+
 spring:
   application:
-    name: auth-service
+    name: cdm-auth-service
   datasource:
     url: jdbc:postgresql://localhost:5432/ai_saas
     username: postgres
@@ -11,15 +20,9 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: validate # 表结构由 Python Alembic 维护
-    show-sql: true
+      ddl-auto: validate
+    show-sql: false
     properties:
-      hibernate.format_sql: true
-
-sa-token:
-  token-name: Authorization
-  timeout: 2592000
-  jwt-secret-key: ${JWT_SECRET}
-  token-style: uuid
-  is-read-header: true
-  is-read-cookie: false
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true

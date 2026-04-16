@@ -1,48 +1,60 @@
 package com.cdm.auth.controller;
 
-import cn.dev33.satoken.stp.StpUtil;
-import cn.dev33.satoken.annotation.SaCheckLogin;
-import com.cdm.auth.dto.LoginRequest;
-import com.cdm.auth.dto.LoginResponse;
+import com.cdm.auth.dto.*;
+import com.cdm.auth.security.IdentityContext;
 import com.cdm.auth.service.AuthService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
-    @Autowired
-    private AuthService authService;
+    private final AuthService authService;
 
-    @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@Validated @RequestBody LoginRequest request) {
-        LoginResponse response = authService.login(request);
-        return ResponseEntity.ok(response);
+    @PostMapping("/register")
+    public Map<String, Object> register(@Valid @RequestBody RegisterRequest req) {
+        return authService.register(req.getEmail(), req.getPassword(), req.getName());
     }
 
-    @PostMapping("/logout")
-    @SaCheckLogin
-    public ResponseEntity<Map<String, String>> logout() {
-        StpUtil.logout();
-        Map<String, String> result = new HashMap<>();
-        result.put("message", "成功登出");
-        return ResponseEntity.ok(result);
+    @PostMapping("/login/access-token")
+    public Map<String, Object> login(@Valid @RequestBody LoginRequest req) {
+        return authService.login(req.getUsername(), req.getPassword());
+    }
+
+    @PostMapping("/select-org")
+    public Map<String, Object> selectOrg(@Valid @RequestBody SelectOrgRequest req) {
+        return authService.selectOrg(req.getOrgId(), req.getSelectionToken());
+    }
+
+    @PostMapping("/switch-org")
+    public Map<String, Object> switchOrg(@Valid @RequestBody SwitchOrgRequest req,
+                                         HttpServletRequest httpReq) {
+        var ctx = new IdentityContext(httpReq);
+        return authService.switchOrg(ctx.getUserId(), req.getOrgId());
+    }
+
+    @GetMapping("/my-orgs")
+    public List<Map<String, Object>> myOrgs(HttpServletRequest httpReq) {
+        var ctx = new IdentityContext(httpReq);
+        return authService.listMyOrgs(ctx.getUserId());
     }
 
     @GetMapping("/me")
-    @SaCheckLogin
-    public ResponseEntity<Map<String, Object>> me() {
-        Map<String, Object> result = new HashMap<>();
-        result.put("userId", StpUtil.getLoginIdAsLong());
-        result.put("tenantId", StpUtil.getSession().get("tenant_id"));
-        result.put("orgId", StpUtil.getSession().get("org_id"));
-        result.put("roles", StpUtil.getSession().get("roles"));
-        return ResponseEntity.ok(result);
+    public UserReadDto me(HttpServletRequest httpReq) {
+        var ctx = new IdentityContext(httpReq);
+        return authService.getMe(ctx.getUserId(), ctx.getOrgId(), ctx.getTenantId());
+    }
+
+    @GetMapping("/menu-tree")
+    public List<Map<String, Object>> menuTree(HttpServletRequest httpReq) {
+        var ctx = new IdentityContext(httpReq);
+        return authService.getMenuTree(ctx.getUserId(), ctx.getOrgId(), ctx.getTenantId());
     }
 }

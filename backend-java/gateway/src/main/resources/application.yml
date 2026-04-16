@@ -1,24 +1,22 @@
 server:
   port: 8000
 
+sa-token:
+  token-name: Authorization
+  token-prefix: Bearer
+  timeout: 604800
+  jwt-secret-key: ${JWT_SECRET:your-jwt-secret-here-must-be-32-chars-long}
+  is-read-header: true
+  is-read-cookie: false
+  is-print: false
+
 spring:
   application:
-    name: gateway
+    name: cdm-gateway
   cloud:
     gateway:
       routes:
         - id: auth-service
           uri: http://localhost:8010
           predicates:
-            - Path=/api/v1/auth/**, /api/v1/users/**, /api/v1/organizations/**
-        - id: agent-service
-          uri: http://localhost:8020
-          predicates:
-            - Path=/api/v1/chat/**, /api/v1/documents/**, /api/v1/kb/**
-
-sa-token:
-  jwt-secret-key: ${JWT_SECRET}
-  token-name: Authorization
-  token-prefix: "Bearer "
-  is-read-header: true
-  is-read-cookie: false
+            - Path=/api/v1/auth/**

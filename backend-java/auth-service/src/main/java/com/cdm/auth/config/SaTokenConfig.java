@@ -1,17 +1,16 @@
 package com.cdm.auth.config;
 
-import cn.dev33.satoken.interceptor.SaInterceptor;
-import cn.dev33.satoken.stp.StpUtil;
+import cn.dev33.satoken.jwt.StpLogicJwtForStateless;
+import cn.dev33.satoken.stp.StpLogic;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.context.annotation.Primary;
 
 @Configuration
-public class SaTokenConfig implements WebMvcConfigurer {
-    @Override
-    public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(new SaInterceptor(handle -> StpUtil.checkLogin()))
-            .addPathPatterns("/**")
-            .excludePathPatterns("/api/v1/auth/login", "/api/v1/auth/register");
+public class SaTokenConfig {
+    @Bean
+    @Primary
+    public StpLogic getStpLogicJwt() {
+        return new StpLogicJwtForStateless();
     }
 }
