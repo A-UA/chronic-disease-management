@@ -8,7 +8,7 @@ const backendPortMap: Record<string, number> = {
   nestjs: 8001,
 };
 
-const backend = process.env.VITE_BACKEND || "java";
+const backend = process.env.VITE_BACKEND || "nestjs";
 const backendPort = backendPortMap[backend] || 8000;
 
 export default defineConfig({

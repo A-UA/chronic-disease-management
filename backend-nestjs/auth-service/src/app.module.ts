@@ -28,9 +28,9 @@ const entities = [
       port: parseInt(process.env.DB_PORT || '5432'),
       username: process.env.DB_USER || 'postgres',
       password: process.env.DB_PASS || 'postgres',
-      database: process.env.DB_NAME || 'ai_saas',
+      database: process.env.DB_NAME || 'postgres',
       entities,
-      synchronize: false, // DDL 由 Alembic 管理
+      synchronize: true, // DDL 由 Alembic 管理
     }),
     TypeOrmModule.forFeature(entities),
     JwtModule.register({

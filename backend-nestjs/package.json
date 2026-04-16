@@ -4,6 +4,7 @@
   "scripts": {
     "dev:gateway": "pnpm --filter gateway run start:dev",
     "dev:auth": "pnpm --filter auth-service run start:dev",
+    "dev:patient": "pnpm --filter patient-service run start:dev",
     "build:all": "pnpm -r run build"
   }
 }
