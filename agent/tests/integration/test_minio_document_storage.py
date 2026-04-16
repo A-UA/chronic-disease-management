@@ -11,12 +11,12 @@ from app.base.config import settings
 from app.base.database import AsyncSessionLocal, engine
 from app.base.snowflake import get_next_id
 from app.base.storage import get_storage_service
+from app.models import Document, KnowledgeBase, Organization, Tenant, User
 from arq import create_pool
 from arq.connections import RedisSettings
 from fastapi import UploadFile
 from sqlalchemy import delete
 
-from app.models import Document, KnowledgeBase, Organization, Tenant, User
 from app.tasks.worker import WorkerSettings
 
 TEST_REDIS_SETTINGS = RedisSettings(host="localhost", port=6379, database=15)
@@ -177,8 +177,9 @@ async def test_upload_document_and_enqueue_stores_real_object(
     tracked_minio_urls: list[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from app.plugins.parser.base import ParseResult
     from app.services.rag import document_service as service_module
+
+    from app.plugins.parser.base import ParseResult
 
     monkeypatch.setattr(
         service_module.provider_service,

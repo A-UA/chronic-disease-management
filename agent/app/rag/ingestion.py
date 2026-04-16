@@ -7,10 +7,7 @@ creating its own session or updating quota directly.
 import asyncio
 import logging
 
-from sqlalchemy import func
-
-from app.base.config import settings
-from app.models import Chunk, UsageLog
+from app.config import settings
 from app.plugins.chunker.medical_heading import count_tokens
 from app.telemetry.tracing import trace_span
 
@@ -40,19 +37,21 @@ async def generate_chunk_context(
         return ""
 
 
-async def ingest_document_with_dependencies(
-    *,
-    db,
-    document,
+async def ingest_document(
+    milvus_store,
+    document_id: int,
+    kb_id: int,
+    tenant_id: int,
+    file_name: str,
     file_content: str,
     pages: list[str] | None = None,
-    chunker,
-    embedding_provider,
-    llm_provider,
+    chunker=None,
+    embedding_provider=None,
+    llm_provider=None,
     contextual_ingestion: bool | None = None,
-) -> int:
-    """Run ingestion using an injected session and injected providers."""
-    with trace_span("rag.ingest_document", {"document_id": document.id}):
+) -> tuple[int, int]:
+    """Run ingestion using injected providers and write chunks into Milvus."""
+    with trace_span("rag.ingest_document", {"document_id": document_id}):
         chunk_results = chunker.chunk(file_content, pages=pages)
         contextual_enabled = (
             settings.RAG_ENABLE_CONTEXTUAL_INGESTION
@@ -62,7 +61,7 @@ async def ingest_document_with_dependencies(
         model_name = getattr(embedding_provider, "model_name", settings.EMBEDDING_MODEL)
 
         enhanced_contents: list[str] = []
-        if contextual_enabled:
+        if contextual_enabled and llm_provider:
             tasks = [
                 generate_chunk_context(file_content, cr.content, llm_provider)
                 for cr in chunk_results
@@ -73,7 +72,7 @@ async def ingest_document_with_dependencies(
                 batch_results = await asyncio.gather(*batch)
                 contexts.extend(batch_results)
 
-            for cr, ctx in zip(chunk_results, contexts):
+            for cr, ctx in zip(chunk_results, contexts, strict=False):
                 enhanced_contents.append(
                     f"{ctx}\n\n{cr.content}" if ctx else cr.content
                 )
@@ -93,60 +92,38 @@ async def ingest_document_with_dependencies(
 
         actual_dim = embedding_provider.get_dimension()
         if actual_dim:
-            logger.info(
-                "Processing document %s with dimension %s",
-                document.id,
-                actual_dim,
-            )
+            logger.info("Processing document %s with dimension %s", document_id, actual_dim)
+            await milvus_store.ensure_collection("kb", dimension=actual_dim)
 
         total_tokens = 0
-        for index, (chunk_result, embedding, enhanced_content) in enumerate(
-            zip(chunk_results, embeddings, enhanced_contents)
+        vectors_to_insert = []
+        payloads_to_insert = []
+
+        for index, (chunk_result, embedding, _enhanced_content) in enumerate(
+            zip(chunk_results, embeddings, enhanced_contents, strict=False)
         ):
             num_tokens = count_tokens(chunk_result.content, model_name)
             total_tokens += num_tokens
 
-            db.add(
-                Chunk(
-                    tenant_id=document.tenant_id,
-                    kb_id=document.kb_id,
-                    org_id=document.org_id,
-                    document_id=document.id,
-                    content=chunk_result.content,
-                    page_number=chunk_result.page_number,
-                    chunk_index=index,
-                    embedding=embedding,
-                    tsv_content=func.to_tsvector("simple", enhanced_content),
-                    metadata_={
-                        "patient_id": str(document.patient_id)
-                        if getattr(document, "patient_id", None)
-                        else None,
-                        "heading_aware": True,
-                        "section_title": chunk_result.section_title,
-                        "source": str(document.file_name)
-                        if document.file_name
-                        else "unknown",
-                        "token_count": num_tokens,
-                        "char_start": chunk_result.char_start,
-                        "char_end": chunk_result.char_end,
-                        "is_contextual": contextual_enabled,
-                    },
-                )
-            )
+            vectors_to_insert.append(embedding)
+            payloads_to_insert.append({
+                "document_id": document_id,
+                "chunk_index": index,
+                "content": chunk_result.content,
+                "page_number": chunk_result.page_number or 0,
+                "token_count": num_tokens,
+                "section_title": chunk_result.section_title or "",
+                "tenant_id": tenant_id,
+                "kb_id": kb_id,
+                # For Milvus, dynamic metadata needs to be serialized if we don't declare it
+            })
 
-        db.add(
-            UsageLog(
-                tenant_id=document.tenant_id,
-                org_id=document.org_id,
-                user_id=document.uploader_id,
-                model=model_name,
-                prompt_tokens=total_tokens,
-                action_type="embedding",
-                resource_id=document.id,
-                cost=0.0,
+        if vectors_to_insert:
+            inserted_count = await milvus_store.insert(
+                collection_name="kb",
+                vectors=vectors_to_insert,
+                payloads=payloads_to_insert
             )
-        )
+            logger.info(f"Inserted {inserted_count} chunks into Milvus.")
 
-        document.status = "completed"
-        document.failed_reason = None
-        return total_tokens
+        return total_tokens, len(chunk_results)

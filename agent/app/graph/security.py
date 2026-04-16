@@ -1,11 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from sqlalchemy.ext.asyncio import AsyncSession
-
+# Removed SQLAlchemy dependency
 
 @dataclass(frozen=True, slots=True)
 class SecurityContext:
@@ -17,7 +14,7 @@ class SecurityContext:
         user_id: 当前用户 ID
         roles: 用户角色列表
         permissions: 用户有效权限集合（含角色继承）
-        db: 已注入 RLS 上下文的 AsyncSession（set_config 已执行）
+        auth_headers: 用于向 Gateway 发起安全 HTTP 请求的请求头（如 X-Identity-Base64 或 JWT Token）
     """
 
     tenant_id: int
@@ -25,7 +22,7 @@ class SecurityContext:
     user_id: int
     roles: tuple[str, ...] = ()
     permissions: frozenset[str] = field(default_factory=frozenset)
-    db: AsyncSession | None = None
+    auth_headers: dict[str, str] = field(default_factory=dict)
 
     def has_permission(self, perm_code: str) -> bool:
         """检查是否拥有指定权限"""

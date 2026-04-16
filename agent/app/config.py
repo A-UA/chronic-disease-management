@@ -43,6 +43,9 @@ class AgentSettings(BaseSettings):
     RAG_CACHE_TTL: int = 3600
     RAG_ENABLE_CONTEXTUAL_INGESTION: bool = False
 
+    # ── API Gateway ──
+    GATEWAY_URL: str = "http://localhost:3000"
+
     # ── arq Worker ──
     ARQ_MAX_JOBS: int = 10
     ARQ_JOB_TIMEOUT: int = 600

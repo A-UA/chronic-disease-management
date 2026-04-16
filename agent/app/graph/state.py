@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any, TypedDict
+from typing import Annotated, Any, TypedDict
+
+from langchain_core.messages import BaseMessage
+from langgraph.graph.message import add_messages
 
 
 class AgentState(TypedDict):
@@ -11,7 +14,7 @@ class AgentState(TypedDict):
     Attributes:
         messages: 对话消息列表
         query: 当前用户查询
-        kb_id: 知识库 ID
+        kb_ids: 知识库 ID 列表
         skill_results: Skill 执行结果缓存
         citations: RAG 引用
         final_answer: 最终回答
@@ -19,9 +22,9 @@ class AgentState(TypedDict):
         max_iterations: 最大迭代次数（默认 3）
     """
 
-    messages: list[dict[str, str]]
+    messages: Annotated[list[BaseMessage], add_messages]
     query: str
-    kb_id: int
+    kb_ids: list[int]
     skill_results: list[dict[str, Any]]
     citations: list[dict]
     final_answer: str

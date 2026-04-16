@@ -1,10 +1,10 @@
-"""患者相关 Skills — 所有数据访问通过 ctx.db（带 RLS）"""
+"""患者相关 Skills — 所有数据访问通过 httpx 调用 Gateway"""
 
-from sqlalchemy import select
+import httpx
 
-from app.ai.agent.security import SecurityContext
-from app.ai.agent.skills.base import SkillDefinition, SkillResult, skill_registry
-from app.models import HealthMetric, PatientProfile
+from app.config import settings
+from app.graph.security import SecurityContext
+from app.graph.skills.base import SkillDefinition, SkillResult, skill_registry
 
 
 async def query_patient_handler(
@@ -14,27 +14,49 @@ async def query_patient_handler(
 ) -> SkillResult:
     """根据 ID 或姓名查询患者档案"""
     try:
-        stmt = select(PatientProfile)
-        if patient_id:
-            stmt = stmt.where(PatientProfile.id == patient_id)
-        elif name:
-            stmt = stmt.where(PatientProfile.name.ilike(f"%{name}%"))
-        else:
+        if not patient_id and not name:
             return SkillResult(success=False, error="请提供 patient_id 或 name")
-        result = await ctx.db.execute(stmt.limit(5))
-        patients = result.scalars().all()
-        if not patients:
-            return SkillResult(success=True, data="未找到匹配的患者")
-        data = [
+
+        async with httpx.AsyncClient() as client:
+            if patient_id:
+                # Get precise patient profile
+                response = await client.get(
+                    f"{settings.GATEWAY_URL}/api/v1/patients/{patient_id}",
+                    headers=ctx.auth_headers,
+                    timeout=10.0,
+                )
+                if response.status_code == 404:
+                    return SkillResult(success=True, data="未找到匹配的患者")
+                response.raise_for_status()
+                data = response.json()
+                data = [data] # Wrap in list to match search format
+            else:
+                # Search patients by name
+                response = await client.get(
+                    f"{settings.GATEWAY_URL}/api/v1/patients",
+                    params={"name": name, "page": 1, "size": 5},
+                    headers=ctx.auth_headers,
+                    timeout=10.0,
+                )
+                response.raise_for_status()
+                data = response.json().get("content", [])
+                if not data:
+                    return SkillResult(success=True, data="未找到匹配的患者")
+
+        # Map to succinct response for LLM
+        formatted_data = [
             {
-                "id": str(p.id),
-                "name": p.name,
-                "gender": p.gender,
-                "primary_diagnosis": p.primary_diagnosis,
+                "id": str(p["id"]),
+                "name": p["name"],
+                "gender": p.get("gender"),
+                "primary_diagnosis": p.get("primaryDiagnosis"),
+                "risk_level": p.get("riskLevel"),
             }
-            for p in patients
+            for p in data
         ]
-        return SkillResult(success=True, data=data)
+        return SkillResult(success=True, data=formatted_data)
+    except httpx.HTTPStatusError as e:
+        return SkillResult(success=False, error=f"Gateway HTTP Error: {e.response.status_code}")
     except Exception as e:
         return SkillResult(success=False, error=str(e))
 
@@ -49,28 +71,36 @@ async def health_trend_handler(
     if not patient_id:
         return SkillResult(success=False, error="需要 patient_id")
     try:
-        stmt = (
-            select(HealthMetric)
-            .where(
-                HealthMetric.patient_id == patient_id,
-                HealthMetric.metric_type == metric_type,
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{settings.GATEWAY_URL}/api/v1/health-metrics",
+                params={
+                    "patientId": patient_id,
+                    "metricType": metric_type,
+                },
+                headers=ctx.auth_headers,
+                timeout=10.0,
             )
-            .order_by(HealthMetric.recorded_at.desc())
-            .limit(days)
-        )
-        result = await ctx.db.execute(stmt)
-        metrics = result.scalars().all()
-        if not metrics:
-            return SkillResult(success=True, data=f"近 {days} 天无 {metric_type} 记录")
+            response.raise_for_status()
+            content = response.json().get("content", [])
+
+            if not content:
+                return SkillResult(success=True, data=f"近 {days} 天无 {metric_type} 记录")
+
+            # In the API response it is sorted by created time optionally, assuming descending or we limit to subset.
+            metrics = content[:days]
+
         data = [
             {
-                "date": m.recorded_at.isoformat(),
-                "value": m.value,
-                "type": m.metric_type,
+                "date": m["recordedAt"],
+                "value": m["metadata"],
+                "type": m["metricType"],
             }
             for m in metrics
         ]
         return SkillResult(success=True, data=data)
+    except httpx.HTTPStatusError as e:
+        return SkillResult(success=False, error=f"Gateway HTTP Error: {e.response.status_code}")
     except Exception as e:
         return SkillResult(success=False, error=str(e))
 

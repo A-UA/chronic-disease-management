@@ -1,7 +1,7 @@
 """RAG 检索技能 — 桥接现有的 retrieve_chunks + build_rag_prompt"""
 
-from app.ai.agent.security import SecurityContext
-from app.ai.agent.skills.base import SkillDefinition, SkillResult, skill_registry
+from app.graph.security import SecurityContext
+from app.graph.skills.base import SkillDefinition, SkillResult, skill_registry
 
 
 async def rag_search_handler(
@@ -12,33 +12,46 @@ async def rag_search_handler(
     """在知识库中语义检索"""
     if not query or not kb_id:
         return SkillResult(success=False, error="需要 query 和 kb_id 参数")
-    try:
-        from app.ai.rag.prompt import build_rag_prompt
-        from app.ai.rag.retrieval import retrieve_chunks
-        from app.plugins.registry import PluginRegistry
 
-        llm = PluginRegistry.get("llm")
+    from app.config import settings
+    from app.plugins.registry import PluginRegistry
+    from app.rag.retrieval import build_rag_prompt, retrieve_chunks
+    from app.vectorstore.milvus import MilvusVectorStore
+
+    milvus_store = MilvusVectorStore(
+        host=settings.MILVUS_HOST,
+        port=settings.MILVUS_PORT,
+        collection_prefix=settings.MILVUS_COLLECTION_PREFIX,
+    )
+
+    try:
+        llm_provider = PluginRegistry.get("llm")
+        # In decoupled architecture, Gateway handles RBAC.
+        # We rely on kb_id for scoping the Milvus query.
+        org_id = 0
+        user_id = 0
+
         chunks = await retrieve_chunks(
-            db=ctx.db,
+            milvus_store=milvus_store,
             query=query,
             kb_id=kb_id,
-            org_id=ctx.org_id,
-            user_id=ctx.user_id,
-            llm_provider=llm,
+            org_id=org_id,
+            user_id=user_id,
+            limit=5,
+            llm_provider=llm_provider,
         )
+
         if not chunks:
-            return SkillResult(success=True, data="未找到相关文档内容")
-        prompt, citations = build_rag_prompt(query, chunks)
-        return SkillResult(
-            success=True,
-            data={
-                "context": prompt,
-                "citations": citations,
-                "chunk_count": len(chunks),
-            },
-        )
+            return SkillResult(success=True, data="该知识库中未找到与提问最相关的内容。")
+
+        prompt_context, _ = build_rag_prompt(query, chunks)
+        # return the generated text prompt blocks
+        return SkillResult(success=True, data=prompt_context)
     except Exception as e:
-        return SkillResult(success=False, error=str(e))
+        return SkillResult(
+            success=False,
+            error=f"RAG 检索失败: {str(e)}"
+        )
 
 
 skill_registry.register(

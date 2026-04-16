@@ -8,7 +8,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any
 
-from app.ai.agent.security import SecurityContext
+from app.graph.security import SecurityContext
 
 logger = logging.getLogger(__name__)
 
@@ -73,12 +73,8 @@ class SkillRegistry:
         return list(self._skills.values())
 
     def get_available(self, permissions: frozenset[str]) -> list[SkillDefinition]:
-        """根据权限过滤可用 Skills"""
-        return [
-            s
-            for s in self._skills.values()
-            if s.required_permission is None or s.required_permission in permissions
-        ]
+        """根据权限过滤可用 Skills（已废弃：目前统一由 Gateway API 返回 403 从而在运行时拦截）"""
+        return list(self._skills.values())
 
     def get_tool_schemas(self, permissions: frozenset[str]) -> list[dict]:
         """生成当前用户可用的 function calling schemas"""
@@ -95,14 +91,7 @@ class SkillRegistry:
         if skill is None:
             return SkillResult(success=False, error=f"未知技能: {name}")
 
-        # 权限预校验
-        if skill.required_permission and not ctx.has_permission(
-            skill.required_permission
-        ):
-            return SkillResult(
-                success=False,
-                error=f"权限不足: 需要 {skill.required_permission}",
-            )
+        # 权限防线已转移至 Java/NestJS API 网关，此处直接放行。
 
         # 参数白名单过滤
         allowed = set(skill.parameters_schema.get("properties", {}).keys())

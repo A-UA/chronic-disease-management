@@ -8,19 +8,18 @@ import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, TypedDict
 
-from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql import Select
+import redis.asyncio as redis
 
 from app.ai.rag.query_rewrite import prepare_retrieval_query
-from app.base.config import settings
-from app.models import Chunk, Document
+from app.config import settings
 from app.plugins.registry import PluginRegistry
-from app.services.system.quota import redis_client
+
+redis_client = redis.from_url(settings.REDIS_URL, decode_responses=True)
 from app.telemetry.tracing import trace_span
 
 if TYPE_CHECKING:
     from app.plugins.llm.base import LLMPlugin as LLMProvider
+
 
 logger = logging.getLogger(__name__)
 _DOC_REF_PATTERN = re.compile(
@@ -53,9 +52,20 @@ class StatementCitation(TypedDict):
     citations: list[Citation]
 
 
+@dataclass
+class RetrievedChunkContent:
+    """Milvus 返回的结构化 Chunk 承载类。替代了原有依赖 Postgres 的 Chunk ORM模型"""
+    id: int | str
+    document_id: int
+    content: str
+    page_number: int | None = None
+    section_title: str | None = None
+    token_count: int | None = None
+
+
 @dataclass(slots=True)
 class RetrievedChunk:
-    chunk: Chunk
+    chunk: RetrievedChunkContent
     fused_score: float
     final_score: float
     sources: tuple[str, ...]
@@ -71,7 +81,7 @@ def _build_cache_key(
     user_id: int,
     filters: RetrievalFilters | None = None,
 ) -> str:
-    """增强版 Cache Key：包含用户 ID 和更细粒度的过滤条件，防止越权缓存命中"""
+    """增强版 Cache Key"""
     payload = {
         "query": query.lower(),
         "user_id": str(user_id),
@@ -81,11 +91,6 @@ def _build_cache_key(
             )
             if filters
             else [],
-            "file_types": sorted(filters.get("file_types", [])) if filters else [],
-            "patient_id": str(filters.get("patient_id"))
-            if filters and filters.get("patient_id")
-            else None,
-            "metadata": filters.get("metadata") if filters else {},
         },
     }
     query_hash = hashlib.sha256(
@@ -97,7 +102,7 @@ def _build_cache_key(
 async def condense_query(
     query: str, history: list[dict[str, str]], llm_provider: LLMProvider
 ) -> str:
-    """将对话历史与当前问题压缩为一个独立的检索词（Query Condensing）"""
+    """将对话历史与当前问题压缩为一个独立的检索词"""
     if not history:
         return query
 
@@ -123,43 +128,6 @@ def _dedupe_sources(existing: tuple[str, ...], source: str) -> tuple[str, ...]:
     if source in existing:
         return existing
     return existing + (source,)
-
-
-def _apply_retrieval_filters(stmt: Select, filters: RetrievalFilters | None) -> Select:
-    if not filters:
-        return stmt
-
-    document_ids = filters.get("document_ids") or []
-    if document_ids:
-        stmt = stmt.where(Chunk.document_id.in_(document_ids))
-
-    file_types = filters.get("file_types") or []
-    patient_id = filters.get("patient_id")
-    if file_types or patient_id:
-        stmt = stmt.join(Document, Document.id == Chunk.document_id)
-    if file_types:
-        stmt = stmt.where(Document.file_type.in_(file_types))
-    if patient_id:
-        stmt = stmt.where(Document.patient_id == patient_id)
-
-    metadata_filters = filters.get("metadata") or {}
-    for key, value in metadata_filters.items():
-        if key.endswith("__in") and isinstance(value, list):
-            base_key = key[:-4]
-            from sqlalchemy import or_
-
-            stmt = stmt.where(
-                or_(*(Chunk.metadata_.contains({base_key: v}) for v in value))
-            )
-        elif key.endswith("__gt"):
-            base_key = key[:-4]
-            stmt = stmt.where(
-                func.cast(Chunk.metadata_[base_key].astext, func.float) > value
-            )
-        else:
-            stmt = stmt.where(Chunk.metadata_.contains({key: value}))
-
-    return stmt
 
 
 def _build_snippet_and_span(
@@ -218,8 +186,8 @@ async def extract_statement_citations_structured(
         {
             "ref": citation["ref"],
             "doc_id": citation["doc_id"],
-            "chunk_id": citation.get("chunk_id"),
-            "page": citation.get("page"),
+            "chunk_id": getattr(citation, "chunk_id", ""),
+            "page": getattr(citation, "page", None),
         }
         for citation in citations
     ]
@@ -245,10 +213,7 @@ async def extract_statement_citations_structured(
         if structured:
             return structured
     except Exception:
-        logger.warning(
-            "Structured statement citation extraction failed; falling back to regex mapping",
-            exc_info=True,
-        )
+        pass
 
     return build_statement_citations(answer_text, citations)
 
@@ -259,6 +224,10 @@ def _serialize_ranked_results(results: list[RetrievedChunk]) -> str:
         payload.append(
             {
                 "chunk_id": str(result.chunk.id),
+                "document_id": result.chunk.document_id,
+                "content": result.chunk.content,
+                "page_number": result.chunk.page_number,
+                "section_title": result.chunk.section_title,
                 "fused_score": result.fused_score,
                 "final_score": result.final_score,
                 "sources": list(result.sources),
@@ -270,24 +239,22 @@ def _serialize_ranked_results(results: list[RetrievedChunk]) -> str:
     return json.dumps(payload)
 
 
-async def _load_cached_ranked_results(
-    db: AsyncSession, cached_data: str
-) -> list[RetrievedChunk] | None:
+async def _load_cached_ranked_results(cached_data: str) -> list[RetrievedChunk] | None:
     try:
         cached_meta = json.loads(cached_data)
         if not cached_meta:
             return []
 
-        chunk_ids = [int(item["chunk_id"]) for item in cached_meta]
-        stmt = select(Chunk).where(Chunk.id.in_(chunk_ids))
-        result = await db.execute(stmt)
-        chunk_by_id = {str(chunk.id): chunk for chunk in result.scalars().all()}
-
         ranked_results: list[RetrievedChunk] = []
         for item in cached_meta:
-            chunk = chunk_by_id.get(item["chunk_id"])
-            if chunk is None:
-                return None
+            chunk = RetrievedChunkContent(
+                id=item["chunk_id"],
+                document_id=item["document_id"],
+                content=item["content"],
+                page_number=item.get("page_number"),
+                section_title=item.get("section_title"),
+                token_count=item.get("token_count"),
+            )
             ranked_results.append(
                 RetrievedChunk(
                     chunk=chunk,
@@ -307,8 +274,7 @@ async def _load_cached_ranked_results(
 async def expand_query(
     query: str, history: list[dict[str, str]], llm_provider: LLMProvider
 ) -> list[str]:
-    """将原始查询扩展为多个不同维度的检索词（仅对复杂查询执行）"""
-    # 简单查询跳过扩展：短查询或不含问号的陈述句
+    """将原始查询扩展为多个不同维度的检索词"""
     if len(query) < 15 or not any(c in query for c in "?？吗呢什么怎么如何为什么"):
         return [query]
 
@@ -330,15 +296,13 @@ async def expand_query(
     try:
         completion = await llm_provider.complete_text(prompt)
         queries = [q.strip() for q in completion.split("\n") if q.strip()]
-        # 总是包含原始查询或压缩后的查询
         return queries[:3]
     except Exception:
-        logger.warning("Query expansion failed; using original query")
         return [query]
 
 
 async def retrieve_ranked_chunks(
-    db: AsyncSession,
+    milvus_store,
     query: str,
     kb_id: int,
     org_id: int,
@@ -351,13 +315,11 @@ async def retrieve_ranked_chunks(
     with trace_span(
         "rag.retrieve_ranked_chunks", {"kb_id": kb_id, "query_len": len(query)}
     ):
-        # 查询压缩（仅当有历史上下文时）
         search_query = query
         if history and llm_provider:
             with trace_span("rag.condense_query"):
                 search_query = await condense_query(query, history, llm_provider)
 
-        # 查询复杂度判断：短查询或简单查询跳过 Multi-Query 扩展
         if llm_provider:
             with trace_span("rag.expand_query"):
                 all_queries = await expand_query(
@@ -368,96 +330,65 @@ async def retrieve_ranked_chunks(
         else:
             all_queries = [search_query]
 
-        # 2. 缓存检查 (针对主查询)
         cache_key = _build_cache_key(search_query, kb_id, org_id, user_id, filters)
         cached_data = await redis_client.get(cache_key)
         if cached_data:
-            cached_results = await _load_cached_ranked_results(db, cached_data)
-            if cached_results:
+            cached_results = await _load_cached_ranked_results(cached_data)
+            if cached_results is not None:
                 return cached_results
 
-        # 3. 多路检索
         embedding_provider = PluginRegistry.get("embedding")
-        retrieved_by_id: dict[int, RetrievedChunk] = {}
-
-        vector_weight = getattr(settings, "RAG_VECTOR_WEIGHT", 0.7)
-        keyword_weight = getattr(settings, "RAG_KEYWORD_WEIGHT", 0.3)
-        k_rrf = getattr(settings, "RAG_RRF_K", 60)
+        retrieved_by_id: dict[str, RetrievedChunk] = {}
 
         async def _single_query_search(q: str):
             prepared = prepare_retrieval_query(q)
             rq = prepared.retrieval_query
 
-            # 向量检索
             with trace_span("rag.vector_search"):
                 emb = await embedding_provider.embed_query(rq)
-                v_stmt = (
-                    select(Chunk)
-                    .where(Chunk.org_id == org_id, Chunk.kb_id == kb_id)
-                    .order_by(Chunk.embedding.cosine_distance(emb))
-                    .limit(limit * 2)
-                )
-                v_stmt = _apply_retrieval_filters(v_stmt, filters)
+                milvus_filters = {"kb_id": kb_id}
+                if filters and filters.get("document_ids"):
+                    milvus_filters["document_id"] = filters["document_ids"]
 
-            # 关键词检索
-            with trace_span("rag.keyword_search"):
-                k_stmt = (
-                    select(Chunk)
-                    .where(
-                        Chunk.org_id == org_id,
-                        Chunk.kb_id == kb_id,
-                        Chunk.tsv_content.op("@@")(func.plainto_tsquery("simple", rq)),
-                    )
-                    .order_by(
-                        func.ts_rank(
-                            Chunk.tsv_content, func.plainto_tsquery("simple", rq)
-                        ).desc()
-                    )
-                    .limit(limit * 2)
-                )
-                k_stmt = _apply_retrieval_filters(k_stmt, filters)
+                v_res = await milvus_store.search("kb", emb, limit=limit * 2, filters=milvus_filters)
+            return v_res, rq
 
-            v_res, k_res = await asyncio.gather(db.execute(v_stmt), db.execute(k_stmt))
-            return list(v_res.scalars().all()), list(k_res.scalars().all()), rq
-
-        # 并行执行所有扩展查询
         with trace_span("rag.multi_query_search", {"query_count": len(all_queries)}):
             search_tasks = [_single_query_search(q) for q in all_queries]
             all_res = await asyncio.gather(*search_tasks)
 
-        # 4. RRF 融合
-        with trace_span("rag.rrf_fusion"):
-            for v_chunks, k_chunks, rq in all_res:
-                for rank, chunk in enumerate(v_chunks):
-                    item = retrieved_by_id.setdefault(
-                        chunk.id,
-                        RetrievedChunk(
-                            chunk=chunk, fused_score=0.0, final_score=0.0, sources=()
-                        ),
-                    )
-                    item.fused_score += vector_weight / (k_rrf + rank + 1)
-                    item.vector_rank = min(item.vector_rank or 999, rank + 1)
-                    item.sources = _dedupe_sources(item.sources, "vector")
+        # 归并计算 Score
+        for v_res, rq in all_res:
+            for rank, hit in enumerate(v_res):
+                payload = hit["payload"]
+                chunk_id = str(hit["id"])
 
-                for rank, chunk in enumerate(k_chunks):
-                    item = retrieved_by_id.setdefault(
-                        chunk.id,
-                        RetrievedChunk(
-                            chunk=chunk, fused_score=0.0, final_score=0.0, sources=()
+                item = retrieved_by_id.setdefault(
+                    chunk_id,
+                    RetrievedChunk(
+                        chunk=RetrievedChunkContent(
+                            id=chunk_id,
+                            document_id=payload.get("document_id", 0),
+                            content=payload.get("content", ""),
+                            page_number=payload.get("page_number", 0),
+                            section_title=payload.get("section_title", ""),
+                            token_count=payload.get("token_count", 0),
                         ),
-                    )
-                    item.fused_score += keyword_weight / (k_rrf + rank + 1)
-                    item.keyword_rank = min(item.keyword_rank or 999, rank + 1)
-                    item.sources = _dedupe_sources(item.sources, "keyword")
+                        fused_score=0.0,
+                        final_score=0.0,
+                        sources=(),
+                    ),
+                )
 
-        # 排序与重排
+                # 直接记录最高的分数作为融合依据
+                sim_score = hit["score"]
+                item.fused_score = max(item.fused_score, sim_score)
+                item.vector_rank = min(item.vector_rank or 999, rank + 1)
+                item.sources = _dedupe_sources(item.sources, "vector")
+
         min_score_threshold = getattr(settings, "RAG_MIN_SCORE_THRESHOLD", 0.0)
         fused_results = sorted(
-            [
-                r
-                for r in retrieved_by_id.values()
-                if r.fused_score >= min_score_threshold
-            ],
+            [r for r in retrieved_by_id.values() if r.fused_score >= min_score_threshold],
             key=lambda x: x.fused_score,
             reverse=True,
         )
@@ -465,16 +396,20 @@ async def retrieve_ranked_chunks(
         with trace_span("rag.rerank", {"candidates": len(fused_results)}):
             try:
                 reranker = PluginRegistry.get("reranker")
-                reranked_results = await reranker.rerank(
-                    search_query, fused_results, limit
-                )
+                if reranker and hasattr(reranker, "rerank"):
+                    reranked_results = await reranker.rerank(
+                        search_query, fused_results, limit
+                    )
+                else:
+                    reranked_results = fused_results[:limit]
+                    for r in reranked_results:
+                        r.final_score = r.fused_score
             except Exception:
-                logger.warning("Reranker failed; falling back to fused ranking")
+                logger.warning("Reranker failed; falling back to vector ranking")
                 reranked_results = fused_results[:limit]
                 for r in reranked_results:
                     r.final_score = r.fused_score
 
-        # 缓存主查询结果
         if reranked_results:
             await redis_client.setex(
                 cache_key,
@@ -486,7 +421,7 @@ async def retrieve_ranked_chunks(
 
 
 async def retrieve_chunks(
-    db: AsyncSession,
+    milvus_store,
     query: str,
     kb_id: int,
     org_id: int,
@@ -495,16 +430,16 @@ async def retrieve_chunks(
     filters: RetrievalFilters | None = None,
     history: list[dict[str, str]] | None = None,
     llm_provider: LLMProvider | None = None,
-) -> list[Chunk]:
+) -> list[RetrievedChunkContent]:
     ranked = await retrieve_ranked_chunks(
-        db, query, kb_id, org_id, user_id, limit, filters, history, llm_provider
+        milvus_store, query, kb_id, org_id, user_id, limit, filters, history, llm_provider
     )
     return [r.chunk for r in ranked]
 
 
 def build_rag_prompt(
     query: str,
-    chunks: list[Chunk],
+    chunks: list[RetrievedChunkContent],
     patient_name: str | None = None,
     language: str = "zh",
 ) -> tuple[str, list[dict[str, Citation]]]:
