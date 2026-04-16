@@ -1,5 +1,6 @@
 import json
-from fastapi import APIRouter
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from app.agent.ingestion import process_document_to_milvus
 from sse_starlette.sse import EventSourceResponse
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from pydantic import BaseModel, Field
@@ -57,3 +58,19 @@ async def chat_sync(req: ChatRequest):
     config = {"configurable": req.metadata}
     response = await graph.ainvoke({"messages": messages}, config=config)
     return {"reply": response["messages"][-1].content}
+
+@internal_router.post("/knowledge/parse")
+async def parse_knowledge_document(
+    file: UploadFile = File(...),
+    kb_id: str = Form(...)
+):
+    try:
+        content = await file.read()
+        chunk_count = process_document_to_milvus(content, file.filename, kb_id)
+        return {
+            "status": "success",
+            "filename": file.filename,
+            "chunk_count": chunk_count
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
