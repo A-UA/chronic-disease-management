@@ -1,0 +1,9 @@
+{
+  "name": "cdm-backend-nestjs",
+  "private": true,
+  "scripts": {
+    "dev:gateway": "pnpm --filter gateway run start:dev",
+    "dev:auth": "pnpm --filter auth-service run start:dev",
+    "build:all": "pnpm -r run build"
+  }
+}
