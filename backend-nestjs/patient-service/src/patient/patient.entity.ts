@@ -13,4 +13,7 @@ export class PatientEntity {
 
   @Column()
   name: string;
+
+  @Column()
+  gender: string;
 }

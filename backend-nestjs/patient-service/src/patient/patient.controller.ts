@@ -12,4 +12,9 @@ export class PatientController {
   async findAll(@Payload() identity: IdentityPayload) {
     return this.patientService.findAll(identity);
   }
+
+  @MessagePattern({ cmd: 'patient_create' })
+  async createPatient(@Payload() data: { identity: IdentityPayload; name: string; gender: string }) {
+    return this.patientService.createPatient(data.identity, { name: data.name, gender: data.gender });
+  }
 }

@@ -19,4 +19,15 @@ export class PatientService {
       },
     });
   }
+
+  async createPatient(identity: IdentityPayload, data: { name: string; gender: string }) {
+    const entity = this.repo.create({
+      id: Date.now(), // Generate properly in prod
+      tenantId: identity.tenantId,
+      orgId: identity.orgId,
+      name: data.name,
+      gender: data.gender,
+    });
+    return this.repo.save(entity);
+  }
 }

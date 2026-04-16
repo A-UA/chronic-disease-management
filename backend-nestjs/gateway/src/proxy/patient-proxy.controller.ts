@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { PATIENT_SERVICE, IdentityPayload } from '@cdm/shared';
@@ -15,5 +15,14 @@ export class PatientProxyController {
   @Get()
   findAll(@CurrentUser() identity: IdentityPayload) {
     return this.patientClient.send({ cmd: 'patient_find_all' }, identity);
+  }
+
+  @Post()
+  createPatient(
+    @CurrentUser() identity: IdentityPayload,
+    @Body('name') name: string,
+    @Body('gender') gender: string
+  ) {
+    return this.patientClient.send({ cmd: 'patient_create' }, { identity, name, gender });
   }
 }
