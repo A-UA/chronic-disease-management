@@ -1,11 +1,15 @@
 from langchain_core.tools import tool
+from langchain_core.runnables import RunnableConfig
 from langchain_openai import OpenAIEmbeddings
 from langchain_milvus import Milvus
 from app.config import settings
 
 @tool
-def rag_search_handler(query: str, kb_id: int) -> str:
+def rag_search_handler(query: str, config: RunnableConfig) -> str:
     """在知识库中检索与问题相关的文档内容，返回带引用的上下文"""
+    kb_id = config.get("configurable", {}).get("kb_id")
+    if not kb_id:
+        return "当前上下文中未找到知识库 ID，检索无法进行。"
     embeddings = OpenAIEmbeddings()
     vector_store = Milvus(
         embedding_function=embeddings,
