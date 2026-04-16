@@ -4,6 +4,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { AUTH_SERVICE, AUTH_TCP_PORT, PATIENT_SERVICE, PATIENT_TCP_PORT } from '@cdm/shared';
 import { AuthProxyController } from './proxy/auth-proxy.controller';
 import { PatientProxyController } from './proxy/patient-proxy.controller';
+import { HealthMetricProxyController } from './proxy/health-metric-proxy.controller';
+import { PatientFamilyLinkProxyController } from './proxy/patient-family-link-proxy.controller';
 
 @Module({
   imports: [
@@ -23,6 +25,11 @@ import { PatientProxyController } from './proxy/patient-proxy.controller';
       },
     ]),
   ],
-  controllers: [AuthProxyController, PatientProxyController],
+  controllers: [
+    AuthProxyController, 
+    PatientProxyController, 
+    HealthMetricProxyController, 
+    PatientFamilyLinkProxyController
+  ],
 })
 export class AppModule {}

@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PatientModule } from './patient/patient.module';
+import { HealthMetricModule } from './health-metric/health-metric.module';
+import { PatientFamilyLinkModule } from './patient-family-link/patient-family-link.module';
 
 @Module({
   imports: [
@@ -17,6 +19,8 @@ import { PatientModule } from './patient/patient.module';
       synchronize: false,
     }),
     PatientModule,
+    HealthMetricModule,
+    PatientFamilyLinkModule,
   ],
 })
 export class AppModule {}
