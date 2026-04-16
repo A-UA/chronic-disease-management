@@ -1,0 +1,25 @@
+server:
+  port: 8010
+
+spring:
+  application:
+    name: auth-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ai_saas
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate # 表结构由 Python Alembic 维护
+    show-sql: true
+    properties:
+      hibernate.format_sql: true
+
+sa-token:
+  token-name: Authorization
+  timeout: 2592000
+  jwt-secret-key: ${JWT_SECRET}
+  token-style: uuid
+  is-read-header: true
+  is-read-cookie: false
