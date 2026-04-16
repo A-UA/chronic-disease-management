@@ -264,36 +264,37 @@ Java/NestJS ←────┘
 
 ### 6.3 模块结构
 
-每个微服务按业务领域聚合（Controller → Service → Repository 同包）：
+每个微服务按职责分层（标准 Spring Boot 微服务分包）：
 
 ```
 auth-service/src/main/java/com/cdm/auth/
 ├── AuthServiceApplication.java
-├── auth/
-│   ├── AuthController.java
+├── config/                     # 配置层
+│   └── SaTokenConfig.java
+├── controller/                 # 控制器层（HTTP 适配）
+│   └── AuthController.java
+├── service/                    # 服务层（业务编排）
 │   ├── AuthService.java
-│   └── JwtProvider.java
-├── user/
-│   ├── UserController.java
-│   ├── UserService.java
+│   └── MenuService.java
+├── repository/                 # 数据访问层
 │   ├── UserRepository.java
+│   ├── OrganizationRepository.java
+│   └── ...
+├── entity/                     # 实体层（ORM 映射）
+│   ├── BaseEntity.java
 │   ├── UserEntity.java
-│   └── dto/
-├── organization/
-│   ├── OrgController.java
-│   ├── OrgService.java
-│   ├── OrgRepository.java
-│   ├── OrgEntity.java
-│   └── dto/
-├── rbac/
-│   ├── RbacController.java
-│   ├── RbacService.java
-│   ├── RoleRepository.java
-│   ├── RoleEntity.java
-│   └── PermissionEntity.java
-└── common/
-    ├── BaseEntity.java
-    └── BusinessException.java
+│   └── ...
+├── dto/                        # 数据传输对象
+│   ├── LoginRequest.java
+│   └── ...
+├── security/                   # 安全/权限
+│   ├── StpInterfaceImpl.java
+│   └── IdentityContext.java
+├── util/                       # 工具类
+│   └── SnowflakeIdGenerator.java
+└── exception/                  # 异常处理
+    ├── BusinessException.java
+    └── GlobalExceptionHandler.java
 ```
 
 ### 6.4 网关路由配置
