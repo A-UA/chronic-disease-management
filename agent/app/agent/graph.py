@@ -17,7 +17,11 @@ def create_agent_graph():
         
     tools = md_tools + [rag_search_handler]
     
-    llm = ChatOpenAI(model=settings.CHAT_MODEL).bind_tools(tools)
+    llm = ChatOpenAI(
+        model=settings.CHAT_MODEL,
+        base_url=settings.LLM_BASE_URL,
+        api_key=settings.LLM_API_KEY
+    ).bind_tools(tools)
     
     # Use ToolNode for standard tool invocation fallback
     tool_node = ToolNode(tools)

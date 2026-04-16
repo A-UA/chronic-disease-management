@@ -10,7 +10,11 @@ def rag_search_handler(query: str, config: RunnableConfig) -> str:
     kb_id = config.get("configurable", {}).get("kb_id")
     if not kb_id:
         return "当前上下文中未找到知识库 ID，检索无法进行。"
-    embeddings = OpenAIEmbeddings()
+    embeddings = OpenAIEmbeddings(
+        model=settings.EMBEDDING_MODEL,
+        base_url=settings.LLM_BASE_URL,
+        api_key=settings.LLM_API_KEY
+    )
     vector_store = Milvus(
         embedding_function=embeddings,
         connection_args={"host": settings.MILVUS_HOST, "port": settings.MILVUS_PORT},
