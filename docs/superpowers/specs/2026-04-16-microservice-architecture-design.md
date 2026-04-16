@@ -47,24 +47,28 @@
 
 ```
 chronic-disease-management/
-├── agent/                        # Python AI 中间层（原 backend/ 重命名）
+├── agent/                        # Python AI 中间层（原 backend/ 完全重构）
 │   ├── app/
 │   │   ├── main.py               # FastAPI 入口（仅内部接口）
-│   │   ├── ai/
-│   │   │   ├── rag/              # RAG 检索引擎
-│   │   │   │   ├── retrieval.py  # 向量检索（对接 Milvus）
-│   │   │   │   ├── ingestion.py  # 文档切块 + 写入 Milvus
-│   │   │   │   ├── citation.py   # 引用构建
-│   │   │   │   ├── context.py    # 上下文增强
-│   │   │   │   └── compress.py   # 对话历史压缩
-│   │   │   └── agent/            # LangGraph Agent + Skills
+│   │   ├── config.py             # 配置（Milvus、LLM、Redis 等）
+│   │   ├── rag/                  # RAG 检索引擎（扁平化，无 ai/ 嵌套）
+│   │   │   ├── retrieval.py      # 向量检索（对接 Milvus）
+│   │   │   ├── ingestion.py      # 文档切块 + Embedding + 写入 Milvus
+│   │   │   ├── citation.py       # 引用构建
+│   │   │   ├── context.py        # 上下文增强
+│   │   │   └── compress.py       # 对话历史压缩
+│   │   ├── graph/                # LangGraph Agent（原 ai/agent/，重命名避免冲突）
+│   │   │   ├── graph.py          # 图定义与执行
+│   │   │   ├── state.py          # 状态定义
+│   │   │   └── skills/           # 工具技能
 │   │   ├── plugins/              # 插件体系（LLM/Embedding/Reranker/Parser/Chunker）
-│   │   ├── vectorstore/          # 向量数据库客户端封装
-│   │   │   ├── base.py           # 抽象接口（Protocol）
+│   │   │   └── registry.py
+│   │   ├── vectorstore/          # 向量数据库客户端
+│   │   │   ├── base.py           # Protocol 抽象
 │   │   │   └── milvus.py         # Milvus 实现
 │   │   ├── schemas/              # 内部接口请求/响应模型
-│   │   ├── config.py             # 配置（Milvus 连接、LLM 参数等）
 │   │   └── tasks/                # arq 异步任务（文档入库）
+│   │       └── worker.py
 │   └── pyproject.toml
 │
 ├── backend-java/                 # Java Spring Boot 微服务集群
@@ -129,12 +133,12 @@ chronic-disease-management/
 
 **保留并重构的模块**：
 
-| 保留的模块 | 原路径 | 重构说明 |
-|-----------|--------|----------|
-| RAG 引擎 | `ai/rag/` | 保留核心算法，重构数据层对接 Milvus |
-| Agent 技能 | `ai/agent/` | 保留 LangGraph 图执行逻辑 |
-| 插件体系 | `plugins/` | 保留 LLM/Embedding/Reranker/Parser/Chunker |
-| 异步任务 | `tasks/` | 保留 arq Worker，任务内容简化为纯 AI 任务 |
+| 保留的模块 | 原路径 → 新路径 | 重构说明 |
+|-----------|----------------|----------|
+| RAG 引擎 | `ai/rag/` → `rag/` | 提升一级，消除 `ai/` 嵌套；重构数据层对接 Milvus |
+| Agent 图执行 | `ai/agent/` → `graph/` | 重命名避免与项目名冲突；保留 LangGraph 图执行逻辑 |
+| 插件体系 | `plugins/` → `plugins/` | 保留 LLM/Embedding/Reranker/Parser/Chunker |
+| 异步任务 | `tasks/` → `tasks/` | 保留 arq Worker，任务内容简化为纯 AI 任务 |
 
 ## 5. Python Agent 内部 API 契约
 
