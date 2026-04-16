@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
+  # ── 业务数据库（标准版，不含 pgvector）──
   db:
-    # 包含了 pgvector 插件的 PostgreSQL 镜像
-    image: ankane/pgvector:v0.5.1
+    image: postgres:16-alpine
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -13,11 +13,13 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  # ── 缓存 ──
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
 
+  # ── 对象存储 ──
   minio:
     image: minio/minio
     command: server /data --console-address ":9001"
@@ -30,6 +32,50 @@ services:
     volumes:
       - minio_data:/data
 
+  # ── Milvus 向量数据库（Standalone 模式）──
+  milvus-etcd:
+    image: quay.io/coreos/etcd:v3.5.16
+    environment:
+      ETCD_AUTO_COMPACTION_MODE: revision
+      ETCD_AUTO_COMPACTION_RETENTION: "1000"
+      ETCD_QUOTA_BACKEND_BYTES: "4294967296"
+      ETCD_SNAPSHOT_COUNT: "50000"
+    volumes:
+      - milvus_etcd:/etcd
+    command: etcd -advertise-client-urls=http://127.0.0.1:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+
+  milvus-minio:
+    image: minio/minio
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    volumes:
+      - milvus_minio:/minio_data
+    command: minio server /minio_data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  milvus:
+    image: milvusdb/milvus:v2.4-latest
+    command: ["milvus", "run", "standalone"]
+    environment:
+      ETCD_ENDPOINTS: milvus-etcd:2379
+      MINIO_ADDRESS: milvus-minio:9000
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    volumes:
+      - milvus_data:/var/lib/milvus
+    depends_on:
+      - milvus-etcd
+      - milvus-minio
+
 volumes:
   postgres_data:
   minio_data:
+  milvus_etcd:
+  milvus_minio:
+  milvus_data:
