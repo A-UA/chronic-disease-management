@@ -38,6 +38,7 @@
 ### 2.2 核心原则
 
 - **Python Agent 不碰业务数据库**：Agent 只与 Milvus（向量数据库）和 LLM 接口交互
+- **Agent 完全重构**：原 `backend/` 中的业务模块（路由、服务、仓储、ORM 模型等）全部删除，从零构建纯 AI 中间层服务
 - **镜像实现**：Java 和 NestJS 各自完整实现相同的业务模块，便于对比
 - **共享数据库**：Java 和 NestJS 连同一个 PostgreSQL，DDL 迁移由 Alembic 统一管理
 - **前端无侵入切换**：通过环境变量切换代理目标端口
@@ -109,6 +110,31 @@ chronic-disease-management/
 - `chunk` 的 `embedding` 向量列 → Milvus 的向量字段
 - `chunk` 的元数据（`document_id`、`chunk_index`、`content`、`token_count` 等）→ Milvus 的 payload/scalar 字段
 - `document` 表保留在 PostgreSQL 中，由业务后端管理 CRUD
+
+### 4.2 Agent 重构策略（完全重建）
+
+原 `backend/` 重命名为 `agent/` 后，以下模块**全部删除**，不做保留或迁移：
+
+| 删除的模块 | 原路径 | 原因 |
+|-----------|--------|------|
+| 路由层 | `routers/` | 所有 HTTP 端点由 Java/NestJS 实现 |
+| 服务层 | `services/` | 业务编排由 Java/NestJS 实现 |
+| 仓储层 | `repositories/` | 数据库访问由 Java/NestJS 实现 |
+| ORM 模型 | `models/` | 实体定义由 Java/NestJS 实现 |
+| 请求响应模型 | `schemas/` | 重建为仅包含 Agent 内部接口的模型 |
+| 基础设施 | `base/` | 重建为仅包含 Agent 自身配置（无 JWT、无数据库连接） |
+| 种子数据 | `seed.py` | 迁移至 `database/seed.py` |
+| 数据库迁移 | `alembic/` | 迁移至 `database/alembic/` |
+| 可观测性 | `telemetry/` | 按需在 Agent 中从零引入轻量方案 |
+
+**保留并重构的模块**：
+
+| 保留的模块 | 原路径 | 重构说明 |
+|-----------|--------|----------|
+| RAG 引擎 | `ai/rag/` | 保留核心算法，重构数据层对接 Milvus |
+| Agent 技能 | `ai/agent/` | 保留 LangGraph 图执行逻辑 |
+| 插件体系 | `plugins/` | 保留 LLM/Embedding/Reranker/Parser/Chunker |
+| 异步任务 | `tasks/` | 保留 arq Worker，任务内容简化为纯 AI 任务 |
 
 ## 5. Python Agent 内部 API 契约
 
@@ -442,7 +468,7 @@ server: {
 
 | 编号 | 任务 | 说明 |
 |------|------|------|
-| P1-1 | 重命名 `backend/` → `agent/` | 精简 Agent 代码，移除业务路由和 ORM |
+| P1-1 | 重命名 `backend/` → `agent/`，完全重构 | 删除所有业务模块（routers/services/repositories/models/schemas/base），仅保留 ai/ + plugins/ + tasks/，从零构建纯 AI 服务 |
 | P1-2 | Agent 接入 Milvus | 替换 pgvector，移除 chunk 表 |
 | P1-3 | Agent 暴露 `/internal/*` 接口 | 按契约实现 6 个内部端点 |
 | P1-4 | Java: gateway + auth-service | 登录/JWT/me/菜单树 |
