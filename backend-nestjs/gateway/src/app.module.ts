@@ -8,7 +8,11 @@ import { HealthMetricProxyController } from './proxy/health-metric-proxy.control
 import { PatientFamilyLinkProxyController } from './proxy/patient-family-link-proxy.controller';
 import { ManagerAssignmentProxyController } from './proxy/manager-assignment-proxy.controller';
 import { ManagementSuggestionProxyController } from './proxy/management-suggestion-proxy.controller';
-
+import { KnowledgeBaseProxyController } from './proxy/knowledge-base-proxy.controller';
+import { KnowledgeDocumentProxyController } from './proxy/knowledge-document-proxy.controller';
+import { MinioProxyService } from './proxy/services/minio-proxy.service';
+import { AgentProxyService } from './proxy/services/agent-proxy.service';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [
@@ -27,6 +31,7 @@ import { ManagementSuggestionProxyController } from './proxy/management-suggesti
         options: { host: 'localhost', port: PATIENT_TCP_PORT },
       },
     ]),
+    HttpModule,
   ],
   controllers: [
     AuthProxyController, 
@@ -34,7 +39,13 @@ import { ManagementSuggestionProxyController } from './proxy/management-suggesti
     HealthMetricProxyController, 
     PatientFamilyLinkProxyController,
     ManagerAssignmentProxyController,
-    ManagementSuggestionProxyController
+    ManagementSuggestionProxyController,
+    KnowledgeBaseProxyController,
+    KnowledgeDocumentProxyController
   ],
+  providers: [
+    MinioProxyService,
+    AgentProxyService
+  ]
 })
 export class AppModule {}

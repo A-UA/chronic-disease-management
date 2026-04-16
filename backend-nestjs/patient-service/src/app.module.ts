@@ -6,6 +6,7 @@ import { HealthMetricModule } from './health-metric/health-metric.module';
 import { PatientFamilyLinkModule } from './patient-family-link/patient-family-link.module';
 import { ManagerAssignmentModule } from './manager-assignment/manager-assignment.module';
 import { ManagementSuggestionModule } from './management-suggestion/management-suggestion.module';
+import { KnowledgeModule } from './knowledge/knowledge.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { ManagementSuggestionModule } from './management-suggestion/management-s
     PatientFamilyLinkModule,
     ManagerAssignmentModule,
     ManagementSuggestionModule,
+    KnowledgeModule,
   ],
 })
 export class AppModule {}
