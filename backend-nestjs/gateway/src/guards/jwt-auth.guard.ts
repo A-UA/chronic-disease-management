@@ -26,6 +26,7 @@ export class JwtAuthGuard implements CanActivate {
         userId: Number(payload.sub),
         tenantId: Number(payload.tenant_id),
         orgId: Number(payload.org_id),
+        allowedOrgIds: payload.allowed_org_ids || (payload.org_id ? [Number(payload.org_id)] : []),
         roles: payload.roles || [],
       };
       return true;

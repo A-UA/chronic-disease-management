@@ -50,12 +50,14 @@ public class SaTokenConfig {
             Object tenantId = StpUtil.getExtra("tenant_id");
             Object orgId = StpUtil.getExtra("org_id");
             Object roles = StpUtil.getExtra("roles");
+            Object allowedOrgIds = StpUtil.getExtra("allowed_org_ids");
 
             ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
                     .header("X-User-Id", userId)
                     .header("X-Tenant-Id", tenantId != null ? String.valueOf(tenantId) : "")
                     .header("X-Org-Id", orgId != null ? String.valueOf(orgId) : "")
                     .header("X-Roles", roles != null ? String.valueOf(roles) : "")
+                    .header("X-Allowed-Org-Ids", allowedOrgIds != null ? String.valueOf(allowedOrgIds) : "")
                     .build();
 
             return chain.filter(exchange.mutate().request(mutatedRequest).build());

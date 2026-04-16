@@ -9,12 +9,14 @@ export class JwtProvider {
     userId: number,
     tenantId: number,
     orgId: number,
+    allowedOrgIds: number[],
     roles: string[],
   ): string {
     return this.jwtService.sign({
       sub: String(userId),
       tenant_id: String(tenantId),
       org_id: String(orgId),
+      allowed_org_ids: allowedOrgIds,
       roles,
     });
   }

@@ -19,8 +19,10 @@
     <name>CDM Backend Java</name>
 
     <modules>
+        <module>common-lib</module>
         <module>gateway</module>
         <module>auth-service</module>
+        <module>patient-service</module>
     </modules>
 
     <properties>

@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { JwtModule } from '@nestjs/jwt';
-import { AUTH_SERVICE, AUTH_TCP_PORT } from '@cdm/shared';
+import { AUTH_SERVICE, AUTH_TCP_PORT, PATIENT_SERVICE, PATIENT_TCP_PORT } from '@cdm/shared';
 import { AuthProxyController } from './proxy/auth-proxy.controller';
+import { PatientProxyController } from './proxy/patient-proxy.controller';
 
 @Module({
   imports: [
@@ -15,8 +16,13 @@ import { AuthProxyController } from './proxy/auth-proxy.controller';
         transport: Transport.TCP,
         options: { host: 'localhost', port: AUTH_TCP_PORT },
       },
+      {
+        name: PATIENT_SERVICE,
+        transport: Transport.TCP,
+        options: { host: 'localhost', port: PATIENT_TCP_PORT },
+      },
     ]),
   ],
-  controllers: [AuthProxyController],
+  controllers: [AuthProxyController, PatientProxyController],
 })
 export class AppModule {}

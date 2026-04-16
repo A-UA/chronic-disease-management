@@ -50,8 +50,9 @@ export class AuthService {
       const ou = orgUsers[0];
       const org = await this.orgRepo.findOneBy({ id: ou.orgId });
       const roleCodes = await this.getRoleCodes(ou.orgId, ou.userId);
+      const allowedOrgIds = await this.getDescendingOrgIds(ou.orgId);
       const token = this.jwtProvider.createAccessToken(
-        user.id, org.tenantId, org.id, roleCodes,
+        user.id, org.tenantId, org.id, allowedOrgIds, roleCodes,
       );
       return {
         access_token: token,
@@ -98,7 +99,10 @@ export class AuthService {
 
     const org = await this.orgRepo.findOneBy({ id: orgId });
     const roleCodes = await this.getRoleCodes(orgId, userId);
-    const token = this.jwtProvider.createAccessToken(userId, org.tenantId, org.id, roleCodes);
+    const allowedOrgIds = await this.getDescendingOrgIds(orgId);
+    const token = this.jwtProvider.createAccessToken(
+      userId, org.tenantId, org.id, allowedOrgIds, roleCodes,
+    );
 
     return {
       access_token: token,
@@ -117,8 +121,9 @@ export class AuthService {
 
     const org = await this.orgRepo.findOneBy({ id: orgId });
     const roleCodes = await this.getRoleCodes(orgId, identity.userId);
+    const allowedOrgIds = await this.getDescendingOrgIds(orgId);
     const token = this.jwtProvider.createAccessToken(
-      identity.userId, org.tenantId, org.id, roleCodes,
+      identity.userId, org.tenantId, org.id, allowedOrgIds, roleCodes,
     );
 
     return {
@@ -159,6 +164,21 @@ export class AuthService {
   }
 
   // ── 私有方法 ──
+
+  private async getDescendingOrgIds(rootOrgId: number): Promise<number[]> {
+    const queue = [rootOrgId];
+    const result = new Set<number>();
+    
+    while (queue.length > 0) {
+      const current = queue.shift();
+      if (current && !result.has(current)) {
+        result.add(current);
+        const children = await this.orgRepo.find({ where: { parentId: current } });
+        queue.push(...children.map(c => c.id));
+      }
+    }
+    return Array.from(result);
+  }
 
   private verifyPassword(raw: string, hash: string): boolean {
     if (!hash) return false;

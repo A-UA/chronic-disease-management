@@ -1,0 +1,13 @@
+server:
+  port: 8020
+spring:
+  application:
+    name: patient-service
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:cdm}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASS:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true

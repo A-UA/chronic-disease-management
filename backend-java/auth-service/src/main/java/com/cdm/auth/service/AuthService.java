@@ -156,11 +156,13 @@ public class AuthService {
     private Map<String, Object> loginToOrg(UserEntity user, OrganizationUserEntity ou) {
         var org = orgRepo.findById(ou.getOrgId()).orElseThrow();
         var roleCodes = getRoleCodes(ou.getOrgId(), ou.getUserId());
+        var allowedOrgIds = getDescendingOrgIds(ou.getOrgId());
 
         StpUtil.login(user.getId(),
                 SaLoginConfig
                         .setExtra("tenant_id", org.getTenantId())
                         .setExtra("org_id", org.getId())
+                        .setExtra("allowed_org_ids", allowedOrgIds)
                         .setExtra("roles", String.join(",", roleCodes)));
 
         return Map.of(
@@ -169,6 +171,23 @@ public class AuthService {
                 "organization", Map.of("id", org.getId(), "name", org.getName(),
                                        "tenant_id", org.getTenantId()),
                 "require_org_selection", false);
+    }
+
+    private List<Long> getDescendingOrgIds(Long rootOrgId) {
+        List<Long> result = new ArrayList<>();
+        Queue<Long> queue = new LinkedList<>();
+        queue.add(rootOrgId);
+        while (!queue.isEmpty()) {
+            Long current = queue.poll();
+            if (!result.contains(current)) {
+                result.add(current);
+                List<OrganizationEntity> children = orgRepo.findByParentId(current);
+                for (OrganizationEntity child : children) {
+                    queue.add(child.getId());
+                }
+            }
+        }
+        return result;
     }
 
     private boolean verifyPassword(String raw, String hash) {
