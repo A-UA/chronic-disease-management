@@ -1,4 +1,5 @@
 """向量数据库抽象接口"""
+
 from __future__ import annotations
 
 from typing import Any, Protocol
@@ -6,6 +7,7 @@ from typing import Any, Protocol
 
 class SearchResult:
     """搜索结果标准结构"""
+
     __slots__ = ("id", "score", "payload")
 
     def __init__(self, id: int | str, score: float, payload: dict[str, Any]):

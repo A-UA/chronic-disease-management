@@ -63,7 +63,7 @@ class FakeDeleteDB:
 
     async def delete(self, obj):
         self.deleted.append(obj)
-        
+
     async def flush(self):
         pass
 

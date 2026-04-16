@@ -14,12 +14,19 @@ from unittest.mock import AsyncMock
 
 import httpx
 import pytest
-from sqlalchemy import delete, select, text
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.base.database import AsyncSessionLocal, engine
 from app.base.security import create_access_token
 from app.base.snowflake import get_next_id
+from app.routers.deps import (
+    get_current_org_id,
+    get_current_tenant_id,
+    get_current_user,
+    get_db,
+    verify_quota,
+)
+from sqlalchemy import delete, select, text
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.main import app
 from app.models import (
     Conversation,
@@ -28,13 +35,6 @@ from app.models import (
     Organization,
     Tenant,
     User,
-)
-from app.routers.deps import (
-    get_current_org_id,
-    get_current_tenant_id,
-    get_current_user,
-    get_db,
-    verify_quota,
 )
 
 # ---------------------------------------------------------------------------

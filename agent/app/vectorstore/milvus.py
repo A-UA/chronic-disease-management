@@ -1,10 +1,11 @@
 """Milvus 向量数据库客户端实现"""
+
 from __future__ import annotations
 
 import logging
 from typing import Any
 
-from pymilvus import MilvusClient, DataType, CollectionSchema, FieldSchema
+from pymilvus import CollectionSchema, DataType, FieldSchema, MilvusClient
 
 logger = logging.getLogger(__name__)
 
@@ -25,18 +26,24 @@ class MilvusVectorStore:
         if self._client.has_collection(full_name):
             return
 
-        schema = CollectionSchema(fields=[
-            FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
-            FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=dimension),
-            FieldSchema(name="document_id", dtype=DataType.INT64),
-            FieldSchema(name="chunk_index", dtype=DataType.INT32),
-            FieldSchema(name="content", dtype=DataType.VARCHAR, max_length=65535),
-            FieldSchema(name="page_number", dtype=DataType.INT32),
-            FieldSchema(name="token_count", dtype=DataType.INT32),
-            FieldSchema(name="section_title", dtype=DataType.VARCHAR, max_length=512),
-            FieldSchema(name="tenant_id", dtype=DataType.INT64),
-            FieldSchema(name="kb_id", dtype=DataType.INT64),
-        ])
+        schema = CollectionSchema(
+            fields=[
+                FieldSchema(
+                    name="id", dtype=DataType.INT64, is_primary=True, auto_id=True
+                ),
+                FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=dimension),
+                FieldSchema(name="document_id", dtype=DataType.INT64),
+                FieldSchema(name="chunk_index", dtype=DataType.INT32),
+                FieldSchema(name="content", dtype=DataType.VARCHAR, max_length=65535),
+                FieldSchema(name="page_number", dtype=DataType.INT32),
+                FieldSchema(name="token_count", dtype=DataType.INT32),
+                FieldSchema(
+                    name="section_title", dtype=DataType.VARCHAR, max_length=512
+                ),
+                FieldSchema(name="tenant_id", dtype=DataType.INT64),
+                FieldSchema(name="kb_id", dtype=DataType.INT64),
+            ]
+        )
         self._client.create_collection(
             collection_name=full_name,
             schema=schema,
@@ -45,7 +52,11 @@ class MilvusVectorStore:
         self._client.create_index(
             collection_name=full_name,
             field_name="vector",
-            index_params={"index_type": "IVF_FLAT", "metric_type": "COSINE", "params": {"nlist": 128}},
+            index_params={
+                "index_type": "IVF_FLAT",
+                "metric_type": "COSINE",
+                "params": {"nlist": 128},
+            },
         )
         # 创建 document_id 标量索引（用于删除）
         self._client.create_index(
@@ -95,18 +106,28 @@ class MilvusVectorStore:
             data=[vector],
             limit=limit,
             filter=filter_expr if filter_expr else None,
-            output_fields=["document_id", "content", "chunk_index", "page_number",
-                          "token_count", "section_title", "tenant_id", "kb_id"],
+            output_fields=[
+                "document_id",
+                "content",
+                "chunk_index",
+                "page_number",
+                "token_count",
+                "section_title",
+                "tenant_id",
+                "kb_id",
+            ],
         )
 
         parsed = []
         for hits in results:
             for hit in hits:
-                parsed.append({
-                    "id": hit["id"],
-                    "score": hit["distance"],
-                    "payload": hit["entity"],
-                })
+                parsed.append(
+                    {
+                        "id": hit["id"],
+                        "score": hit["distance"],
+                        "payload": hit["entity"],
+                    }
+                )
         return parsed
 
     async def delete_by_document_id(

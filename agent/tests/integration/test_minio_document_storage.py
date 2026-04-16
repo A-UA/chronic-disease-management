@@ -7,15 +7,15 @@ from urllib.parse import urlparse
 
 import aioboto3
 import pytest
+from app.base.config import settings
+from app.base.database import AsyncSessionLocal, engine
+from app.base.snowflake import get_next_id
+from app.base.storage import get_storage_service
 from arq import create_pool
 from arq.connections import RedisSettings
 from fastapi import UploadFile
 from sqlalchemy import delete
 
-from app.base.config import settings
-from app.base.database import AsyncSessionLocal, engine
-from app.base.snowflake import get_next_id
-from app.base.storage import get_storage_service
 from app.models import Document, KnowledgeBase, Organization, Tenant, User
 from app.tasks.worker import WorkerSettings
 

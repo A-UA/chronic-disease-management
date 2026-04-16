@@ -3,12 +3,12 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 
 import pytest
+from app.base.database import AsyncSessionLocal, engine
+from app.base.snowflake import get_next_id
 from arq import create_pool
 from arq.connections import RedisSettings
 from sqlalchemy import delete, select
 
-from app.base.database import AsyncSessionLocal, engine
-from app.base.snowflake import get_next_id
 from app.models import Document, KnowledgeBase, Organization, Tenant, User
 from app.tasks.worker import WorkerSettings
 
@@ -116,8 +116,9 @@ async def test_enqueue_and_consume_process_document_task_success(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from app.ai.rag import ingestion as ingestion_module
-    from app.services.rag import tasks as tasks_module
     from app.services.rag.provider_service import provider_service
+
+    from app.services.rag import tasks as tasks_module
 
     async def fake_ingest_document_with_dependencies(**kwargs):
         kwargs["document"].status = "completed"
@@ -168,8 +169,9 @@ async def test_enqueue_and_consume_process_document_task_failure_writes_back_sta
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from app.ai.rag import ingestion as ingestion_module
-    from app.services.rag import tasks as tasks_module
     from app.services.rag.provider_service import provider_service
+
+    from app.services.rag import tasks as tasks_module
 
     async def fake_ingest_document_with_dependencies(**kwargs):
         raise RuntimeError("boom")

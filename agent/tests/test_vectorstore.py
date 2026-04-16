@@ -1,9 +1,11 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 
 class FakeMilvusResult:
     """模拟 Milvus 搜索结果"""
+
     def __init__(self, hits):
         self._hits = hits
 
@@ -30,7 +32,10 @@ async def test_milvus_insert_vectors():
         mock_client.insert.return_value = {"insert_count": 2}
 
         from app.vectorstore.milvus import MilvusVectorStore
-        store = MilvusVectorStore(host="localhost", port=19530, collection_prefix="test")
+
+        store = MilvusVectorStore(
+            host="localhost", port=19530, collection_prefix="test"
+        )
 
         result = await store.insert(
             collection_name="test_kb_1",
@@ -51,13 +56,26 @@ async def test_milvus_search():
         mock_client = MagicMock()
         MockClient.return_value = mock_client
 
-        mock_client.search.return_value = [[
-            {"id": 1, "distance": 0.95, "entity": {"content": "结果1", "document_id": 10}},
-            {"id": 2, "distance": 0.80, "entity": {"content": "结果2", "document_id": 10}},
-        ]]
+        mock_client.search.return_value = [
+            [
+                {
+                    "id": 1,
+                    "distance": 0.95,
+                    "entity": {"content": "结果1", "document_id": 10},
+                },
+                {
+                    "id": 2,
+                    "distance": 0.80,
+                    "entity": {"content": "结果2", "document_id": 10},
+                },
+            ]
+        ]
 
         from app.vectorstore.milvus import MilvusVectorStore
-        store = MilvusVectorStore(host="localhost", port=19530, collection_prefix="test")
+
+        store = MilvusVectorStore(
+            host="localhost", port=19530, collection_prefix="test"
+        )
 
         results = await store.search(
             collection_name="test_kb_1",
@@ -78,7 +96,10 @@ async def test_milvus_delete_by_document_id():
         mock_client.delete.return_value = {"delete_count": 5}
 
         from app.vectorstore.milvus import MilvusVectorStore
-        store = MilvusVectorStore(host="localhost", port=19530, collection_prefix="test")
+
+        store = MilvusVectorStore(
+            host="localhost", port=19530, collection_prefix="test"
+        )
 
         count = await store.delete_by_document_id(
             collection_name="test_kb_1",
