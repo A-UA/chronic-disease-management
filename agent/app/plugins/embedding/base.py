@@ -1,9 +1,0 @@
-"""Embedding 插件接口定义"""
-
-from typing import Protocol
-
-
-class EmbeddingPlugin(Protocol):
-    async def embed_documents(self, texts: list[str]) -> list[list[float]]: ...
-    async def embed_query(self, text: str) -> list[float]: ...
-    def get_dimension(self) -> int | None: ...
