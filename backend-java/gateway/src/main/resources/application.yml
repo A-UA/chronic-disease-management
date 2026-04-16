@@ -23,4 +23,4 @@ spring:
         - id: patient-service
           uri: http://localhost:8020
           predicates:
-            - Path=/api/v1/patients/**, /api/v1/health-metrics/**, /api/v1/family-links/**
+            - Path=/api/v1/patients/**, /api/v1/health-metrics/**, /api/v1/family-links/**, /api/v1/manager-assignments/**, /api/v1/management-suggestions/**

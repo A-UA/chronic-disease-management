@@ -6,6 +6,9 @@ import { AuthProxyController } from './proxy/auth-proxy.controller';
 import { PatientProxyController } from './proxy/patient-proxy.controller';
 import { HealthMetricProxyController } from './proxy/health-metric-proxy.controller';
 import { PatientFamilyLinkProxyController } from './proxy/patient-family-link-proxy.controller';
+import { ManagerAssignmentProxyController } from './proxy/manager-assignment-proxy.controller';
+import { ManagementSuggestionProxyController } from './proxy/management-suggestion-proxy.controller';
+
 
 @Module({
   imports: [
@@ -29,7 +32,9 @@ import { PatientFamilyLinkProxyController } from './proxy/patient-family-link-pr
     AuthProxyController, 
     PatientProxyController, 
     HealthMetricProxyController, 
-    PatientFamilyLinkProxyController
+    PatientFamilyLinkProxyController,
+    ManagerAssignmentProxyController,
+    ManagementSuggestionProxyController
   ],
 })
 export class AppModule {}

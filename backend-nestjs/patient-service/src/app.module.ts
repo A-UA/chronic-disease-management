@@ -4,6 +4,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { PatientModule } from './patient/patient.module';
 import { HealthMetricModule } from './health-metric/health-metric.module';
 import { PatientFamilyLinkModule } from './patient-family-link/patient-family-link.module';
+import { ManagerAssignmentModule } from './manager-assignment/manager-assignment.module';
+import { ManagementSuggestionModule } from './management-suggestion/management-suggestion.module';
 
 @Module({
   imports: [
@@ -21,6 +23,8 @@ import { PatientFamilyLinkModule } from './patient-family-link/patient-family-li
     PatientModule,
     HealthMetricModule,
     PatientFamilyLinkModule,
+    ManagerAssignmentModule,
+    ManagementSuggestionModule,
   ],
 })
 export class AppModule {}
