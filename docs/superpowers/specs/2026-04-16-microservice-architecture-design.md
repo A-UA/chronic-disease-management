@@ -255,7 +255,7 @@ Java/NestJS ←────┘
 |------|------|
 | 框架 | Spring Boot 3.x (Java 17+) |
 | 网关 | Spring Cloud Gateway |
-| 安全 | Spring Security + jjwt |
+| 安全 | Sa-Token (JWT Stateless) |
 | ORM | Spring Data JPA + Hibernate |
 | 构建 | Maven, 多模块 |
 | HTTP 客户端 | WebClient (WebFlux) |
@@ -419,7 +419,7 @@ export class PatientProxyController {
 |------|-------------------|--------|
 | 网关类型 | 声明式（YAML 路由 + Filter 链） | 编程式（Controller + ClientProxy） |
 | 内部通信 | HTTP（服务间 REST 调用） | TCP（NestJS 原生微服务协议） |
-| 鉴权传递 | 篡改 Header 透传 | 打包进 Payload 对象直接传递 |
+| 鉴权传递 | Sa-Token SaReactorFilter + Header 透传 | JWT Guard + Payload 对象直接传递 |
 | ORM | JPA / Hibernate | TypeORM |
 | 共享库 | Maven 子模块 | npm 包 (pnpm workspace) |
 | 异常体系 | @ControllerAdvice | RpcExceptionFilter |
