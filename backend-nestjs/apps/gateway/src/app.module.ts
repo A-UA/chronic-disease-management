@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { HttpModule } from '@nestjs/axios';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { BigIntSerializerInterceptor, AUTH_TCP_PORT, PATIENT_TCP_PORT } from '@cdm/shared';
 
@@ -23,6 +24,7 @@ import { MinioProxyService } from './proxy/services/minio-proxy.service.js';
       secret: process.env.JWT_SECRET || 'your-jwt-secret-here-must-match-python',
       signOptions: { expiresIn: '7d' },
     }),
+    HttpModule,
     ClientsModule.register([
       {
         name: 'AUTH_SERVICE',
