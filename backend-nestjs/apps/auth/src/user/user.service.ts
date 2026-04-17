@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserEntity } from './user.entity.js';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UserService {
@@ -16,9 +17,19 @@ export class UserService {
   async create(payload: any) {
     const entity = this.repo.create(payload as any);
     if (!(entity as any).id) { (entity as any).id = String(nextId()); }
+    
+    // Convert incoming password field to hashed passwordHash
+    if (payload.password) {
+      (entity as any).passwordHash = bcrypt.hashSync(payload.password, 10);
+    }
+    
     return this.repo.save(entity);
   }
   async update(id: string, data: any) {
+    if (data.password) {
+      data.passwordHash = bcrypt.hashSync(data.password, 10);
+      delete data.password;
+    }
     await this.repo.update(id, data);
     return this.repo.findOne({ where: { id } as any });
   }
