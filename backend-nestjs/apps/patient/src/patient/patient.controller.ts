@@ -1,8 +1,7 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { PatientService } from './patient.service.js';
-import { PATIENT_SERVICE } from '@cdm/shared';
-import type { IdentityPayload } from '@cdm/shared';
+import type { IdentityPayload, CreatePatientPayload } from '@cdm/shared';
 
 @Controller()
 export class PatientController {
@@ -14,7 +13,7 @@ export class PatientController {
   }
 
   @MessagePattern({ cmd: 'patient_create' })
-  async createPatient(@Payload() data: { identity: IdentityPayload; name: string; gender: string }) {
+  async createPatient(@Payload() data: CreatePatientPayload) {
     return this.patientService.createPatient(data.identity, { name: data.name, gender: data.gender });
   }
 }

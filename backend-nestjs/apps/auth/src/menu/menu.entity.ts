@@ -39,7 +39,7 @@ export class MenuEntity {
   isEnabled: boolean;
 
   @Column({ type: 'jsonb', nullable: true })
-  meta: Record<string, any> | null;
+  meta: Record<string, unknown> | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

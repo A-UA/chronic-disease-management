@@ -1,7 +1,9 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
-import { AUTH_SERVICE, IdentityPayload } from '@cdm/shared';
+import { AUTH_SERVICE } from '@cdm/shared';
+import type { IdentityPayload } from '@cdm/shared';
+import { PaginationQueryDto, CreateRoleDto, UpdateRoleDto } from '@cdm/shared';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard.js';
 import { CurrentUser } from '../decorators/current-user.decorator.js';
 
@@ -11,7 +13,7 @@ export class RoleProxyController {
   constructor(@Inject(AUTH_SERVICE) private readonly authClient: ClientProxy) {}
 
   @Get()
-  async list(@Query() query: any, @CurrentUser() user: IdentityPayload) {
+  async list(@Query() query: PaginationQueryDto, @CurrentUser() user: IdentityPayload) {
     const res = await firstValueFrom(this.authClient.send({ cmd: 'role_list' }, { ...query, identity: user }));
 
     // tenants, orgs, users list endpoints expect PaginatedResult { total, items }
@@ -20,12 +22,12 @@ export class RoleProxyController {
   }
 
   @Post()
-  async create(@Body() body: any, @CurrentUser() user: IdentityPayload) {
-    return firstValueFrom(this.authClient.send({ cmd: 'role_create' }, { ...body, identity: user }));
+  async create(@Body() body: CreateRoleDto, @CurrentUser() user: IdentityPayload) {
+    return firstValueFrom(this.authClient.send({ cmd: 'role_create' }, { data: body, identity: user }));
   }
 
   @Put(':id')
-  async update(@Param('id') id: string, @Body() body: any, @CurrentUser() user: IdentityPayload) {
+  async update(@Param('id') id: string, @Body() body: UpdateRoleDto, @CurrentUser() user: IdentityPayload) {
     return firstValueFrom(this.authClient.send({ cmd: 'role_update' }, { id, data: body, identity: user }));
   }
 

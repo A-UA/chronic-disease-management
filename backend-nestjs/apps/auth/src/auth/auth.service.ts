@@ -81,17 +81,17 @@ export class AuthService {
   }
 
   async selectOrg(orgId: string, selectionToken: string) {
-    let payload: any;
+    let tokenPayload: { sub: string; purpose: string };
     try {
-      payload = this.jwtProvider.parseToken(selectionToken);
-      if (payload.purpose !== 'org_selection') {
+      tokenPayload = this.jwtProvider.parseToken(selectionToken);
+      if (tokenPayload.purpose !== 'org_selection') {
         throw new Error();
       }
     } catch {
       throw new RpcException({ statusCode: 422, message: 'Invalid or expired selection token' });
     }
 
-    const userId = String(payload.sub);
+    const userId = String(tokenPayload.sub);
     const ou = await this.orgUserRepo.findOne({ where: { orgId, userId } });
     if (!ou) {
       throw new RpcException({ statusCode: 403, message: 'User is not a member of this organization' });

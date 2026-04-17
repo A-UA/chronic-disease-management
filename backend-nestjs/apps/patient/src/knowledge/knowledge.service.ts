@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { KnowledgeBaseEntity } from './entities/knowledge-base.entity.js';
 import { DocumentEntity } from './entities/document.entity.js';
+import type { CreateKbData, SyncDocumentPayload } from '@cdm/shared';
 
 @Injectable()
 export class KnowledgeService {
@@ -15,7 +16,7 @@ export class KnowledgeService {
     return this.kbRepo.find({ where: { tenantId } });
   }
 
-  createKb(tenantId: string, orgId: string, createdBy: string, data: any) {
+  createKb(tenantId: string, orgId: string, createdBy: string, data: CreateKbData) {
     const kb = this.kbRepo.create({
       tenantId, orgId, createdBy, name: data.name, description: data.description
     });
@@ -35,13 +36,13 @@ export class KnowledgeService {
     return this.docRepo.find({ where: { kbId } });
   }
 
-  syncDocument(tenantId: string, orgId: string, uploaderId: string, payload: any) {
+  syncDocument(tenantId: string, orgId: string, uploaderId: string, payload: SyncDocumentPayload) {
     const doc = this.docRepo.create({
       tenantId, orgId, uploaderId,
       kbId: payload.kbId,
       fileName: payload.fileName,
-      fileType: payload.fileType,
-      fileSize: payload.fileSize,
+      fileType: payload.fileType ?? '',
+      fileSize: payload.fileSize ?? 0,
       minioUrl: payload.minioUrl
     });
     return this.docRepo.save(doc)

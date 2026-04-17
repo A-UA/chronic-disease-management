@@ -1,27 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import FormData from 'form-data';
 import { v4 as uuidv4 } from 'uuid';
-import { NotFoundException } from '@nestjs/common';
 import { Response } from 'express';
+import type { ChatMessage, ChatConversation, ParseDocumentResponse } from '@cdm/shared';
 
-export interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  created_at: string;
-  citations?: any[];
-}
-
-export interface ChatConversation {
-  id: string;
-  kb_id: string;
-  title: string | null;
-  created_at: string;
-  messages: ChatMessage[];
-  user_id: string;
-}
+// 重导出供外部引用
+export type { ChatMessage, ChatConversation };
 
 @Injectable()
 export class AgentProxyService {
@@ -185,12 +171,13 @@ export class AgentProxyService {
         res.end();
       });
 
-      response.data.on('error', (err: any) => {
+      response.data.on('error', (err: Error) => {
         console.error('Stream error:', err);
         res.end();
       });
-    } catch (e: any) {
-      console.error('Chat error:', e.message);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      console.error('Chat error:', message);
       if (!res.headersSent) {
         res.status(500).json({ message: 'Chat failed' });
       } else {
@@ -209,15 +196,16 @@ export class AgentProxyService {
 
     try {
       const response = await firstValueFrom(
-        this.httpService.post(`${this.agentUrl}/internal/knowledge/parse`, formData, {
+        this.httpService.post<ParseDocumentResponse>(`${this.agentUrl}/internal/knowledge/parse`, formData, {
           headers: formData.getHeaders(),
         })
-      ) as any;
+      );
       if (response.data && response.data.chunk_count !== undefined) {
         return response.data.chunk_count;
       }
-    } catch (e: any) {
-      console.error('Agent upload failed:', e.message);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      console.error('Agent upload failed:', message);
     }
     return 0;
   }

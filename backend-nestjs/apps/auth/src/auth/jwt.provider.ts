@@ -1,6 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
+interface JwtPayloadData {
+  sub: string;
+  tenant_id: string;
+  org_id: string;
+  allowed_org_ids: string[];
+  roles: string[];
+}
+
+interface SelectionTokenPayload {
+  sub: string;
+  purpose: string;
+}
+
 @Injectable()
 export class JwtProvider {
   constructor(private readonly jwtService: JwtService) {}
@@ -12,23 +25,24 @@ export class JwtProvider {
     allowedOrgIds: string[],
     roles: string[],
   ): string {
-    return this.jwtService.sign({
-      sub: String(userId),
-      tenant_id: String(tenantId),
-      org_id: String(orgId),
+    const payload: JwtPayloadData = {
+      sub: userId,
+      tenant_id: tenantId,
+      org_id: orgId,
       allowed_org_ids: allowedOrgIds,
       roles,
-    });
+    };
+    return this.jwtService.sign(payload);
   }
 
   createSelectionToken(userId: string): string {
     return this.jwtService.sign(
-      { sub: String(userId), purpose: 'org_selection' },
+      { sub: userId, purpose: 'org_selection' },
       { expiresIn: '5m' },
     );
   }
 
-  parseToken(token: string): any {
-    return this.jwtService.verify(token);
+  parseToken(token: string): SelectionTokenPayload {
+    return this.jwtService.verify<SelectionTokenPayload>(token);
   }
 }

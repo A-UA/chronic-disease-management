@@ -1,8 +1,8 @@
-import { nextId } from '@cdm/shared';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull, Or, Equal } from 'typeorm';
 import { MenuEntity } from './menu.entity.js';
+import type { ListPayload, CreatePayload, CreateMenuData, UpdateMenuData } from '@cdm/shared';
 
 export interface MenuNode {
   id: string;
@@ -15,7 +15,7 @@ export interface MenuNode {
   sort: number;
   is_visible: boolean;
   is_enabled: boolean;
-  meta: Record<string, any> | null;
+  meta: Record<string, unknown> | null;
   children: MenuNode[];
 }
 
@@ -26,21 +26,23 @@ export class MenuService {
     private readonly menuRepo: Repository<MenuEntity>,
   ) {}
 
-  async list(payload: any) {
+  async list(payload: ListPayload) {
     const skip = Number(payload.skip) || 0;
     const limit = Number(payload.limit) || 50;
     const [items, total] = await this.menuRepo.findAndCount({ skip, take: limit });
     return { items, total };
   }
 
-  async create(payload: any) {
-    const entity = this.menuRepo.create(payload as any);
+  async create(payload: CreatePayload<CreateMenuData>) {
+    const entity = this.menuRepo.create({
+      ...payload.data,
+    });
     return this.menuRepo.save(entity);
   }
 
-  async update(id: string, data: any) {
+  async update(id: string, data: UpdateMenuData) {
     await this.menuRepo.update(id, data);
-    return this.menuRepo.findOne({ where: { id } as any });
+    return this.menuRepo.findOneBy({ id });
   }
 
   async delete(id: string) {
