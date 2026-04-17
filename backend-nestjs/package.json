@@ -4,6 +4,7 @@
   "private": true,
   "packageManager": "pnpm@10.0.0",
   "scripts": {
+    "dev": "turbo run dev",
     "dev:gateway": "turbo run dev --filter=@cdm/gateway",
     "dev:auth": "turbo run dev --filter=@cdm/auth",
     "dev:patient": "turbo run dev --filter=@cdm/patient",
