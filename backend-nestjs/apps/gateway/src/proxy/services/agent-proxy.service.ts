@@ -126,21 +126,41 @@ export class AgentProxyService {
 
       response.data.on('data', (chunk: Buffer) => {
         buffer += chunk.toString();
-        let boundary = buffer.indexOf('\n\n');
         
-        while (boundary !== -1) {
+        while (true) {
+          const idx1 = buffer.indexOf('\n\n');
+          const idx2 = buffer.indexOf('\r\n\r\n');
+          
+          let boundary = -1;
+          let shift = 0;
+          
+          if (idx1 !== -1 && idx2 !== -1) {
+            if (idx1 < idx2) {
+              boundary = idx1; shift = 2;
+            } else {
+              boundary = idx2; shift = 4;
+            }
+          } else if (idx1 !== -1) {
+            boundary = idx1; shift = 2;
+          } else if (idx2 !== -1) {
+            boundary = idx2; shift = 4;
+          } else {
+            break; // No complete block yet
+          }
+          
           const block = buffer.slice(0, boundary);
-          buffer = buffer.slice(boundary + 2);
+          buffer = buffer.slice(boundary + shift);
           
           const lines = block.split('\n');
           let currentEvent = 'message';
           let currentData = '';
           
           for (const line of lines) {
-            if (line.startsWith('event: ')) {
-               currentEvent = line.slice(7).trim();
-            } else if (line.startsWith('data: ')) {
-               currentData += line.slice(6) + '\n';
+            const cleanLine = line.replace(/\r$/, '');
+            if (cleanLine.startsWith('event: ')) {
+               currentEvent = cleanLine.slice(7).trim();
+            } else if (cleanLine.startsWith('data: ')) {
+               currentData += cleanLine.slice(6) + '\n';
             }
           }
           if (currentData.endsWith('\n')) {
@@ -151,7 +171,6 @@ export class AgentProxyService {
              res.write(`data: ${JSON.stringify({ text: currentData })}\n\n`);
              assistantContent += currentData;
           }
-          boundary = buffer.indexOf('\n\n');
         }
       });
 
