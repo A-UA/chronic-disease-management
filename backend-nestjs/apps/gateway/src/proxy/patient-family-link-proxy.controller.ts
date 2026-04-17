@@ -12,15 +12,15 @@ export class PatientFamilyLinkProxyController {
   ) {}
 
   @Get(':patientId')
-  findAll(@CurrentUser() identity: IdentityPayload, @Param('patientId') patientId: number) {
+  findAll(@CurrentUser() identity: IdentityPayload, @Param('patientId') patientId: string) {
     return this.patientClient.send({ cmd: 'family_find_all' }, { identity, patientId });
   }
 
   @Post(':patientId')
   linkFamily(
     @CurrentUser() identity: IdentityPayload, 
-    @Param('patientId') patientId: number,
-    @Body('familyUserId') familyUserId: number,
+    @Param('patientId') patientId: string,
+    @Body('familyUserId') familyUserId: string,
     @Body('relationship') relationship: string
   ) {
     return this.patientClient.send({ cmd: 'family_link' }, { identity, patientId, familyUserId, relationship });

@@ -11,7 +11,7 @@ export class ManagerAssignmentService {
     private readonly repo: Repository<ManagerAssignmentEntity>,
   ) {}
 
-  async findAllForPatient(identity: IdentityPayload, patientId: number) {
+  async findAllForPatient(identity: IdentityPayload, patientId: string) {
     return this.repo.find({
       where: {
         tenantId: identity.tenantId,
@@ -21,7 +21,7 @@ export class ManagerAssignmentService {
     });
   }
 
-  async assignManager(identity: IdentityPayload, patientId: number, data: { managerUserId: number, assignmentType: string }) {
+  async assignManager(identity: IdentityPayload, patientId: string, data: { managerUserId: string, assignmentType: string }) {
     const entity = this.repo.create({
       id: nextId(),
       tenantId: identity.tenantId,

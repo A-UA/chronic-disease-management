@@ -10,16 +10,15 @@ const snowflake = new Snowflake(CDM_EPOCH);
 
 /**
  * 生成一个全局唯一的雪花 ID
- * 返回字符串形式以避免 JS 精度丢失，并在类型上兼容当前 Entity 定义
+ * 返回字符串形式以避免 JS 精度丢失，并在类型上兼容 TypeORM bigint Entity 定义
  */
-export function nextId(): number {
-  // trick: 运行时返回字符串给 TypeORM，满足 pg bigint 要求且无截断
-  return snowflake.generate().toString() as unknown as number;
+export function nextId(): string {
+  return snowflake.generate().toString();
 }
 
 /**
  * 将 bigint 格式的 ID 转为字符串（用于 API 响应序列化）
  */
-export function idToString(id: number | bigint): string {
+export function idToString(id: string | number | bigint): string {
   return String(id);
 }

@@ -8,12 +8,12 @@ export class HealthMetricController {
   constructor(private readonly service: HealthMetricService) {}
 
   @MessagePattern({ cmd: 'health_metric_find_all' })
-  async findAll(@Payload() data: { identity: IdentityPayload; patientId: number }) {
+  async findAll(@Payload() data: { identity: IdentityPayload; patientId: string }) {
     return this.service.findAllForPatient(data.identity, data.patientId);
   }
 
   @MessagePattern({ cmd: 'health_metric_create' })
-  async create(@Payload() data: { identity: IdentityPayload; patientId: number; metricType: string; metricValue: string }) {
+  async create(@Payload() data: { identity: IdentityPayload; patientId: string; metricType: string; metricValue: string }) {
     return this.service.create(data.identity, data.patientId, { metricType: data.metricType, metricValue: data.metricValue });
   }
 }

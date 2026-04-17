@@ -12,15 +12,15 @@ export class ManagerAssignmentProxyController {
   ) {}
 
   @Get(':patientId')
-  findAll(@CurrentUser() identity: IdentityPayload, @Param('patientId') patientId: number) {
+  findAll(@CurrentUser() identity: IdentityPayload, @Param('patientId') patientId: string) {
     return this.patientClient.send({ cmd: 'manager_assignment_find_all' }, { identity, patientId });
   }
 
   @Post(':patientId')
   assignManager(
     @CurrentUser() identity: IdentityPayload, 
-    @Param('patientId') patientId: number,
-    @Body('managerUserId') managerUserId: number,
+    @Param('patientId') patientId: string,
+    @Body('managerUserId') managerUserId: string,
     @Body('assignmentType') assignmentType: string
   ) {
     return this.patientClient.send({ cmd: 'manager_assignment_create' }, { identity, patientId, managerUserId, assignmentType });

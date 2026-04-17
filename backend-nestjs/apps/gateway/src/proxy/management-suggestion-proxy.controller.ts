@@ -12,14 +12,14 @@ export class ManagementSuggestionProxyController {
   ) {}
 
   @Get(':patientId')
-  findAll(@CurrentUser() identity: IdentityPayload, @Param('patientId') patientId: number) {
+  findAll(@CurrentUser() identity: IdentityPayload, @Param('patientId') patientId: string) {
     return this.patientClient.send({ cmd: 'management_suggestion_find_all' }, { identity, patientId });
   }
 
   @Post(':patientId')
   createSuggestion(
     @CurrentUser() identity: IdentityPayload, 
-    @Param('patientId') patientId: number,
+    @Param('patientId') patientId: string,
     @Body('suggestionType') suggestionType: string,
     @Body('content') content: string
   ) {

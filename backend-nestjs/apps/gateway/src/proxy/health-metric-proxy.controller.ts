@@ -12,14 +12,14 @@ export class HealthMetricProxyController {
   ) {}
 
   @Get(':patientId')
-  findAll(@CurrentUser() identity: IdentityPayload, @Param('patientId') patientId: number) {
+  findAll(@CurrentUser() identity: IdentityPayload, @Param('patientId') patientId: string) {
     return this.patientClient.send({ cmd: 'health_metric_find_all' }, { identity, patientId });
   }
 
   @Post(':patientId')
   create(
     @CurrentUser() identity: IdentityPayload, 
-    @Param('patientId') patientId: number,
+    @Param('patientId') patientId: string,
     @Body('metricType') metricType: string,
     @Body('metricValue') metricValue: string
   ) {

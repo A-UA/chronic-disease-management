@@ -8,12 +8,12 @@ export class PatientFamilyLinkController {
   constructor(private readonly service: PatientFamilyLinkService) {}
 
   @MessagePattern({ cmd: 'family_find_all' })
-  async findAll(@Payload() data: { identity: IdentityPayload; patientId: number }) {
+  async findAll(@Payload() data: { identity: IdentityPayload; patientId: string }) {
     return this.service.findAllForPatient(data.identity, data.patientId);
   }
 
   @MessagePattern({ cmd: 'family_link' })
-  async linkFamily(@Payload() data: { identity: IdentityPayload; patientId: number; familyUserId: number; relationship: string }) {
+  async linkFamily(@Payload() data: { identity: IdentityPayload; patientId: string; familyUserId: string; relationship: string }) {
     return this.service.linkFamily(data.identity, data.patientId, { familyUserId: data.familyUserId, relationship: data.relationship });
   }
 }

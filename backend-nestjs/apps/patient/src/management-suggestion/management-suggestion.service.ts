@@ -11,7 +11,7 @@ export class ManagementSuggestionService {
     private readonly repo: Repository<ManagementSuggestionEntity>,
   ) {}
 
-  async findAllForPatient(identity: IdentityPayload, patientId: number) {
+  async findAllForPatient(identity: IdentityPayload, patientId: string) {
     return this.repo.find({
       where: {
         tenantId: identity.tenantId,
@@ -21,7 +21,7 @@ export class ManagementSuggestionService {
     });
   }
 
-  async createSuggestion(identity: IdentityPayload, patientId: number, data: { suggestionType: string, content: string }) {
+  async createSuggestion(identity: IdentityPayload, patientId: string, data: { suggestionType: string, content: string }) {
     const entity = this.repo.create({
       id: nextId(),
       tenantId: identity.tenantId,

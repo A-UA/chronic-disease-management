@@ -11,31 +11,31 @@ export class KnowledgeService {
     @InjectRepository(DocumentEntity) private docRepo: Repository<DocumentEntity>
   ) {}
 
-  findAllKb(tenantId: number) {
+  findAllKb(tenantId: string) {
     return this.kbRepo.find({ where: { tenantId } });
   }
 
-  createKb(tenantId: number, orgId: number, createdBy: number, data: any) {
+  createKb(tenantId: string, orgId: string, createdBy: string, data: any) {
     const kb = this.kbRepo.create({
       tenantId, orgId, createdBy, name: data.name, description: data.description
     });
     return this.kbRepo.save(kb);
   }
 
-  async getKbStats(kbId: number) {
+  async getKbStats(kbId: string) {
     const docs = await this.docRepo.count({ where: { kbId } });
     return { document_count: docs, chunk_count: 0, total_tokens: 0 };
   }
 
-  deleteKb(id: number) {
+  deleteKb(id: string) {
     return this.kbRepo.delete(id);
   }
 
-  findDocsByKb(kbId: number) {
+  findDocsByKb(kbId: string) {
     return this.docRepo.find({ where: { kbId } });
   }
 
-  syncDocument(tenantId: number, orgId: number, uploaderId: number, payload: any) {
+  syncDocument(tenantId: string, orgId: string, uploaderId: string, payload: any) {
     const doc = this.docRepo.create({
       tenantId, orgId, uploaderId,
       kbId: payload.kbId,
@@ -48,7 +48,7 @@ export class KnowledgeService {
       .then(saved => ({ ...saved, chunkCount: payload.chunkCount, status: payload.status }));
   }
 
-  deleteDoc(id: number) {
+  deleteDoc(id: string) {
     return this.docRepo.delete(id);
   }
 }

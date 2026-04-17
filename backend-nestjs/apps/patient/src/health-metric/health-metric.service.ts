@@ -11,7 +11,7 @@ export class HealthMetricService {
     private readonly repo: Repository<HealthMetricEntity>,
   ) {}
 
-  async findAllForPatient(identity: IdentityPayload, patientId: number) {
+  async findAllForPatient(identity: IdentityPayload, patientId: string) {
     return this.repo.find({
       where: {
         tenantId: identity.tenantId,
@@ -21,7 +21,7 @@ export class HealthMetricService {
     });
   }
 
-  async create(identity: IdentityPayload, patientId: number, data: { metricType: string, metricValue: string }) {
+  async create(identity: IdentityPayload, patientId: string, data: { metricType: string, metricValue: string }) {
     const entity = this.repo.create({
       id: nextId(),
       tenantId: identity.tenantId,

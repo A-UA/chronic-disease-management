@@ -11,7 +11,7 @@ export class PatientFamilyLinkService {
     private readonly repo: Repository<PatientFamilyLinkEntity>,
   ) {}
 
-  async findAllForPatient(identity: IdentityPayload, patientId: number) {
+  async findAllForPatient(identity: IdentityPayload, patientId: string) {
     return this.repo.find({
       where: {
         tenantId: identity.tenantId,
@@ -21,7 +21,7 @@ export class PatientFamilyLinkService {
     });
   }
 
-  async linkFamily(identity: IdentityPayload, patientId: number, data: { familyUserId: number, relationship: string }) {
+  async linkFamily(identity: IdentityPayload, patientId: string, data: { familyUserId: string, relationship: string }) {
     const entity = this.repo.create({
       id: nextId(),
       tenantId: identity.tenantId,
