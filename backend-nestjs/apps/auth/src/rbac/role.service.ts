@@ -15,7 +15,7 @@ export class RoleService {
   }
   async create(payload: any) {
     const entity = this.repo.create(payload as any);
-    if (!(entity as any).id) { (entity as any).id = String(nextId()); }
+    if (!(entity as any).id) { (entity as any).id = nextId(); }
     return this.repo.save(entity);
   }
   async update(id: string, data: any) {

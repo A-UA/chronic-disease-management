@@ -24,7 +24,7 @@ export class UserService {
 
   async create(payload: any) {
     const entity = this.repo.create(payload as any);
-    if (!(entity as any).id) { (entity as any).id = String(nextId()); }
+    if (!(entity as any).id) { (entity as any).id = nextId(); }
     
     if (payload.password) {
       (entity as any).passwordHash = await bcrypt.hash(payload.password, 10);

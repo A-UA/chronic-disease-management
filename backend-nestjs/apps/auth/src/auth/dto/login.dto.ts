@@ -22,10 +22,10 @@ export class RegisterDto {
 }
 
 export class SelectOrgDto {
-  orgId: number;
+  orgId: string;
   selectionToken: string;
 }
 
 export class SwitchOrgDto {
-  orgId: number;
+  orgId: string;
 }
