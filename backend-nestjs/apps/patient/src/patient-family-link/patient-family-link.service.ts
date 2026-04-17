@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { PatientFamilyLinkEntity } from './patient-family-link.entity.js';
 import { IdentityPayload, nextId } from '@cdm/shared';
+import type { PatientFamilyLinkVO } from '@cdm/shared';
 
 @Injectable()
 export class PatientFamilyLinkService {
@@ -11,17 +12,18 @@ export class PatientFamilyLinkService {
     private readonly repo: Repository<PatientFamilyLinkEntity>,
   ) {}
 
-  async findAllForPatient(identity: IdentityPayload, patientId: string) {
-    return this.repo.find({
+  async findAllForPatient(identity: IdentityPayload, patientId: string): Promise<PatientFamilyLinkVO[]> {
+    const entities = await this.repo.find({
       where: {
         tenantId: identity.tenantId,
         orgId: In(identity.allowedOrgIds),
         patientId,
       },
     });
+    return entities.map(PatientFamilyLinkService.toVO);
   }
 
-  async linkFamily(identity: IdentityPayload, patientId: string, data: { familyUserId: string, relationship: string }) {
+  async linkFamily(identity: IdentityPayload, patientId: string, data: { familyUserId: string, relationship: string }): Promise<PatientFamilyLinkVO> {
     const entity = this.repo.create({
       id: nextId(),
       tenantId: identity.tenantId,
@@ -31,6 +33,17 @@ export class PatientFamilyLinkService {
       relationship: data.relationship,
       createdAt: new Date(),
     });
-    return this.repo.save(entity);
+    const saved = await this.repo.save(entity);
+    return PatientFamilyLinkService.toVO(saved);
+  }
+
+  static toVO(entity: PatientFamilyLinkEntity): PatientFamilyLinkVO {
+    return {
+      id: entity.id,
+      patientId: entity.patientId,
+      familyUserId: entity.familyUserId,
+      relationship: entity.relationship,
+      createdAt: entity.createdAt,
+    };
   }
 }

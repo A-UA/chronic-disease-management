@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { HealthMetricEntity } from './health-metric.entity.js';
 import { IdentityPayload, nextId } from '@cdm/shared';
+import type { HealthMetricVO } from '@cdm/shared';
 
 @Injectable()
 export class HealthMetricService {
@@ -11,17 +12,18 @@ export class HealthMetricService {
     private readonly repo: Repository<HealthMetricEntity>,
   ) {}
 
-  async findAllForPatient(identity: IdentityPayload, patientId: string) {
-    return this.repo.find({
+  async findAllForPatient(identity: IdentityPayload, patientId: string): Promise<HealthMetricVO[]> {
+    const entities = await this.repo.find({
       where: {
         tenantId: identity.tenantId,
         orgId: In(identity.allowedOrgIds),
         patientId,
       },
     });
+    return entities.map(HealthMetricService.toVO);
   }
 
-  async create(identity: IdentityPayload, patientId: string, data: { metricType: string, metricValue: string }) {
+  async create(identity: IdentityPayload, patientId: string, data: { metricType: string, metricValue: string }): Promise<HealthMetricVO> {
     const entity = this.repo.create({
       id: nextId(),
       tenantId: identity.tenantId,
@@ -31,6 +33,17 @@ export class HealthMetricService {
       metricValue: data.metricValue,
       recordedAt: new Date(),
     });
-    return this.repo.save(entity);
+    const saved = await this.repo.save(entity);
+    return HealthMetricService.toVO(saved);
+  }
+
+  static toVO(entity: HealthMetricEntity): HealthMetricVO {
+    return {
+      id: entity.id,
+      patientId: entity.patientId,
+      metricType: entity.metricType,
+      metricValue: entity.metricValue,
+      recordedAt: entity.recordedAt,
+    };
   }
 }

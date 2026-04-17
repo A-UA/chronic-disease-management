@@ -11,7 +11,14 @@ import { RoleEntity } from '../rbac/role.entity.js';
 import { PermissionEntity } from '../rbac/permission.entity.js';
 import { JwtProvider } from './jwt.provider.js';
 import { MenuService } from '../menu/menu.service.js';
+import type { MenuNode } from '../menu/menu.service.js';
 import { IdentityPayload } from '@cdm/shared';
+import type {
+  LoginResultVO,
+  OrgTokenResultVO,
+  OrganizationSummaryVO,
+  CurrentUserVO,
+} from '@cdm/shared';
 
 @Injectable()
 export class AuthService {
@@ -32,7 +39,7 @@ export class AuthService {
     private readonly menuService: MenuService,
   ) {}
 
-  async login(username: string, password: string) {
+  async login(username: string, password: string): Promise<LoginResultVO> {
     const user = await this.userRepo.findOne({ where: { email: username } });
     if (!user || !(await this.verifyPassword(password, user.passwordHash))) {
       throw new RpcException({ statusCode: 422, message: 'Incorrect email or password' });
@@ -54,17 +61,18 @@ export class AuthService {
       const token = this.jwtProvider.createAccessToken(
         user.id, org.tenantId, org.id, allowedOrgIds, roleCodes,
       );
+      const orgSummary: OrganizationSummaryVO = { id: org.id, name: org.name, tenant_id: org.tenantId };
       return {
         access_token: token,
         token_type: 'bearer',
-        organization: { id: org.id, name: org.name, tenant_id: org.tenantId },
+        organization: orgSummary,
         require_org_selection: false,
       };
     }
 
     // 多部门
     const selectionToken = this.jwtProvider.createSelectionToken(user.id);
-    const orgList = await Promise.all(
+    const orgList: OrganizationSummaryVO[] = await Promise.all(
       orgUsers.map(async (ou) => {
         const org = await this.orgRepo.findOneBy({ id: ou.orgId });
         return { id: org.id, name: org.name, tenant_id: org.tenantId };
@@ -80,7 +88,7 @@ export class AuthService {
     };
   }
 
-  async selectOrg(orgId: string, selectionToken: string) {
+  async selectOrg(orgId: string, selectionToken: string): Promise<OrgTokenResultVO> {
     let tokenPayload: { sub: string; purpose: string };
     try {
       tokenPayload = this.jwtProvider.parseToken(selectionToken);
@@ -111,7 +119,7 @@ export class AuthService {
     };
   }
 
-  async switchOrg(identity: IdentityPayload, orgId: string) {
+  async switchOrg(identity: IdentityPayload, orgId: string): Promise<OrgTokenResultVO> {
     const ou = await this.orgUserRepo.findOne({
       where: { orgId, userId: identity.userId },
     });
@@ -133,7 +141,7 @@ export class AuthService {
     };
   }
 
-  async listMyOrgs(userId: string) {
+  async listMyOrgs(userId: string): Promise<OrganizationSummaryVO[]> {
     const orgUsers = await this.orgUserRepo.find({ where: { userId } });
     return Promise.all(
       orgUsers.map(async (ou) => {
@@ -143,7 +151,7 @@ export class AuthService {
     );
   }
 
-  async getMe(identity: IdentityPayload) {
+  async getMe(identity: IdentityPayload): Promise<CurrentUserVO> {
     const user = await this.userRepo.findOneBy({ id: identity.userId });
     const perms = await this.getEffectivePermissions(identity.orgId, identity.userId);
 
@@ -158,7 +166,7 @@ export class AuthService {
     };
   }
 
-  async getMenuTree(identity: IdentityPayload) {
+  async getMenuTree(identity: IdentityPayload): Promise<MenuNode[]> {
     const perms = await this.getEffectivePermissions(identity.orgId, identity.userId);
     return this.menuService.getMenuTree(identity.tenantId, perms);
   }

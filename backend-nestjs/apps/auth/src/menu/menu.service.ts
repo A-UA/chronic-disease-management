@@ -2,7 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull, Or, Equal } from 'typeorm';
 import { MenuEntity } from './menu.entity.js';
-import type { ListPayload, CreatePayload, CreateMenuData, UpdateMenuData } from '@cdm/shared';
+import type {
+  ListPayload,
+  CreatePayload,
+  CreateMenuData,
+  UpdateMenuData,
+  PaginatedResult,
+  MenuVO,
+  SuccessVO,
+} from '@cdm/shared';
 
 export interface MenuNode {
   id: string;
@@ -26,26 +34,28 @@ export class MenuService {
     private readonly menuRepo: Repository<MenuEntity>,
   ) {}
 
-  async list(payload: ListPayload) {
+  async list(payload: ListPayload): Promise<PaginatedResult<MenuVO>> {
     const skip = Number(payload.skip) || 0;
     const limit = Number(payload.limit) || 50;
-    const [items, total] = await this.menuRepo.findAndCount({ skip, take: limit });
-    return { items, total };
+    const [entities, total] = await this.menuRepo.findAndCount({ skip, take: limit });
+    return { items: entities.map(MenuService.toVO), total };
   }
 
-  async create(payload: CreatePayload<CreateMenuData>) {
+  async create(payload: CreatePayload<CreateMenuData>): Promise<MenuVO> {
     const entity = this.menuRepo.create({
       ...payload.data,
     });
-    return this.menuRepo.save(entity);
+    const saved = await this.menuRepo.save(entity);
+    return MenuService.toVO(saved);
   }
 
-  async update(id: string, data: UpdateMenuData) {
+  async update(id: string, data: UpdateMenuData): Promise<MenuVO | null> {
     await this.menuRepo.update(id, data);
-    return this.menuRepo.findOneBy({ id });
+    const updated = await this.menuRepo.findOneBy({ id });
+    return updated ? MenuService.toVO(updated) : null;
   }
 
-  async delete(id: string) {
+  async delete(id: string): Promise<SuccessVO> {
     await this.menuRepo.delete(id);
     return { success: true };
   }
@@ -64,6 +74,26 @@ export class MenuService {
     );
 
     return this.buildTree(visibleMenus);
+  }
+
+  static toVO(entity: MenuEntity): MenuVO {
+    return {
+      id: entity.id,
+      parentId: entity.parentId,
+      tenantId: entity.tenantId,
+      name: entity.name,
+      code: entity.code,
+      menuType: entity.menuType,
+      path: entity.path,
+      icon: entity.icon,
+      permissionCode: entity.permissionCode,
+      sort: entity.sort,
+      isVisible: entity.isVisible,
+      isEnabled: entity.isEnabled,
+      meta: entity.meta,
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
+    };
   }
 
   private buildTree(menus: MenuEntity[]): MenuNode[] {

@@ -3,7 +3,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { KnowledgeBaseEntity } from './entities/knowledge-base.entity.js';
 import { DocumentEntity } from './entities/document.entity.js';
-import type { CreateKbData, SyncDocumentPayload } from '@cdm/shared';
+import type {
+  CreateKbData,
+  SyncDocumentPayload,
+  KnowledgeBaseVO,
+  KnowledgeBaseStatsVO,
+  DocumentVO,
+  DocumentSyncResultVO,
+} from '@cdm/shared';
+import type { DeleteResult } from 'typeorm';
 
 @Injectable()
 export class KnowledgeService {
@@ -12,31 +20,34 @@ export class KnowledgeService {
     @InjectRepository(DocumentEntity) private docRepo: Repository<DocumentEntity>
   ) {}
 
-  findAllKb(tenantId: string) {
-    return this.kbRepo.find({ where: { tenantId } });
+  async findAllKb(tenantId: string): Promise<KnowledgeBaseVO[]> {
+    const entities = await this.kbRepo.find({ where: { tenantId } });
+    return entities.map(KnowledgeService.toKbVO);
   }
 
-  createKb(tenantId: string, orgId: string, createdBy: string, data: CreateKbData) {
+  async createKb(tenantId: string, orgId: string, createdBy: string, data: CreateKbData): Promise<KnowledgeBaseVO> {
     const kb = this.kbRepo.create({
       tenantId, orgId, createdBy, name: data.name, description: data.description
     });
-    return this.kbRepo.save(kb);
+    const saved = await this.kbRepo.save(kb);
+    return KnowledgeService.toKbVO(saved);
   }
 
-  async getKbStats(kbId: string) {
+  async getKbStats(kbId: string): Promise<KnowledgeBaseStatsVO> {
     const docs = await this.docRepo.count({ where: { kbId } });
     return { document_count: docs, chunk_count: 0, total_tokens: 0 };
   }
 
-  deleteKb(id: string) {
+  deleteKb(id: string): Promise<DeleteResult> {
     return this.kbRepo.delete(id);
   }
 
-  findDocsByKb(kbId: string) {
-    return this.docRepo.find({ where: { kbId } });
+  async findDocsByKb(kbId: string): Promise<DocumentVO[]> {
+    const entities = await this.docRepo.find({ where: { kbId } });
+    return entities.map(KnowledgeService.toDocVO);
   }
 
-  syncDocument(tenantId: string, orgId: string, uploaderId: string, payload: SyncDocumentPayload) {
+  async syncDocument(tenantId: string, orgId: string, uploaderId: string, payload: SyncDocumentPayload): Promise<DocumentSyncResultVO> {
     const doc = this.docRepo.create({
       tenantId, orgId, uploaderId,
       kbId: payload.kbId,
@@ -45,11 +56,37 @@ export class KnowledgeService {
       fileSize: payload.fileSize ?? 0,
       minioUrl: payload.minioUrl
     });
-    return this.docRepo.save(doc)
-      .then(saved => ({ ...saved, chunkCount: payload.chunkCount, status: payload.status }));
+    const saved = await this.docRepo.save(doc);
+    return {
+      ...KnowledgeService.toDocVO(saved),
+      chunkCount: payload.chunkCount,
+      status: payload.status,
+    };
   }
 
-  deleteDoc(id: string) {
+  deleteDoc(id: string): Promise<DeleteResult> {
     return this.docRepo.delete(id);
+  }
+
+  static toKbVO(entity: KnowledgeBaseEntity): KnowledgeBaseVO {
+    return {
+      id: entity.id,
+      tenantId: entity.tenantId,
+      orgId: entity.orgId,
+      createdBy: entity.createdBy,
+      name: entity.name,
+      description: entity.description,
+    };
+  }
+
+  static toDocVO(entity: DocumentEntity): DocumentVO {
+    return {
+      id: entity.id,
+      kbId: entity.kbId,
+      fileName: entity.fileName,
+      fileType: entity.fileType,
+      fileSize: entity.fileSize,
+      minioUrl: entity.minioUrl,
+    };
   }
 }
