@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module.js';
 
 async function bootstrap() {
@@ -8,6 +9,15 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
   app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
   
+  const config = new DocumentBuilder()
+    .setTitle('Chronic Disease Management API')
+    .setDescription('The multi-tenant AI SaaS API documentation')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document);
+
   const port = process.env.PORT || 8001;
   await app.listen(port);
   console.log(`Gateway listening on port ${port}`);

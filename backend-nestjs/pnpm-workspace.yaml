@@ -1,4 +1,4 @@
-packages:
+﻿packages:
   - 'apps/*'
   - 'libs/*'
 
@@ -43,3 +43,4 @@ catalog:
   'typescript': '^5.7.3'
   'typescript-eslint': '^8.20.0'
   'uuid': '^11.0.2'
+  '@nestjs/swagger': '^11.0.0'

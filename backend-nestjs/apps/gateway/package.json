@@ -16,6 +16,7 @@
     "@nestjs/jwt": "catalog:",
     "@nestjs/microservices": "catalog:",
     "@nestjs/platform-express": "catalog:",
+    "@nestjs/swagger": "catalog:",
     "axios": "catalog:",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",

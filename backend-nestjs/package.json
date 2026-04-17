@@ -13,14 +13,14 @@
     "test": "turbo run test"
   },
   "devDependencies": {
-    "turbo": "catalog:",
-    "prettier": "catalog:",
-    "eslint": "catalog:",
-    "typescript-eslint": "catalog:",
     "@eslint/js": "catalog:",
-    "eslint-plugin-prettier": "catalog:",
+    "eslint": "catalog:",
     "eslint-config-prettier": "catalog:",
+    "eslint-plugin-prettier": "catalog:",
     "globals": "catalog:",
-    "typescript": "catalog:"
+    "prettier": "catalog:",
+    "turbo": "catalog:",
+    "typescript": "catalog:",
+    "typescript-eslint": "catalog:"
   }
 }
