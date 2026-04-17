@@ -20,14 +20,14 @@ export class UserService {
     
     // Convert incoming password field to hashed passwordHash
     if (payload.password) {
-      (entity as any).passwordHash = bcrypt.hashSync(payload.password, 10);
+      (entity as any).passwordHash = await bcrypt.hash(payload.password, 10);
     }
     
     return this.repo.save(entity);
   }
   async update(id: string, data: any) {
     if (data.password) {
-      data.passwordHash = bcrypt.hashSync(data.password, 10);
+      data.passwordHash = await bcrypt.hash(data.password, 10);
       delete data.password;
     }
     await this.repo.update(id, data);

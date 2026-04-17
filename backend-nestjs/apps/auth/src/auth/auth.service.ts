@@ -34,7 +34,7 @@ export class AuthService {
 
   async login(username: string, password: string) {
     const user = await this.userRepo.findOne({ where: { email: username } });
-    if (!user || !this.verifyPassword(password, user.passwordHash)) {
+    if (!user || !(await this.verifyPassword(password, user.passwordHash))) {
       throw new RpcException({ statusCode: 422, message: 'Incorrect email or password' });
     }
 
@@ -180,10 +180,11 @@ export class AuthService {
     return Array.from(result);
   }
 
-  private verifyPassword(raw: string, hash: string): boolean {
+  private async verifyPassword(raw: string, hash: string): Promise<boolean> {
+    if (!raw) return false;
     if (!hash) return false;
     if (hash.startsWith('$argon2')) return false; // Argon2 暂不支持
-    return bcrypt.compareSync(raw, hash);
+    return bcrypt.compare(raw, hash);
   }
 
   private async getRoleCodes(orgId: string, userId: string): Promise<string[]> {
