@@ -1,3 +1,4 @@
+import { nextId } from '@cdm/shared';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -14,6 +15,7 @@ export class RoleService {
   }
   async create(payload: any) {
     const entity = this.repo.create(payload as any);
+    if (!(entity as any).id) { (entity as any).id = String(nextId()); }
     return this.repo.save(entity);
   }
   async update(id: string, data: any) {

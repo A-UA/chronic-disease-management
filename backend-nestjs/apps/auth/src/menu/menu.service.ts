@@ -1,3 +1,4 @@
+import { nextId } from '@cdm/shared';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull, Or, Equal } from 'typeorm';
