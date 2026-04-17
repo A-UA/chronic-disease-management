@@ -1,5 +1,3 @@
 packages:
-  - 'gateway'
-  - 'auth-service'
-  - 'shared'
-  - 'patient-service'
+  - 'apps/*'
+  - 'libs/*'

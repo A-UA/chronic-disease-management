@@ -2,9 +2,22 @@
   "name": "cdm-backend-nestjs",
   "private": true,
   "scripts": {
-    "dev:gateway": "pnpm --filter gateway run start:dev",
-    "dev:auth": "pnpm --filter auth-service run start:dev",
-    "dev:patient": "pnpm --filter patient-service run start:dev",
-    "build:all": "pnpm -r run build"
+    "dev:gateway": "turbo run dev --filter=@cdm/gateway",
+    "dev:auth": "turbo run dev --filter=@cdm/auth",
+    "dev:patient": "turbo run dev --filter=@cdm/patient",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0",
+    "prettier": "^3.4.0",
+    "eslint": "^9.18.0",
+    "typescript-eslint": "^8.20.0",
+    "@eslint/js": "^9.18.0",
+    "eslint-plugin-prettier": "^5.2.0",
+    "eslint-config-prettier": "^10.0.0",
+    "globals": "^17.0.0",
+    "typescript": "^5.7.3"
   }
 }
