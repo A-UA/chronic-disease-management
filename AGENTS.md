@@ -73,7 +73,8 @@ chronic-disease-management/
 ├── frontend/                      # React 管理后台
 │   ├── apps/website/src/          
 │   └── vite.config.ts             
-├── database/                      # DB 相关脚本或图例 (PostgreSQL)
+├── database/                      # 数据库 SQL 脚本 (PostgreSQL)
+│   └── init.sql                   # 建表 + 索引 + 种子数据（手动执行）
 └── AGENTS.md                      # 本说明文档
 ```
 
@@ -104,7 +105,13 @@ docker-compose up -d
 # 服务：PostgreSQL (关系业务与鉴权数据库), Redis, Milvus (向量存储), MinIO (对象存储)
 ```
 
-### 5.2 启动 Agent (Python 3.12)
+### 5.2 初始化数据库
+DDL 由 `database/init.sql` 手动管理，后端服务均禁用了自动建表。首次部署或重建数据库时执行：
+```powershell
+psql -h localhost -U postgres -d <数据库名> -f database/init.sql
+```
+
+### 5.3 启动 Agent (Python 3.12)
 推荐使用官方 `uv` 运行。
 ```powershell
 cd agent
@@ -115,11 +122,11 @@ uv run uvicorn app.main:app --reload --port 8000
 ```
 > 测试运行：`uv run pytest`
 
-### 5.3 启动后端业务服务
-- **Java**：使用 Maven 或 IDEA 打开 `backend-java` 并按序启动 Gateway、Auth 服务。
-- **NestJS**：在 `backend-nestjs` 运行 `pnpm install`，使用 `pnpm run start:dev` 或类似命令以 Watch 模式启动对应微服务。（TCP 微服务需先于网关启动）
+### 5.4 启动后端业务服务
+- **Java**：使用 Maven 或 IDEA 打开 `backend-java` 并按序启动 Gateway、Auth 服务。（`ddl-auto: none`，必须先执行 5.2）
+- **NestJS**：在 `backend-nestjs` 运行 `pnpm install`，使用 `pnpm run start:dev` 或类似命令以 Watch 模式启动对应微服务。（`synchronize: false`，必须先执行 5.2；TCP 微服务需先于网关启动）
 
-### 5.4 启动前端后台
+### 5.5 启动前端后台
 ```powershell
 cd frontend
 vp install 
@@ -128,6 +135,7 @@ vp dev
 
 ## 6. 代码提交检查标准
 
+* **数据库变更**：任何表结构修改必须同步更新 `database/init.sql`，禁止依赖 ORM 自动同步。NestJS `synchronize` 和 Java `ddl-auto` 均已锁定为关闭状态。
 * 开发 Agent 时，由于 PowerShell 终端特性，多行指令拼接务必使用 `;` 而非 `&&`。stderr 中捕获的 `INFO` 不等于报错。
 * 后端微服务的拓展需遵守严苛的服务解耦，`auth-service` 和 `patient-service` 之间不允许反向外键，所有联合视图必须经由 API/网关重组，跨域验证需携带隔离 ID (org_id 等等)。 
 * 前端 Tailwind V4 直接将 tokens 写进 `global.css` 的 `@theme` 闭包内，绝对不允许编写 `tailwind.config.js` 的复古模式。

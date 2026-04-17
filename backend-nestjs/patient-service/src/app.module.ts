@@ -19,7 +19,7 @@ import { KnowledgeModule } from './knowledge/knowledge.module';
       password: process.env.DB_PASSWORD || 'postgres',
       database: process.env.DB_NAME || 'postgres',
       autoLoadEntities: true,
-      synchronize: true,
+      synchronize: false,
     }),
     PatientModule,
     HealthMetricModule,

@@ -30,7 +30,7 @@ const entities = [
       password: process.env.DB_PASS || 'postgres',
       database: process.env.DB_NAME || 'postgres',
       entities,
-      synchronize: true, // DDL 由 Alembic 管理
+      synchronize: false,
     }),
     TypeOrmModule.forFeature(entities),
     JwtModule.register({
