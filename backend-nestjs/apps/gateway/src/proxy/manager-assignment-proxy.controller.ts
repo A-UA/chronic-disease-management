@@ -4,7 +4,7 @@ import { PATIENT_SERVICE, IdentityPayload } from '@cdm/shared';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard.js';
 import { CurrentUser } from '../decorators/current-user.decorator.js';
 
-@Controller('api/v1/manager-assignments')
+@Controller('manager-assignments')
 @UseGuards(JwtAuthGuard)
 export class ManagerAssignmentProxyController {
   constructor(

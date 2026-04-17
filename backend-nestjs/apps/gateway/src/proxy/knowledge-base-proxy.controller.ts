@@ -7,7 +7,7 @@ import {
 import { JwtAuthGuard } from '../guards/jwt-auth.guard.js';
 import { CurrentUser } from '../decorators/current-user.decorator.js';
 
-@Controller('api/v1/kb')
+@Controller('kb')
 @UseGuards(JwtAuthGuard)
 export class KnowledgeBaseProxyController {
   constructor(@Inject(PATIENT_SERVICE) private readonly patientClient: ClientProxy) {}

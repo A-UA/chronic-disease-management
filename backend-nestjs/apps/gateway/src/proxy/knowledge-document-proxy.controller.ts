@@ -11,7 +11,7 @@ import { MinioProxyService } from './services/minio-proxy.service.js';
 import { AgentProxyService } from './services/agent-proxy.service.js';
 import { lastValueFrom } from 'rxjs';
 
-@Controller('api/v1/documents')
+@Controller('documents')
 @UseGuards(JwtAuthGuard)
 export class KnowledgeDocumentProxyController {
   constructor(

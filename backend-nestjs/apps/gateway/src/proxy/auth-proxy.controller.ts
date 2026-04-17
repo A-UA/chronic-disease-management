@@ -14,7 +14,7 @@ import { CurrentUser } from '../decorators/current-user.decorator.js';
 
 import { LoginBody, SelectOrgBody, SwitchOrgBody } from './dto/auth.dto.js';
 
-@Controller('api/v1/auth')
+@Controller('auth')
 export class AuthProxyController {
   constructor(
     @Inject(AUTH_SERVICE) private readonly authClient: ClientProxy,

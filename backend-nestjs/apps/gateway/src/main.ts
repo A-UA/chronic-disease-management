@@ -8,7 +8,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
   app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
   
-  const port = process.env.PORT || 3000;
+  const port = process.env.PORT || 8001;
   await app.listen(port);
   console.log(`Gateway listening on port ${port}`);
 }
