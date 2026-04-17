@@ -8,18 +8,18 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "@sapphire/snowflake": "^3.5.5"
+    "@sapphire/snowflake": "catalog:"
   },
   "peerDependencies": {
-    "@nestjs/common": "^11.0.1",
-    "@nestjs/config": "^4.0.0",
-    "rxjs": "^7.8.1"
+    "@nestjs/common": "catalog:",
+    "@nestjs/config": "catalog:",
+    "rxjs": "catalog:"
   },
   "devDependencies": {
-    "typescript": "^5.7.3",
-    "@nestjs/common": "^11.0.1",
-    "@nestjs/config": "^4.0.0",
-    "rxjs": "^7.8.1",
-    "@types/node": "^22.0.0"
+    "typescript": "catalog:",
+    "@nestjs/common": "catalog:",
+    "@nestjs/config": "catalog:",
+    "rxjs": "catalog:",
+    "@types/node": "catalog:"
   }
 }

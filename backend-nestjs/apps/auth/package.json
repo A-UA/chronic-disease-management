@@ -9,25 +9,25 @@
   },
   "dependencies": {
     "@cdm/shared": "workspace:*",
-    "@nestjs/common": "^11.0.1",
-    "@nestjs/core": "^11.0.1",
-    "@nestjs/config": "^4.0.0",
-    "@nestjs/jwt": "^11.0.0",
-    "@nestjs/microservices": "^11.0.1",
-    "@nestjs/typeorm": "^11.0.0",
-    "bcryptjs": "^3.0.3",
-    "class-transformer": "^0.5.1",
-    "class-validator": "^0.14.0",
-    "pg": "^8.13.0",
-    "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1",
-    "typeorm": "^0.3.20"
+    "@nestjs/common": "catalog:",
+    "@nestjs/core": "catalog:",
+    "@nestjs/config": "catalog:",
+    "@nestjs/jwt": "catalog:",
+    "@nestjs/microservices": "catalog:",
+    "@nestjs/typeorm": "catalog:",
+    "bcryptjs": "catalog:",
+    "class-transformer": "catalog:",
+    "class-validator": "catalog:",
+    "pg": "catalog:",
+    "reflect-metadata": "catalog:",
+    "rxjs": "catalog:",
+    "typeorm": "catalog:"
   },
   "devDependencies": {
-    "@nestjs/cli": "^11.0.0",
-    "@nestjs/schematics": "^11.0.0",
-    "@types/bcryptjs": "^3.0.0",
-    "@types/node": "^22.0.0",
-    "typescript": "^5.7.3"
+    "@nestjs/cli": "catalog:",
+    "@nestjs/schematics": "catalog:",
+    "@types/bcryptjs": "catalog:",
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
   }
 }
