@@ -3,19 +3,19 @@ import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 @Entity('documents')
 export class DocumentEntity {
   @PrimaryGeneratedColumn({ type: 'bigint' })
-  id: number;
+  id: string;
 
   @Column({ name: 'tenant_id', type: 'bigint' })
-  tenantId: number;
+  tenantId: string;
 
   @Column({ name: 'kb_id', type: 'bigint' })
-  kbId: number;
+  kbId: string;
 
   @Column({ name: 'org_id', type: 'bigint' })
-  orgId: number;
+  orgId: string;
 
   @Column({ name: 'uploader_id', type: 'bigint' })
-  uploaderId: number;
+  uploaderId: string;
 
   @Column({ name: 'file_name' })
   fileName: string;

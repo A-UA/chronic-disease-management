@@ -3,19 +3,19 @@ import { Entity, Column, PrimaryColumn } from 'typeorm';
 @Entity('management_suggestions')
 export class ManagementSuggestionEntity {
   @PrimaryColumn({ type: 'bigint' })
-  id: number;
+  id: string;
 
   @Column({ name: 'tenant_id', type: 'bigint' })
-  tenantId: number;
+  tenantId: string;
 
   @Column({ name: 'org_id', type: 'bigint' })
-  orgId: number;
+  orgId: string;
 
   @Column({ name: 'patient_id', type: 'bigint' })
-  patientId: number;
+  patientId: string;
 
   @Column({ name: 'created_by_user_id', type: 'bigint' })
-  createdByUserId: number;
+  createdByUserId: string;
 
   @Column({ name: 'suggestion_type' })
   suggestionType: string;

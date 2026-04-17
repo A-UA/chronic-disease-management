@@ -3,16 +3,16 @@ import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 @Entity('knowledge_bases')
 export class KnowledgeBaseEntity {
   @PrimaryGeneratedColumn({ type: 'bigint' })
-  id: number;
+  id: string;
 
   @Column({ name: 'tenant_id', type: 'bigint' })
-  tenantId: number;
+  tenantId: string;
 
   @Column({ name: 'org_id', type: 'bigint' })
-  orgId: number;
+  orgId: string;
 
   @Column({ name: 'created_by', type: 'bigint' })
-  createdBy: number;
+  createdBy: string;
 
   @Column()
   name: string;

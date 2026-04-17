@@ -3,7 +3,7 @@ import { Entity, Column, PrimaryColumn } from 'typeorm';
 @Entity('permissions')
 export class PermissionEntity {
   @PrimaryColumn({ type: 'bigint' })
-  id: number;
+  id: string;
 
   @Column({ length: 100 })
   name: string;
@@ -12,8 +12,8 @@ export class PermissionEntity {
   code: string;
 
   @Column({ name: 'resource_id', type: 'bigint' })
-  resourceId: number;
+  resourceId: string;
 
   @Column({ name: 'action_id', type: 'bigint' })
-  actionId: number;
+  actionId: string;
 }

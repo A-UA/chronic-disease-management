@@ -3,7 +3,7 @@ import { Entity, Column, PrimaryColumn, CreateDateColumn } from 'typeorm';
 @Entity('tenants')
 export class TenantEntity {
   @PrimaryColumn({ type: 'bigint' })
-  id: number;
+  id: string;
 
   @Column({ length: 255 })
   name: string;

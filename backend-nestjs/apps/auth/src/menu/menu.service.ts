@@ -4,7 +4,7 @@ import { Repository, IsNull, Or, Equal } from 'typeorm';
 import { MenuEntity } from './menu.entity.js';
 
 export interface MenuNode {
-  id: number;
+  id: string;
   name: string;
   code: string;
   menu_type: string;
@@ -25,7 +25,7 @@ export class MenuService {
     private readonly menuRepo: Repository<MenuEntity>,
   ) {}
 
-  async getMenuTree(tenantId: number, permCodes: Set<string>): Promise<MenuNode[]> {
+  async getMenuTree(tenantId: string, permCodes: Set<string>): Promise<MenuNode[]> {
     const allMenus = await this.menuRepo.find({
       where: {
         isEnabled: true,
@@ -42,7 +42,7 @@ export class MenuService {
   }
 
   private buildTree(menus: MenuEntity[]): MenuNode[] {
-    const menuMap = new Map<number, MenuNode>();
+    const menuMap = new Map<string, MenuNode>();
     for (const m of menus) {
       menuMap.set(m.id, {
         id: m.id,

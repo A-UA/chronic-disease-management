@@ -13,12 +13,12 @@ export class AuthController {
   }
 
   @MessagePattern({ cmd: 'select_org' })
-  async selectOrg(@Payload() data: { orgId: number; selectionToken: string }) {
+  async selectOrg(@Payload() data: { orgId: string; selectionToken: string }) {
     return this.authService.selectOrg(data.orgId, data.selectionToken);
   }
 
   @MessagePattern({ cmd: 'switch_org' })
-  async switchOrg(@Payload() data: { identity: IdentityPayload; orgId: number }) {
+  async switchOrg(@Payload() data: { identity: IdentityPayload; orgId: string }) {
     return this.authService.switchOrg(data.identity, data.orgId);
   }
 

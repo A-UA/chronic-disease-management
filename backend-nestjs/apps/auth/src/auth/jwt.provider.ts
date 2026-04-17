@@ -6,10 +6,10 @@ export class JwtProvider {
   constructor(private readonly jwtService: JwtService) {}
 
   createAccessToken(
-    userId: number,
-    tenantId: number,
-    orgId: number,
-    allowedOrgIds: number[],
+    userId: string,
+    tenantId: string,
+    orgId: string,
+    allowedOrgIds: string[],
     roles: string[],
   ): string {
     return this.jwtService.sign({
@@ -21,7 +21,7 @@ export class JwtProvider {
     });
   }
 
-  createSelectionToken(userId: number): string {
+  createSelectionToken(userId: string): string {
     return this.jwtService.sign(
       { sub: String(userId), purpose: 'org_selection' },
       { expiresIn: '5m' },

@@ -7,13 +7,13 @@ import { PermissionEntity } from './permission.entity.js';
 @Entity('roles')
 export class RoleEntity {
   @PrimaryColumn({ type: 'bigint' })
-  id: number;
+  id: string;
 
   @Column({ name: 'tenant_id', type: 'bigint', nullable: true })
-  tenantId: number | null;
+  tenantId: string | null;
 
   @Column({ name: 'parent_role_id', type: 'bigint', nullable: true })
-  parentRoleId: number | null;
+  parentRoleId: string | null;
 
   @Column({ length: 100 })
   name: string;

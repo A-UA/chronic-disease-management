@@ -80,7 +80,7 @@ export class AuthService {
     };
   }
 
-  async selectOrg(orgId: number, selectionToken: string) {
+  async selectOrg(orgId: string, selectionToken: string) {
     let payload: any;
     try {
       payload = this.jwtProvider.parseToken(selectionToken);
@@ -91,7 +91,7 @@ export class AuthService {
       throw new RpcException({ statusCode: 422, message: 'Invalid or expired selection token' });
     }
 
-    const userId = Number(payload.sub);
+    const userId = String(payload.sub);
     const ou = await this.orgUserRepo.findOne({ where: { orgId, userId } });
     if (!ou) {
       throw new RpcException({ statusCode: 403, message: 'User is not a member of this organization' });
@@ -111,7 +111,7 @@ export class AuthService {
     };
   }
 
-  async switchOrg(identity: IdentityPayload, orgId: number) {
+  async switchOrg(identity: IdentityPayload, orgId: string) {
     const ou = await this.orgUserRepo.findOne({
       where: { orgId, userId: identity.userId },
     });
@@ -133,7 +133,7 @@ export class AuthService {
     };
   }
 
-  async listMyOrgs(userId: number) {
+  async listMyOrgs(userId: string) {
     const orgUsers = await this.orgUserRepo.find({ where: { userId } });
     return Promise.all(
       orgUsers.map(async (ou) => {
@@ -165,9 +165,9 @@ export class AuthService {
 
   // ── 私有方法 ──
 
-  private async getDescendingOrgIds(rootOrgId: number): Promise<number[]> {
+  private async getDescendingOrgIds(rootOrgId: string): Promise<string[]> {
     const queue = [rootOrgId];
-    const result = new Set<number>();
+    const result = new Set<string>();
     
     while (queue.length > 0) {
       const current = queue.shift();
@@ -186,7 +186,7 @@ export class AuthService {
     return bcrypt.compareSync(raw, hash);
   }
 
-  private async getRoleCodes(orgId: number, userId: number): Promise<string[]> {
+  private async getRoleCodes(orgId: string, userId: string): Promise<string[]> {
     const ourList = await this.orgUserRoleRepo.find({ where: { orgId, userId } });
     const codes: string[] = [];
     for (const our of ourList) {
@@ -196,7 +196,7 @@ export class AuthService {
     return codes;
   }
 
-  private async getEffectivePermissions(orgId: number, userId: number): Promise<Set<string>> {
+  private async getEffectivePermissions(orgId: string, userId: string): Promise<Set<string>> {
     const ourList = await this.orgUserRoleRepo.find({ where: { orgId, userId } });
     const roleIds = ourList.map((our) => our.roleId);
 

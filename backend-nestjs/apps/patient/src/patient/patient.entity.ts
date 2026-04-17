@@ -3,13 +3,13 @@ import { Entity, Column, PrimaryColumn } from 'typeorm';
 @Entity('patient_profiles')
 export class PatientEntity {
   @PrimaryColumn({ type: 'bigint' })
-  id: number;
+  id: string;
 
   @Column({ name: 'tenant_id', type: 'bigint' })
-  tenantId: number;
+  tenantId: string;
 
   @Column({ name: 'org_id', type: 'bigint' })
-  orgId: number;
+  orgId: string;
 
   @Column()
   name: string;

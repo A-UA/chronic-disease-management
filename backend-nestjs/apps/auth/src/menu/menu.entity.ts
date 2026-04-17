@@ -3,13 +3,13 @@ import { Entity, Column, PrimaryColumn, CreateDateColumn, UpdateDateColumn } fro
 @Entity('menus')
 export class MenuEntity {
   @PrimaryColumn({ type: 'bigint' })
-  id: number;
+  id: string;
 
   @Column({ name: 'parent_id', type: 'bigint', nullable: true })
-  parentId: number | null;
+  parentId: string | null;
 
   @Column({ name: 'tenant_id', type: 'bigint', nullable: true })
-  tenantId: number | null;
+  tenantId: string | null;
 
   @Column({ length: 100 })
   name: string;

@@ -1,7 +1,7 @@
 export interface IdentityPayload {
-  userId: number;
-  tenantId: number;
-  orgId: number;
-  allowedOrgIds: number[];
+  userId: string;
+  tenantId: string;
+  orgId: string;
+  allowedOrgIds: string[];
   roles: string[];
 }

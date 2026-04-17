@@ -23,10 +23,10 @@ export class JwtAuthGuard implements CanActivate {
       const payload = this.jwtService.verify(token);
       // 将身份信息注入 request 对象
       (request as any).identity = {
-        userId: Number(payload.sub),
-        tenantId: Number(payload.tenant_id),
-        orgId: Number(payload.org_id),
-        allowedOrgIds: payload.allowed_org_ids || (payload.org_id ? [Number(payload.org_id)] : []),
+        userId: String(payload.sub),
+        tenantId: String(payload.tenant_id),
+        orgId: String(payload.org_id),
+        allowedOrgIds: payload.allowed_org_ids || (payload.org_id ? [String(payload.org_id)] : []),
         roles: payload.roles || [],
       };
       return true;

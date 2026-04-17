@@ -3,16 +3,16 @@ import { Entity, Column, PrimaryColumn } from 'typeorm';
 @Entity('health_metrics')
 export class HealthMetricEntity {
   @PrimaryColumn({ type: 'bigint' })
-  id: number;
+  id: string;
 
   @Column({ name: 'tenant_id', type: 'bigint' })
-  tenantId: number;
+  tenantId: string;
 
   @Column({ name: 'org_id', type: 'bigint' })
-  orgId: number;
+  orgId: string;
 
   @Column({ name: 'patient_id', type: 'bigint' })
-  patientId: number;
+  patientId: string;
 
   @Column({ name: 'metric_type' })
   metricType: string;

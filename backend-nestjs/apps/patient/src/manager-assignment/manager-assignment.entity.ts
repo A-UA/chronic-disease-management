@@ -3,19 +3,19 @@ import { Entity, Column, PrimaryColumn } from 'typeorm';
 @Entity('patient_manager_assignments')
 export class ManagerAssignmentEntity {
   @PrimaryColumn({ type: 'bigint' })
-  id: number;
+  id: string;
 
   @Column({ name: 'tenant_id', type: 'bigint' })
-  tenantId: number;
+  tenantId: string;
 
   @Column({ name: 'org_id', type: 'bigint' })
-  orgId: number;
+  orgId: string;
 
   @Column({ name: 'patient_id', type: 'bigint' })
-  patientId: number;
+  patientId: string;
 
   @Column({ name: 'manager_user_id', type: 'bigint' })
-  managerUserId: number;
+  managerUserId: string;
 
   @Column({ name: 'assignment_type' })
   assignmentType: string;

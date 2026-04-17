@@ -11,9 +11,9 @@ export class LoginBody {
 }
 
 export class SelectOrgBody {
-  @IsNumber()
+  @IsString()
   @IsNotEmpty()
-  orgId!: number;
+  orgId!: string;
 
   @IsString()
   @IsNotEmpty()
@@ -21,7 +21,7 @@ export class SelectOrgBody {
 }
 
 export class SwitchOrgBody {
-  @IsNumber()
+  @IsString()
   @IsNotEmpty()
-  orgId!: number;
+  orgId!: string;
 }

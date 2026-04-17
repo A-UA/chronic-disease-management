@@ -3,13 +3,13 @@ import { Entity, Column, PrimaryColumn, CreateDateColumn, UpdateDateColumn } fro
 @Entity('organizations')
 export class OrganizationEntity {
   @PrimaryColumn({ type: 'bigint' })
-  id: number;
+  id: string;
 
   @Column({ name: 'tenant_id', type: 'bigint' })
-  tenantId: number;
+  tenantId: string;
 
   @Column({ name: 'parent_id', type: 'bigint', nullable: true })
-  parentId: number | null;
+  parentId: string | null;
 
   @Column({ length: 255 })
   name: string;
