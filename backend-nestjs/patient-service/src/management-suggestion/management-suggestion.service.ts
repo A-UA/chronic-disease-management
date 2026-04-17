@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { ManagementSuggestionEntity } from './management-suggestion.entity';
-import type { IdentityPayload } from '@cdm/shared';
+import { IdentityPayload, nextId } from '@cdm/shared';
 
 @Injectable()
 export class ManagementSuggestionService {
@@ -23,7 +23,7 @@ export class ManagementSuggestionService {
 
   async createSuggestion(identity: IdentityPayload, patientId: number, data: { suggestionType: string, content: string }) {
     const entity = this.repo.create({
-      id: Date.now(), // Generate properly in prod (e.g. snowflake logic mapped later)
+      id: nextId(),
       tenantId: identity.tenantId,
       orgId: identity.orgId,
       patientId,

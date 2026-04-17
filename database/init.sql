@@ -274,39 +274,39 @@ CREATE INDEX IF NOT EXISTS idx_documents_tenant_kb ON documents (tenant_id, kb_i
 -- 项目使用雪花算法，参数：EPOCH=1704067200000(2024-01-01), workerBits=10, seqBits=12, workerId=1
 -- 公式: ((timestamp - EPOCH) << 22) | (workerId << 12) | sequence
 -- 种子 ID 使用固定时间戳 diff=60000ms (纪元后1分钟) 生成，位于时间线极早期，不会与业务数据冲突
--- 基础实体 base = (60000 << 22) | (1 << 12) = 251658244096
--- 菜单实体 base = (60001 << 22) | (1 << 12) = 251662438400
+-- 基础实体 base = (60000 << 22) | (1 << 12) = 2045078279118917632
+-- 菜单实体 base = (60001 << 22) | (1 << 12) = 2045078279118917636
 
 -- 默认租户 (seq=0)
-INSERT INTO tenants (id, name, slug, plan_type) VALUES (251658244096, '默认租户', 'default', 'free') ON CONFLICT DO NOTHING;
+INSERT INTO tenants (id, name, slug, plan_type) VALUES (2045078279118917632, '默认租户', 'default', 'free') ON CONFLICT DO NOTHING;
 
 -- 总部医院组织 (seq=1)
-INSERT INTO organizations (id, tenant_id, name, code, status) VALUES (251658244097, 251658244096, '总部医院', 'hq', 'active') ON CONFLICT DO NOTHING;
+INSERT INTO organizations (id, tenant_id, name, code, status) VALUES (2045078279118917633, 2045078279118917632, '总部医院', 'hq', 'active') ON CONFLICT DO NOTHING;
 
 -- 系统管理员（密码: admin123）(seq=2)
-INSERT INTO users (id, email, password_hash, name) VALUES (251658244098, 'admin@cdm.com', '$2b$10$6maP.G1efHQ2Fy.UpOSHFugvFzPm4YDnMk58wNyqKsYTFaj8itB8C', '系统管理员') ON CONFLICT DO NOTHING;
+INSERT INTO users (id, email, password_hash, name) VALUES (2045078279118917634, 'admin@cdm.com', '$2b$10$6maP.G1efHQ2Fy.UpOSHFugvFzPm4YDnMk58wNyqKsYTFaj8itB8C', '系统管理员') ON CONFLICT DO NOTHING;
 
 -- 超管角色 (seq=3)
-INSERT INTO roles (id, tenant_id, name, code, is_system) VALUES (251658244099, 251658244096, '超管', 'sysadmin', true) ON CONFLICT DO NOTHING;
+INSERT INTO roles (id, tenant_id, name, code, is_system) VALUES (2045078279118917635, 2045078279118917632, '超管', 'sysadmin', true) ON CONFLICT DO NOTHING;
 
 -- 关联：管理员加入组织
-INSERT INTO organization_users (org_id, user_id, tenant_id, user_type) VALUES (251658244097, 251658244098, 251658244096, 'staff') ON CONFLICT DO NOTHING;
+INSERT INTO organization_users (org_id, user_id, tenant_id, user_type) VALUES (2045078279118917633, 2045078279118917634, 2045078279118917632, 'staff') ON CONFLICT DO NOTHING;
 
 -- 关联：管理员分配超管角色
-INSERT INTO organization_user_roles (org_id, user_id, role_id, tenant_id) VALUES (251658244097, 251658244098, 251658244099, 251658244096) ON CONFLICT DO NOTHING;
+INSERT INTO organization_user_roles (org_id, user_id, role_id, tenant_id) VALUES (2045078279118917633, 2045078279118917634, 2045078279118917635, 2045078279118917632) ON CONFLICT DO NOTHING;
 
--- 菜单数据 (使用 diff=60001ms 的雪花 ID，base=251662438400)
+-- 菜单数据 (使用 diff=60001ms 的雪花 ID，base=2045078279118917636)
 INSERT INTO menus (id, parent_id, tenant_id, name, code, menu_type, path, icon, sort, is_visible, is_enabled) VALUES
-(251662438400, NULL,          NULL, '患者管理',       'patient-list',   'page',      '/patients',             'UserOutlined',              10, true, true),
-(251662438401, NULL,          NULL, '知识摘要与文档', 'knowledge',       'directory', '/knowledge',            'BookOutlined',              20, true, true),
-(251662438402, 251662438401,  NULL, '知识库管理',     'kb-list',         'page',      '/knowledge/list',       'AppstoreAddOutlined',       1,  true, true),
-(251662438403, 251662438401,  NULL, '知识文档',       'kb-documents',    'page',      '/knowledge/documents',  'FileTextOutlined',          2,  true, true),
-(251662438404, NULL,          NULL, '智能问诊 Agent', 'ai-chat',         'page',      '/chat',                 'MessageOutlined',           30, true, true),
-(251662438405, NULL,          NULL, '系统管理',       'system',          'directory', '/system',               'SettingOutlined',           90, true, true),
-(251662438406, 251662438405,  NULL, '用户管理',       'sys-users',       'page',      '/system/users',         'TeamOutlined',              1,  true, true),
-(251662438407, 251662438405,  NULL, '租户管理',       'sys-tenants',     'page',      '/system/tenants',       'BankOutlined',              2,  true, true),
-(251662438408, 251662438405,  NULL, '组织机构',       'sys-orgs',        'page',      '/system/orgs',          'ApartmentOutlined',         3,  true, true),
-(251662438409, 251662438405,  NULL, '角色管理',       'sys-roles',       'page',      '/system/roles',         'SafetyCertificateOutlined', 4,  true, true),
-(251662438410, 251662438405,  NULL, '菜单管理',       'sys-menus',       'page',      '/system/menus',         'MenuOutlined',              5,  true, true),
-(251662438411, 251662438405,  NULL, '审计日志',       'sys-audit',       'page',      '/system/audit',         'AuditOutlined',             6,  true, true)
+(2045078279118917636, NULL,          NULL, '患者管理',       'patient-list',   'page',      '/patients',             'UserOutlined',              10, true, true),
+(2045078279118917637, NULL,          NULL, '知识摘要与文档', 'knowledge',       'directory', '/knowledge',            'BookOutlined',              20, true, true),
+(2045078279118917638, 2045078279118917637,  NULL, '知识库管理',     'kb-list',         'page',      '/knowledge/list',       'AppstoreAddOutlined',       1,  true, true),
+(2045078279118917639, 2045078279118917637,  NULL, '知识文档',       'kb-documents',    'page',      '/knowledge/documents',  'FileTextOutlined',          2,  true, true),
+(2045078279118917640, NULL,          NULL, '智能问诊 Agent', 'ai-chat',         'page',      '/chat',                 'MessageOutlined',           30, true, true),
+(2045078279118917641, NULL,          NULL, '系统管理',       'system',          'directory', '/system',               'SettingOutlined',           90, true, true),
+(2045078279118917642, 2045078279118917641,  NULL, '用户管理',       'sys-users',       'page',      '/system/users',         'TeamOutlined',              1,  true, true),
+(2045078279118917643, 2045078279118917641,  NULL, '租户管理',       'sys-tenants',     'page',      '/system/tenants',       'BankOutlined',              2,  true, true),
+(2045078279118917644, 2045078279118917641,  NULL, '组织机构',       'sys-orgs',        'page',      '/system/orgs',          'ApartmentOutlined',         3,  true, true),
+(2045078279118917645, 2045078279118917641,  NULL, '角色管理',       'sys-roles',       'page',      '/system/roles',         'SafetyCertificateOutlined', 4,  true, true),
+(2045078279118917646, 2045078279118917641,  NULL, '菜单管理',       'sys-menus',       'page',      '/system/menus',         'MenuOutlined',              5,  true, true),
+(2045078279118917647, 2045078279118917641,  NULL, '审计日志',       'sys-audit',       'page',      '/system/audit',         'AuditOutlined',             6,  true, true)
 ON CONFLICT DO NOTHING;

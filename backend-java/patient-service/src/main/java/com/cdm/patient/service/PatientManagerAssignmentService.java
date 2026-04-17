@@ -22,7 +22,7 @@ public class PatientManagerAssignmentService {
 
     public PatientManagerAssignmentEntity assignManager(IdentityPayload identity, Long patientId, Long managerUserId, String assignmentType) {
         PatientManagerAssignmentEntity entity = new PatientManagerAssignmentEntity();
-        entity.setId(System.currentTimeMillis());
+        entity.setId(com.cdm.common.util.SnowflakeIdGenerator.nextId());
         entity.setTenantId(identity.getTenantId());
         entity.setOrgId(identity.getOrgId());
         entity.setPatientId(patientId);

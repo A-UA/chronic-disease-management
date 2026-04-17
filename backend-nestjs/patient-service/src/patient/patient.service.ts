@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { PatientEntity } from './patient.entity';
-import { IdentityPayload } from '@cdm/shared';
+import { IdentityPayload, nextId } from '@cdm/shared';
 
 @Injectable()
 export class PatientService {
@@ -22,7 +22,7 @@ export class PatientService {
 
   async createPatient(identity: IdentityPayload, data: { name: string; gender: string }) {
     const entity = this.repo.create({
-      id: Date.now(), // Generate properly in prod
+      id: nextId(),
       tenantId: identity.tenantId,
       orgId: identity.orgId,
       name: data.name,

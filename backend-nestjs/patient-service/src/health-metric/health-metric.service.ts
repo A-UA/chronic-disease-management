@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { HealthMetricEntity } from './health-metric.entity';
-import type { IdentityPayload } from '@cdm/shared';
+import { IdentityPayload, nextId } from '@cdm/shared';
 
 @Injectable()
 export class HealthMetricService {
@@ -23,7 +23,7 @@ export class HealthMetricService {
 
   async create(identity: IdentityPayload, patientId: number, data: { metricType: string, metricValue: string }) {
     const entity = this.repo.create({
-      id: Date.now(), // Generate properly in prod
+      id: nextId(),
       tenantId: identity.tenantId,
       orgId: identity.orgId,
       patientId,

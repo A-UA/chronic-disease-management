@@ -22,7 +22,7 @@ public class ManagementSuggestionService {
 
     public ManagementSuggestionEntity createSuggestion(IdentityPayload identity, Long patientId, String suggestionType, String content) {
         ManagementSuggestionEntity entity = new ManagementSuggestionEntity();
-        entity.setId(System.currentTimeMillis());
+        entity.setId(com.cdm.common.util.SnowflakeIdGenerator.nextId());
         entity.setTenantId(identity.getTenantId());
         entity.setOrgId(identity.getOrgId());
         entity.setPatientId(patientId);

@@ -22,7 +22,7 @@ public class PatientFamilyLinkService {
 
     public PatientFamilyLinkEntity linkFamily(IdentityPayload identity, Long patientId, Long familyUserId, String relationship) {
         PatientFamilyLinkEntity entity = new PatientFamilyLinkEntity();
-        entity.setId(System.currentTimeMillis());
+        entity.setId(com.cdm.common.util.SnowflakeIdGenerator.nextId());
         entity.setTenantId(identity.getTenantId());
         entity.setOrgId(identity.getOrgId());
         entity.setPatientId(patientId);

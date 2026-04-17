@@ -21,7 +21,7 @@ public class PatientService {
 
     public PatientProfileEntity createPatient(IdentityPayload identity, String name, String gender) {
         PatientProfileEntity entity = new PatientProfileEntity();
-        entity.setId(System.currentTimeMillis());
+        entity.setId(com.cdm.common.util.SnowflakeIdGenerator.nextId());
         entity.setTenantId(identity.getTenantId());
         entity.setOrgId(identity.getOrgId());
         entity.setName(name);

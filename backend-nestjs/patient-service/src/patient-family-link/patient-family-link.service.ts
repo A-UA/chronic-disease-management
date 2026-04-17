@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { PatientFamilyLinkEntity } from './patient-family-link.entity';
-import type { IdentityPayload } from '@cdm/shared';
+import { IdentityPayload, nextId } from '@cdm/shared';
 
 @Injectable()
 export class PatientFamilyLinkService {
@@ -23,7 +23,7 @@ export class PatientFamilyLinkService {
 
   async linkFamily(identity: IdentityPayload, patientId: number, data: { familyUserId: number, relationship: string }) {
     const entity = this.repo.create({
-      id: Date.now(), // Generate properly in prod (e.g. snowflake logic mapped later)
+      id: nextId(),
       tenantId: identity.tenantId,
       orgId: identity.orgId,
       patientId,
