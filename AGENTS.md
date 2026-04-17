@@ -50,12 +50,12 @@ chronic-disease-management/
 │   ├── auth-service/              # RBAC 角色、租户、JWT 鉴权服务
 │   ├── patient-service/           # 患者档案、家属、健康指标相关服务
 │   └── pom.xml                    # Maven 聚合构建配置
-├── backend-nestjs/                # Nest.js 业务微服务群
-│   ├── shared/                    # 共享 DTO / TCP 通信传输协议定义
-│   ├── gateway/                   # 转发网关与鉴权中间件
-│   ├── auth-service/              # RBAC/租户凭证服务 (提供 TCP 微服务点)
-│   ├── patient-service/           # 慢病数据与档案业务微服务
-│   └── package.json               # PNPM 工作区间
+├── backend-nestjs/                # Nest.js 业务微服务群 (Turborepo Monorepo)
+│   ├── libs/shared/               # 共享库 (Constants, DTOs, 拦截器, 配置等)
+│   ├── apps/gateway/              # 转发网关与鉴权中间件
+│   ├── apps/auth/                 # RBAC/租户凭证微服务 (TCP)
+│   ├── apps/patient/              # 慢病数据与档案微服务 (TCP)
+│   └── package.json               # PNPM + Turbo 工作区间配置
 ├── agent/                         # AI Agent 运行时环境
 │   ├── app/                       
 │   │   ├── config.py              # Pydantic 环境变量绑定
@@ -124,7 +124,7 @@ uv run uvicorn app.main:app --reload --port 8000
 
 ### 5.4 启动后端业务服务
 - **Java**：使用 Maven 或 IDEA 打开 `backend-java` 并按序启动 Gateway、Auth 服务。（`ddl-auto: none`，必须先执行 5.2）
-- **NestJS**：在 `backend-nestjs` 运行 `pnpm install`，使用 `pnpm run start:dev` 或类似命令以 Watch 模式启动对应微服务。（`synchronize: false`，必须先执行 5.2；TCP 微服务需先于网关启动）
+- **NestJS**：在 `backend-nestjs` 运行 `pnpm install` 安装所有依赖并执行 `pnpm run build`。平时开发可使用 `pnpm run dev:auth` 等脚本单独启动服务，或直接使用 Turborepo 启动所需的子服务。（`synchronize: false`，必须先执行 5.2；TCP 微服务需先于网关启动）
 
 ### 5.5 启动前端后台
 ```powershell
