@@ -17,7 +17,12 @@ import { KnowledgeDocumentProxyController } from './proxy/knowledge-document-pro
 import { AgentProxyService } from './proxy/services/agent-proxy.service.js';
 import { MinioProxyService } from './proxy/services/minio-proxy.service.js';
 import { ChatProxyController, ConversationProxyController } from './proxy/chat-proxy.controller.js';
-
+import { TenantProxyController } from './proxy/tenant-proxy.controller.js';
+import { OrganizationProxyController } from './proxy/org-proxy.controller.js';
+import { UserProxyController } from './proxy/user-proxy.controller.js';
+import { RoleProxyController } from './proxy/role-proxy.controller.js';
+import { PermissionProxyController } from './proxy/permission-proxy.controller.js';
+import { MenuProxyController } from './proxy/menu-proxy.controller.js';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -50,6 +55,12 @@ import { ChatProxyController, ConversationProxyController } from './proxy/chat-p
     KnowledgeDocumentProxyController,
     ChatProxyController,
     ConversationProxyController,
+    TenantProxyController,
+    OrganizationProxyController,
+    UserProxyController,
+    RoleProxyController,
+    PermissionProxyController,
+    MenuProxyController,
   ],
   providers: [
     {

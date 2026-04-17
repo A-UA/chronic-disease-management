@@ -25,6 +25,28 @@ export class MenuService {
     private readonly menuRepo: Repository<MenuEntity>,
   ) {}
 
+  async list(payload: any) {
+    const skip = Number(payload.skip) || 0;
+    const limit = Number(payload.limit) || 50;
+    const [items, total] = await this.menuRepo.findAndCount({ skip, take: limit });
+    return { items, total };
+  }
+
+  async create(payload: any) {
+    const entity = this.menuRepo.create(payload as any);
+    return this.menuRepo.save(entity);
+  }
+
+  async update(id: string, data: any) {
+    await this.menuRepo.update(id, data);
+    return this.menuRepo.findOne({ where: { id } as any });
+  }
+
+  async delete(id: string) {
+    await this.menuRepo.delete(id);
+    return { success: true };
+  }
+
   async getMenuTree(tenantId: string, permCodes: Set<string>): Promise<MenuNode[]> {
     const allMenus = await this.menuRepo.find({
       where: {

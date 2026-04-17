@@ -16,6 +16,17 @@ import { RoleEntity } from './rbac/role.entity.js';
 import { PermissionEntity } from './rbac/permission.entity.js';
 import { MenuEntity } from './menu/menu.entity.js';
 
+import { TenantService } from './organization/tenant.service.js';
+import { TenantController } from './organization/tenant.controller.js';
+import { OrganizationService } from './organization/org.service.js';
+import { OrganizationController } from './organization/org.controller.js';
+import { UserService } from './user/user.service.js';
+import { UserController } from './user/user.controller.js';
+import { RoleService } from './rbac/role.service.js';
+import { RoleController } from './rbac/role.controller.js';
+import { PermissionService } from './rbac/permission.service.js';
+import { PermissionController } from './rbac/permission.controller.js';
+import { MenuController } from './menu/menu.controller.js';
 const entities = [
   UserEntity,
   TenantEntity,
@@ -50,7 +61,24 @@ const entities = [
       signOptions: { expiresIn: '7d' },
     }),
   ],
-  controllers: [AuthController],
-  providers: [AuthService, JwtProvider, MenuService],
+  controllers: [
+    AuthController,
+    TenantController,
+    OrganizationController,
+    UserController,
+    RoleController,
+    PermissionController,
+    MenuController,
+  ],
+  providers: [
+    AuthService,
+    JwtProvider,
+    MenuService,
+    TenantService,
+    OrganizationService,
+    UserService,
+    RoleService,
+    PermissionService,
+  ],
 })
 export class AppModule {}
