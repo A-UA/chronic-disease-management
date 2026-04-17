@@ -1,6 +1,6 @@
 # 慢病管理多租户 AI SaaS — 项目指南
 
-更新时间：2026-04-16
+更新时间：2026-04-18
 
 ## 1. 项目概览
 
@@ -23,8 +23,9 @@
 - **服务通信**: 基于 Spring Cloud 内部调用规范。
 
 #### 方案 B: Node.js + NestJS
-- **技术栈**: TypeScript, NestJS, Prisma / TypeORM。
+- **技术栈**: TypeScript (strict, 零 `any`), NestJS, TypeORM。
 - **结构**: PNPM Workspace Monorepo (`gateway` / `auth-service` / `patient-service` / `shared`)。
+- **类型体系**: 严格的 DTO/VO 分层，入站参数使用 DTO（`libs/shared/src/dto/`），出站响应使用 VO（`libs/shared/src/vo/`）。所有 Service 方法通过 `static toVO()` 工厂方法做 Entity→VO 转换，禁止直接透传 Entity（防止 `passwordHash` 等敏感字段泄漏）。
 - **服务通信**: 微服务间使用 `@nestjs/microservices` 原生 TCP 传输与消息代理通信模式，提升内网调用效率。
 
 ### 2.2 Agent 中间件 (Python)
@@ -51,7 +52,13 @@ chronic-disease-management/
 │   ├── patient-service/           # 患者档案、家属、健康指标相关服务
 │   └── pom.xml                    # Maven 聚合构建配置
 ├── backend-nestjs/                # Nest.js 业务微服务群 (Turborepo Monorepo)
-│   ├── libs/shared/               # 共享库 (Constants, DTOs, 拦截器, 配置等)
+│   ├── libs/shared/               # 共享库
+│   │   ├── src/constants.ts       # 服务标识、TCP 命令常量
+│   │   ├── src/interfaces/        # IdentityPayload 等核心接口
+│   │   ├── src/dto/               # 入站 DTO (crud-payload, auth, patient, gateway 等)
+│   │   ├── src/vo/                # 出站 VO (auth.vo, patient.vo)
+│   │   ├── src/utils/             # snowflake ID 生成器
+│   │   └── src/interceptors/      # BigInt 序列化拦截器
 │   ├── apps/gateway/              # 转发网关与鉴权中间件
 │   ├── apps/auth/                 # RBAC/租户凭证微服务 (TCP)
 │   ├── apps/patient/              # 慢病数据与档案微服务 (TCP)
@@ -136,6 +143,11 @@ vp dev
 ## 6. 代码提交检查标准
 
 * **数据库变更**：任何表结构修改必须同步更新 `database/init.sql`，禁止依赖 ORM 自动同步。NestJS `synchronize` 和 Java `ddl-auto` 均已锁定为关闭状态。
+* **TypeScript 类型纪律（NestJS）**：
+  - **禁止 `any`**：不允许 `: any`、`as any`、`any[]` 出现在业务代码中。对 `unknown` 类型使用类型守卫或 `as` 窄化到具名接口。
+  - **禁止行内类型**：所有方法参数和返回值必须引用 `libs/shared/src/dto/` 或 `libs/shared/src/vo/` 中预定义的接口，不允许 `@Payload() data: { foo: string; bar: number }` 这类行内定义。
+  - **DTO/VO 分层**：入站参数使用 DTO（位于 `dto/`），出站响应使用 VO（位于 `vo/`）。Service 层必须通过 `static toVO()` 工厂方法显式转换，禁止直接 `return repo.save(entity)` 透传 Entity。
+  - **ID 类型统一为 `string`**：数据库 `bigint` 列在应用层一律映射为 `string`，`nextId()` 返回 `string`，Controller/Service 参数中的 ID 字段类型为 `string`。
 * 开发 Agent 时，由于 PowerShell 终端特性，多行指令拼接务必使用 `;` 而非 `&&`。stderr 中捕获的 `INFO` 不等于报错。
 * 后端微服务的拓展需遵守严苛的服务解耦，`auth-service` 和 `patient-service` 之间不允许反向外键，所有联合视图必须经由 API/网关重组，跨域验证需携带隔离 ID (org_id 等等)。 
 * 前端 Tailwind V4 直接将 tokens 写进 `global.css` 的 `@theme` 闭包内，绝对不允许编写 `tailwind.config.js` 的复古模式。
