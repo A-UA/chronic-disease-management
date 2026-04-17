@@ -16,6 +16,7 @@ import { KnowledgeBaseProxyController } from './proxy/knowledge-base-proxy.contr
 import { KnowledgeDocumentProxyController } from './proxy/knowledge-document-proxy.controller.js';
 import { AgentProxyService } from './proxy/services/agent-proxy.service.js';
 import { MinioProxyService } from './proxy/services/minio-proxy.service.js';
+import { ChatProxyController, ConversationProxyController } from './proxy/chat-proxy.controller.js';
 
 @Module({
   imports: [
@@ -47,6 +48,8 @@ import { MinioProxyService } from './proxy/services/minio-proxy.service.js';
     ManagementSuggestionProxyController,
     KnowledgeBaseProxyController,
     KnowledgeDocumentProxyController,
+    ChatProxyController,
+    ConversationProxyController,
   ],
   providers: [
     {
