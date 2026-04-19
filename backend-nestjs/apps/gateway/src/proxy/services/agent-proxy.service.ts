@@ -4,8 +4,8 @@ import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom, lastValueFrom } from 'rxjs';
 import FormData from 'form-data';
 import { Response } from 'express';
-import { MESSAGE_CREATE } from '@cdm/shared';
-import type { IdentityPayload, ParseDocumentResponse, CitationData } from '@cdm/shared';
+import { MESSAGE_CREATE, CONVERSATION_FIND_ONE } from '@cdm/shared';
+import type { IdentityPayload, ParseDocumentResponse, CitationData, ConversationDetailVO } from '@cdm/shared';
 
 @Injectable()
 export class AgentProxyService {
@@ -24,14 +24,25 @@ export class AgentProxyService {
     aiClient: ClientProxy,
     res: Response,
   ) {
+    // 1. 从 ai-service 拉取历史消息
+    const convDetail = await lastValueFrom(
+      aiClient.send<ConversationDetailVO | null>({ cmd: CONVERSATION_FIND_ONE }, {
+        identity,
+        id: conversationId,
+      }),
+    );
+    const history = (convDetail?.messages ?? []).map((m) => ({
+      role: m.role,
+      content: m.content,
+    }));
+
     const payload = {
       query,
       metadata: { kb_id: kbId },
-      // 历史消息已由前端或上层传入 conversationId 关联，Agent 侧暂统一空历史（TODO: 从 ai-service 拉取）
-      history: [] as Array<{ role: string; content: string }>,
+      history,
     };
 
-    // 持久化用户消息
+    // 2. 持久化用户消息
     await lastValueFrom(
       aiClient.send({ cmd: MESSAGE_CREATE }, {
         conversationId,
@@ -171,5 +182,37 @@ export class AgentProxyService {
       console.error('Agent upload failed:', message);
     }
     return 0;
+  }
+
+  /**
+   * 删除整个知识库的向量数据
+   */
+  async deleteVectorsByKb(kbId: string): Promise<number> {
+    try {
+      const response = await this.httpService.axiosRef.delete<{ deleted_count: number }>(
+        `${this.agentUrl}/internal/knowledge/vectors/kb/${kbId}`,
+      );
+      return response.data?.deleted_count ?? 0;
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      console.error('Agent deleteVectorsByKb failed:', message);
+      return 0;
+    }
+  }
+
+  /**
+   * 删除指定文档的向量数据
+   */
+  async deleteVectorsByDoc(kbId: string, filename: string): Promise<number> {
+    try {
+      const response = await this.httpService.axiosRef.delete<{ deleted_count: number }>(
+        `${this.agentUrl}/internal/knowledge/vectors/kb/${kbId}/doc/${encodeURIComponent(filename)}`,
+      );
+      return response.data?.deleted_count ?? 0;
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      console.error('Agent deleteVectorsByDoc failed:', message);
+      return 0;
+    }
   }
 }
