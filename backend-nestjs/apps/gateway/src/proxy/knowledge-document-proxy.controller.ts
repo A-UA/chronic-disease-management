@@ -1,9 +1,9 @@
 import { Controller, Get, Post, Delete, Param, UseGuards, Inject, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ClientProxy } from '@nestjs/microservices';
-import { 
-  PATIENT_SERVICE, IdentityPayload, 
-  DOCUMENT_FIND_BY_KB, DOCUMENT_CREATE_SYNC, DOCUMENT_DELETE 
+import {
+  AI_SERVICE, IdentityPayload,
+  DOCUMENT_FIND_BY_KB, DOCUMENT_CREATE_SYNC, DOCUMENT_DELETE
 } from '@cdm/shared';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard.js';
 import { CurrentUser } from '../decorators/current-user.decorator.js';
@@ -15,27 +15,27 @@ import { lastValueFrom } from 'rxjs';
 @UseGuards(JwtAuthGuard)
 export class KnowledgeDocumentProxyController {
   constructor(
-    @Inject(PATIENT_SERVICE) private readonly patientClient: ClientProxy,
+    @Inject(AI_SERVICE) private readonly aiClient: ClientProxy,
     private readonly minioService: MinioProxyService,
     private readonly agentService: AgentProxyService
   ) {}
 
   @Get('kb/:kbId/documents')
   findAll(@CurrentUser() identity: IdentityPayload, @Param('kbId') kbId: string) {
-    return this.patientClient.send({ cmd: DOCUMENT_FIND_BY_KB }, { identity, kbId: Number(kbId) });
+    return this.aiClient.send({ cmd: DOCUMENT_FIND_BY_KB }, { identity, kbId: Number(kbId) });
   }
 
   @Post('kb/:kbId/documents')
   @UseInterceptors(FileInterceptor('file'))
   async upload(
-    @CurrentUser() identity: IdentityPayload, 
+    @CurrentUser() identity: IdentityPayload,
     @Param('kbId') kbId: string,
     @UploadedFile() file: Express.Multer.File
   ) {
+    // 上传仍在 Gateway 完成（处理 multipart 文件流）
     const minioUrl = await this.minioService.uploadFile(file);
     const chunkCount = await this.agentService.parseDocument(file, kbId);
-    
-    // Sync to patient-service DB
+
     const payload = {
       identity,
       kbId: Number(kbId),
@@ -47,11 +47,12 @@ export class KnowledgeDocumentProxyController {
       status: chunkCount > 0 ? 'completed' : 'failed'
     };
 
-    return lastValueFrom(this.patientClient.send({ cmd: DOCUMENT_CREATE_SYNC }, payload));
+    return lastValueFrom(this.aiClient.send({ cmd: DOCUMENT_CREATE_SYNC }, payload));
   }
 
   @Delete(':id')
   deleteDocument(@CurrentUser() identity: IdentityPayload, @Param('id') id: string) {
-    return this.patientClient.send({ cmd: DOCUMENT_DELETE }, { identity, id: Number(id) });
+    // 简单转发 — 全部清理逻辑由 ai-service 内部编排
+    return this.aiClient.send({ cmd: DOCUMENT_DELETE }, { identity, id: Number(id) });
   }
 }

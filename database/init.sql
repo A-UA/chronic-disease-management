@@ -266,6 +266,47 @@ CREATE INDEX IF NOT EXISTS ix_documents_tenant_id ON documents (tenant_id);
 CREATE INDEX IF NOT EXISTS ix_documents_kb_id ON documents (kb_id);
 CREATE INDEX IF NOT EXISTS idx_documents_tenant_kb ON documents (tenant_id, kb_id);
 
+-- -----------------------------------------------------------
+-- 17. conversations - 会话表
+-- -----------------------------------------------------------
+CREATE TABLE IF NOT EXISTS conversations (
+    id               BIGINT       PRIMARY KEY,
+    tenant_id        BIGINT       NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    org_id           BIGINT       NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    user_id          BIGINT       NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    kb_id            BIGINT       REFERENCES knowledge_bases(id) ON DELETE SET NULL,
+    title            VARCHAR(100) NOT NULL DEFAULT '新对话',
+    message_count    INTEGER      NOT NULL DEFAULT 0,
+    total_tokens     INTEGER      NOT NULL DEFAULT 0,
+    last_message_at  TIMESTAMP    NOT NULL DEFAULT now(),
+    created_at       TIMESTAMP    NOT NULL DEFAULT now(),
+    updated_at       TIMESTAMP    NOT NULL DEFAULT now(),
+    deleted_at       TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_conversations_user
+    ON conversations (tenant_id, user_id, last_message_at DESC);
+CREATE INDEX IF NOT EXISTS idx_conversations_org
+    ON conversations (tenant_id, org_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_kb
+    ON conversations (kb_id) WHERE kb_id IS NOT NULL;
+
+-- -----------------------------------------------------------
+-- 18. chat_messages - 聊天消息表
+-- -----------------------------------------------------------
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id              BIGINT      PRIMARY KEY,
+    conversation_id BIGINT      NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+    role            VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant', 'system')),
+    content         TEXT        NOT NULL,
+    citations       JSONB,
+    metadata        JSONB,
+    token_count     INTEGER     NOT NULL DEFAULT 0,
+    created_at      TIMESTAMP   NOT NULL DEFAULT now(),
+    deleted_at      TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_conv
+    ON chat_messages (conversation_id, created_at);
+
 
 -- ============================================================
 -- 第二部分：种子数据

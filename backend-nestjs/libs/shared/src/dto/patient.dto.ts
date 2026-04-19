@@ -47,38 +47,3 @@ export interface LinkFamilyPayload {
   relationship: string;
 }
 
-// ─── 知识库 TCP 消息载荷 ───
-
-export interface CreateKbPayload {
-  identity: IdentityPayload;
-  data: CreateKbData;
-}
-
-export interface CreateKbData {
-  name: string;
-  description?: string;
-}
-
-export interface KbIdPayload {
-  identity: IdentityPayload;
-  id: string;
-}
-
-export interface DocsByKbPayload {
-  kbId: string;
-}
-
-export interface SyncDocumentPayload {
-  identity: IdentityPayload;
-  kbId: string;
-  fileName: string;
-  fileType?: string;
-  fileSize?: number;
-  minioUrl: string;
-  chunkCount?: number;
-  status?: string;
-}
-
-export interface DeleteDocPayload {
-  id: string;
-}

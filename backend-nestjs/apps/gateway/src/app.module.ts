@@ -4,7 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { HttpModule } from '@nestjs/axios';
 import { APP_INTERCEPTOR } from '@nestjs/core';
-import { BigIntSerializerInterceptor, AUTH_TCP_PORT, PATIENT_TCP_PORT } from '@cdm/shared';
+import { BigIntSerializerInterceptor, AUTH_TCP_PORT, PATIENT_TCP_PORT, AI_TCP_PORT } from '@cdm/shared';
 
 import { AuthProxyController } from './proxy/auth-proxy.controller.js';
 import { PatientProxyController } from './proxy/patient-proxy.controller.js';
@@ -41,6 +41,11 @@ import { MenuProxyController } from './proxy/menu-proxy.controller.js';
         name: 'PATIENT_SERVICE',
         transport: Transport.TCP,
         options: { host: process.env.PATIENT_HOST || 'localhost', port: Number(process.env.PATIENT_TCP_PORT) || PATIENT_TCP_PORT },
+      },
+      {
+        name: 'AI_SERVICE',
+        transport: Transport.TCP,
+        options: { host: process.env.AI_HOST || 'localhost', port: Number(process.env.AI_TCP_PORT) || AI_TCP_PORT },
       },
     ]),
   ],

@@ -2,11 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { databaseConfig } from '@cdm/shared';
-import { PatientModule } from './patient/patient.module.js';
-import { HealthMetricModule } from './health-metric/health-metric.module.js';
-import { PatientFamilyLinkModule } from './patient-family-link/patient-family-link.module.js';
-import { ManagerAssignmentModule } from './manager-assignment/manager-assignment.module.js';
-import { ManagementSuggestionModule } from './management-suggestion/management-suggestion.module.js';
+import { KnowledgeModule } from './knowledge/knowledge.module.js';
+import { ConversationModule } from './conversation/conversation.module.js';
 
 @Module({
   imports: [
@@ -25,11 +22,8 @@ import { ManagementSuggestionModule } from './management-suggestion/management-s
         synchronize: false,
       }),
     }),
-    PatientModule,
-    HealthMetricModule,
-    PatientFamilyLinkModule,
-    ManagerAssignmentModule,
-    ManagementSuggestionModule,
+    KnowledgeModule,
+    ConversationModule,
   ],
 })
 export class AppModule {}

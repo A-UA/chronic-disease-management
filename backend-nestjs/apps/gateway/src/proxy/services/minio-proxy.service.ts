@@ -36,4 +36,21 @@ export class MinioProxyService implements OnModuleInit {
     );
     return `http://${this.endpoint}:${this.port}/${this.bucketName}/${filename}`;
   }
+
+  /**
+   * 根据完整 MinIO URL 删除对象
+   */
+  async deleteFile(minioUrl: string): Promise<void> {
+    try {
+      const urlObj = new URL(minioUrl);
+      // 路径格式: /bucket/objectName
+      const pathParts = urlObj.pathname.split('/').filter(Boolean);
+      if (pathParts.length >= 2) {
+        const objectName = pathParts.slice(1).join('/');
+        await this.minioClient.removeObject(this.bucketName, objectName);
+      }
+    } catch (err) {
+      console.error('MinIO delete failed:', err instanceof Error ? err.message : err);
+    }
+  }
 }

@@ -12,6 +12,7 @@
     "dev:gateway": "turbo run dev --filter=@cdm/gateway",
     "dev:auth": "turbo run dev --filter=@cdm/auth",
     "dev:patient": "turbo run dev --filter=@cdm/patient",
+    "dev:ai": "turbo run dev --filter=@cdm/ai",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "test": "turbo run test"
