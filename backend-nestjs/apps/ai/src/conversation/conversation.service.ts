@@ -8,7 +8,6 @@ import type {
   ConversationVO,
   ConversationDetailVO,
   ChatMessageVO,
-  CitationVO,
 } from '@cdm/shared';
 import type { CitationData } from '@cdm/shared';
 
@@ -77,7 +76,7 @@ export class ConversationService {
         conversationId,
         role,
         content,
-        citations: (citations ?? null) as unknown as Record<string, unknown>[] | null,
+        citations: citations ?? null,
         metadata: metadata ?? null,
         tokenCount: tc,
       });
@@ -113,7 +112,7 @@ export class ConversationService {
       conversationId: entity.conversationId,
       role: entity.role,
       content: entity.content,
-      citations: (entity.citations ?? null) as unknown as CitationVO[] | null,
+      citations: entity.citations ?? null,
       metadata: entity.metadata,
       tokenCount: entity.tokenCount,
       createdAt: entity.createdAt,

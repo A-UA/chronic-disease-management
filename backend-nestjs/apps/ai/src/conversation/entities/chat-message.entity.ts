@@ -1,4 +1,5 @@
 import { Entity, Column, PrimaryColumn, CreateDateColumn } from 'typeorm';
+import type { CitationData } from '@cdm/shared';
 
 @Entity('chat_messages')
 export class ChatMessageEntity {
@@ -15,7 +16,7 @@ export class ChatMessageEntity {
   content: string;
 
   @Column({ type: 'jsonb', nullable: true })
-  citations: Record<string, unknown>[] | null;
+  citations: CitationData[] | null;
 
   @Column({ type: 'jsonb', nullable: true })
   metadata: Record<string, unknown> | null;
