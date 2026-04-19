@@ -19,6 +19,8 @@
     "typescript": "catalog:",
     "@nestjs/common": "catalog:",
     "@nestjs/config": "catalog:",
+    "class-validator": "catalog:",
+    "class-transformer": "catalog:",
     "rxjs": "catalog:",
     "@types/node": "catalog:"
   }
