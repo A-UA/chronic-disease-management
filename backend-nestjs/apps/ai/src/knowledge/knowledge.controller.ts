@@ -3,7 +3,8 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { KnowledgeService } from './knowledge.service.js';
 import {
   KNOWLEDGE_BASE_FIND_ALL, KNOWLEDGE_BASE_CREATE, KNOWLEDGE_BASE_STATS, KNOWLEDGE_BASE_DELETE,
-  DOCUMENT_FIND_BY_KB, DOCUMENT_CREATE_SYNC, DOCUMENT_DELETE
+  DOCUMENT_FIND_BY_KB, DOCUMENT_CREATE_SYNC, DOCUMENT_DELETE, DOCUMENT_FIND_ONE,
+  KB_VERIFY_OWNERSHIP,
 } from '@cdm/shared';
 import type {
   IdentityPayload,
@@ -12,6 +13,7 @@ import type {
   DocsByKbPayload,
   SyncDocumentPayload,
   DeleteDocPayload,
+  KbVerifyOwnershipPayload,
 } from '@cdm/shared';
 
 @Controller()
@@ -53,5 +55,15 @@ export class KnowledgeController {
   @MessagePattern({ cmd: DOCUMENT_DELETE })
   deleteDoc(@Payload() payload: DeleteDocPayload) {
     return this.service.deleteDoc(payload.id);
+  }
+
+  @MessagePattern({ cmd: DOCUMENT_FIND_ONE })
+  findOneDoc(@Payload() payload: DeleteDocPayload) {
+    return this.service.findOneDoc(payload.id);
+  }
+
+  @MessagePattern({ cmd: KB_VERIFY_OWNERSHIP })
+  verifyKbOwnership(@Payload() payload: KbVerifyOwnershipPayload) {
+    return this.service.verifyKbOwnership(payload.kbId, payload.tenantId);
   }
 }

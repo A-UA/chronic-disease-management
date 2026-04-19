@@ -10,6 +10,7 @@ import type {
   KnowledgeBaseStatsVO,
   DocumentVO,
   DocumentSyncResultVO,
+  KbOwnershipResultVO,
 } from '@cdm/shared';
 import type { DeleteResult } from 'typeorm';
 
@@ -88,5 +89,15 @@ export class KnowledgeService {
       fileSize: entity.fileSize,
       minioUrl: entity.minioUrl,
     };
+  }
+
+  async findOneDoc(id: string): Promise<DocumentVO | null> {
+    const doc = await this.docRepo.findOne({ where: { id } });
+    return doc ? KnowledgeService.toDocVO(doc) : null;
+  }
+
+  async verifyKbOwnership(kbId: string, tenantId: string): Promise<KbOwnershipResultVO> {
+    const kb = await this.kbRepo.findOne({ where: { id: kbId, tenantId } });
+    return { valid: !!kb, kbId, tenantId };
   }
 }

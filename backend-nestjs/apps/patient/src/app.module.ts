@@ -7,7 +7,6 @@ import { HealthMetricModule } from './health-metric/health-metric.module.js';
 import { PatientFamilyLinkModule } from './patient-family-link/patient-family-link.module.js';
 import { ManagerAssignmentModule } from './manager-assignment/manager-assignment.module.js';
 import { ManagementSuggestionModule } from './management-suggestion/management-suggestion.module.js';
-import { KnowledgeModule } from './knowledge/knowledge.module.js';
 
 @Module({
   imports: [
@@ -31,7 +30,6 @@ import { KnowledgeModule } from './knowledge/knowledge.module.js';
     PatientFamilyLinkModule,
     ManagerAssignmentModule,
     ManagementSuggestionModule,
-    KnowledgeModule,
   ],
 })
 export class AppModule {}
