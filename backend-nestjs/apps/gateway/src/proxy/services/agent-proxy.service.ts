@@ -183,36 +183,5 @@ export class AgentProxyService {
     }
     return 0;
   }
-
-  /**
-   * 删除整个知识库的向量数据
-   */
-  async deleteVectorsByKb(kbId: string): Promise<number> {
-    try {
-      const response = await this.httpService.axiosRef.delete<{ deleted_count: number }>(
-        `${this.agentUrl}/internal/knowledge/vectors/kb/${kbId}`,
-      );
-      return response.data?.deleted_count ?? 0;
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'Unknown error';
-      console.error('Agent deleteVectorsByKb failed:', message);
-      return 0;
-    }
-  }
-
-  /**
-   * 删除指定文档的向量数据
-   */
-  async deleteVectorsByDoc(kbId: string, filename: string): Promise<number> {
-    try {
-      const response = await this.httpService.axiosRef.delete<{ deleted_count: number }>(
-        `${this.agentUrl}/internal/knowledge/vectors/kb/${kbId}/doc/${encodeURIComponent(filename)}`,
-      );
-      return response.data?.deleted_count ?? 0;
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'Unknown error';
-      console.error('Agent deleteVectorsByDoc failed:', message);
-      return 0;
-    }
-  }
 }
+

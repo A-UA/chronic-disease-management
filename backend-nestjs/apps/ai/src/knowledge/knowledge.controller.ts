@@ -37,7 +37,7 @@ export class KnowledgeController {
 
   @MessagePattern({ cmd: KNOWLEDGE_BASE_DELETE })
   deleteKb(@Payload() payload: KbIdPayload) {
-    return this.service.deleteKb(payload.id);
+    return this.service.deleteKb(payload.id, payload.identity.tenantId);
   }
 
   @MessagePattern({ cmd: DOCUMENT_FIND_BY_KB })

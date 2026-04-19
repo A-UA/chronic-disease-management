@@ -3,9 +3,8 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ClientProxy } from '@nestjs/microservices';
 import {
   AI_SERVICE, IdentityPayload,
-  DOCUMENT_FIND_BY_KB, DOCUMENT_CREATE_SYNC, DOCUMENT_DELETE, DOCUMENT_FIND_ONE
+  DOCUMENT_FIND_BY_KB, DOCUMENT_CREATE_SYNC, DOCUMENT_DELETE
 } from '@cdm/shared';
-import type { DocumentVO } from '@cdm/shared';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard.js';
 import { CurrentUser } from '../decorators/current-user.decorator.js';
 import { MinioProxyService } from './services/minio-proxy.service.js';
@@ -33,6 +32,7 @@ export class KnowledgeDocumentProxyController {
     @Param('kbId') kbId: string,
     @UploadedFile() file: Express.Multer.File
   ) {
+    // 上传仍在 Gateway 完成（处理 multipart 文件流）
     const minioUrl = await this.minioService.uploadFile(file);
     const chunkCount = await this.agentService.parseDocument(file, kbId);
 
@@ -51,28 +51,8 @@ export class KnowledgeDocumentProxyController {
   }
 
   @Delete(':id')
-  async deleteDocument(@CurrentUser() identity: IdentityPayload, @Param('id') id: string) {
-    // 1. 获取文档详情（kb_id, fileName, minioUrl）
-    const doc = await lastValueFrom(
-      this.aiClient.send<DocumentVO | null>({ cmd: DOCUMENT_FIND_ONE }, { id: Number(id) }),
-    );
-
-    if (doc) {
-      // 2. Agent: 删除文档向量
-      await this.agentService.deleteVectorsByDoc(
-        String(doc.kbId),
-        doc.fileName,
-      );
-
-      // 3. MinIO: 删除原始文件
-      if (doc.minioUrl) {
-        await this.minioService.deleteFile(doc.minioUrl);
-      }
-    }
-
-    // 4. ai-service: 删除数据库记录
-    return lastValueFrom(
-      this.aiClient.send({ cmd: DOCUMENT_DELETE }, { identity, id: Number(id) }),
-    );
+  deleteDocument(@CurrentUser() identity: IdentityPayload, @Param('id') id: string) {
+    // 简单转发 — 全部清理逻辑由 ai-service 内部编排
+    return this.aiClient.send({ cmd: DOCUMENT_DELETE }, { identity, id: Number(id) });
   }
 }
