@@ -25,13 +25,10 @@ export interface CreateMessagePayload {
   tokenCount?: number;
 }
 
-/** 引用数据结构 */
-export interface CitationData {
-  ref: string;
-  source: string;
-  snippet: string;
-  page?: number;
-}
+import type { Citation } from '../interfaces/citation.interface.js';
+
+/** 引用数据（类型别名，指向统一 Citation） */
+export type CitationData = Citation;
 
 /** KB 归属校验 */
 export interface KbVerifyOwnershipPayload {
@@ -73,4 +70,19 @@ export interface SyncDocumentPayload {
 
 export interface DeleteDocPayload {
   id: string;
+}
+
+// ─── Gateway 入站 DTO ───
+
+/** 聊天请求体 */
+export interface ChatRequestDto {
+  kb_id: string;
+  query: string;
+  conversation_id?: string;
+}
+
+/** SSE 流结束载荷 */
+export interface StreamDonePayload {
+  done: true;
+  citations?: CitationData[];
 }

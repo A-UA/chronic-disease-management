@@ -49,7 +49,7 @@ export class MinioProxyService implements OnModuleInit {
         const objectName = pathParts.slice(1).join('/');
         await this.minioClient.removeObject(this.bucketName, objectName);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('MinIO delete failed:', err instanceof Error ? err.message : err);
     }
   }

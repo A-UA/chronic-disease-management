@@ -22,7 +22,7 @@ export class KnowledgeDocumentProxyController {
 
   @Get('kb/:kbId/documents')
   findAll(@CurrentUser() identity: IdentityPayload, @Param('kbId') kbId: string) {
-    return this.aiClient.send({ cmd: DOCUMENT_FIND_BY_KB }, { identity, kbId: Number(kbId) });
+    return this.aiClient.send({ cmd: DOCUMENT_FIND_BY_KB }, { identity, kbId });
   }
 
   @Post('kb/:kbId/documents')
@@ -38,7 +38,7 @@ export class KnowledgeDocumentProxyController {
 
     const payload = {
       identity,
-      kbId: Number(kbId),
+      kbId,
       fileName: file.originalname,
       fileType: file.mimetype,
       fileSize: file.size,
@@ -53,6 +53,6 @@ export class KnowledgeDocumentProxyController {
   @Delete(':id')
   deleteDocument(@CurrentUser() identity: IdentityPayload, @Param('id') id: string) {
     // 简单转发 — 全部清理逻辑由 ai-service 内部编排
-    return this.aiClient.send({ cmd: DOCUMENT_DELETE }, { identity, id: Number(id) });
+    return this.aiClient.send({ cmd: DOCUMENT_DELETE }, { identity, id });
   }
 }

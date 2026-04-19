@@ -31,13 +31,10 @@ export interface ChatMessageVO {
   createdAt: Date;
 }
 
-/** 引用视图 */
-export interface CitationVO {
-  ref: string;
-  source: string;
-  snippet: string;
-  page?: number;
-}
+import type { Citation } from '../interfaces/citation.interface.js';
+
+/** 引用视图（类型别名，指向统一 Citation） */
+export type CitationVO = Citation;
 
 /** KB 归属校验结果 */
 export interface KbOwnershipResultVO {

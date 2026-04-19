@@ -67,7 +67,7 @@ export class InfraService implements OnModuleInit {
         const objectName = pathParts.slice(1).join('/');
         await this.minioClient.removeObject(this.bucketName, objectName);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[InfraService] deleteFile failed:', err instanceof Error ? err.message : err);
     }
   }

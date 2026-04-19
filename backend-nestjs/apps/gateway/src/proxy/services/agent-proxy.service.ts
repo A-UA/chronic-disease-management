@@ -5,7 +5,7 @@ import { firstValueFrom, lastValueFrom } from 'rxjs';
 import FormData from 'form-data';
 import { Response } from 'express';
 import { MESSAGE_CREATE, CONVERSATION_FIND_ONE } from '@cdm/shared';
-import type { IdentityPayload, ParseDocumentResponse, CitationData, ConversationDetailVO } from '@cdm/shared';
+import type { IdentityPayload, ParseDocumentResponse, CitationData, ConversationDetailVO, StreamDonePayload } from '@cdm/shared';
 
 @Injectable()
 export class AgentProxyService {
@@ -137,7 +137,7 @@ export class AgentProxyService {
         ).catch((err: Error) => console.error('Failed to persist assistant message:', err.message));
 
         // 发送带引用的结束事件
-        const donePayload: Record<string, unknown> = { done: true };
+        const donePayload: StreamDonePayload = { done: true };
         if (citations.length > 0) {
           donePayload.citations = citations;
         }

@@ -10,7 +10,7 @@ import {
   CONVERSATION_CREATE, CONVERSATION_DELETE,
   KB_VERIFY_OWNERSHIP,
 } from '@cdm/shared';
-import type { KbOwnershipResultVO, ConversationVO } from '@cdm/shared';
+import type { KbOwnershipResultVO, ConversationVO, ChatRequestDto } from '@cdm/shared';
 import { AgentProxyService } from './services/agent-proxy.service.js';
 
 @Controller('conversations')
@@ -44,7 +44,7 @@ export class ChatProxyController {
 
   @Post()
   async sendChat(
-    @Body() body: { kb_id: string; query: string; conversation_id?: string },
+    @Body() body: ChatRequestDto,
     @CurrentUser() identity: IdentityPayload,
     @Res() res: Response,
   ) {
