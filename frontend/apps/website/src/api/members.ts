@@ -14,7 +14,7 @@ export interface OrgMember {
 
 export interface InviteRequest {
   email: string;
-  role_id: string;
+  roleId: string;
 }
 
 export async function listMembers(): Promise<OrgMember[]> {

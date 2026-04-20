@@ -16,14 +16,14 @@ export default function PatientListPage() {
   };
 
   const columns: ProColumns<PatientProfile>[] = [
-    { title: "姓名", dataIndex: "real_name", ellipsis: true },
+    { title: "姓名", dataIndex: "name", ellipsis: true },
     {
       title: "性别",
       dataIndex: "gender",
       width: 80,
       valueEnum: { male: { text: "男" }, female: { text: "女" }, other: { text: "其他" } },
     },
-    { title: "出生日期", dataIndex: "birth_date", valueType: "date", width: 120 },
+    { title: "出生日期", dataIndex: "birthDate", valueType: "date", width: 120 },
     {
       title: "创建时间",
       dataIndex: "createdAt",
@@ -58,7 +58,7 @@ export default function PatientListPage() {
         const data = await getPatients({
           skip: ((params.current ?? 1) - 1) * (params.pageSize ?? 20),
           limit: params.pageSize ?? 20,
-          search: params.real_name as string | undefined,
+          search: params.name as string | undefined,
         });
         return { data, success: true };
       }}

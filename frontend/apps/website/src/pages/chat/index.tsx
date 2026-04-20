@@ -29,8 +29,8 @@ import { listKBs, type KnowledgeBase } from "@/api/knowledge";
  * ================================================================ */
 
 interface Citation {
-  doc_id: string;
-  chunk_id?: string;
+  docId: string;
+  chunkId?: string;
   ref: string;
   page?: number;
   snippet: string;

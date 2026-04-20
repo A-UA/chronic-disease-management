@@ -33,13 +33,13 @@ export default function PatientDetailPage() {
 
       <Card title="基本信息">
         <Descriptions column={2} bordered>
-          <Descriptions.Item label="姓名">{patient.real_name ?? "-"}</Descriptions.Item>
+          <Descriptions.Item label="姓名">{patient.name ?? "-"}</Descriptions.Item>
           <Descriptions.Item label="性别">
             <Tag color={patient.gender === "male" ? "blue" : "pink"}>
               {genderMap[patient.gender ?? ""] ?? "-"}
             </Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="出生日期">{patient.birth_date ?? "-"}</Descriptions.Item>
+          <Descriptions.Item label="出生日期">{patient.birthDate ?? "-"}</Descriptions.Item>
           <Descriptions.Item label="创建时间">{patient.createdAt}</Descriptions.Item>
         </Descriptions>
       </Card>

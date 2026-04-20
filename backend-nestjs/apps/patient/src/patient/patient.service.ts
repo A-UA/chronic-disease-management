@@ -46,6 +46,8 @@ export class PatientService {
       orgId: entity.orgId,
       name: entity.name,
       gender: entity.gender,
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
     };
   }
 }

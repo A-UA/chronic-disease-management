@@ -8,7 +8,7 @@ export async function getPatientTrend(
 ): Promise<HealthMetric[]> {
   return apiClient
     .get(`health-metrics/patients/${patientId}/trend`, {
-      searchParams: { metric_type: metricType, days },
+      searchParams: { metricType, days },
     })
     .json<HealthMetric[]>();
 }

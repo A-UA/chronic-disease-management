@@ -39,7 +39,7 @@ export default function AuditPage() {
       setData(
         await listAuditLogs({
           action: actionFilter,
-          resource_type: resourceFilter,
+          resourceType: resourceFilter,
           limit: 100,
         }),
       );
@@ -69,8 +69,8 @@ export default function AuditPage() {
     },
     {
       title: "用户",
-      dataIndex: "user_email",
-      key: "user_email",
+      dataIndex: "userEmail",
+      key: "userEmail",
       width: 200,
       ellipsis: true,
       render: (email: string | undefined) => email || "-",
@@ -84,23 +84,23 @@ export default function AuditPage() {
     },
     {
       title: "资源类型",
-      dataIndex: "resource_type",
-      key: "resource_type",
+      dataIndex: "resourceType",
+      key: "resourceType",
       width: 140,
       render: (type: string) => <Tag>{type}</Tag>,
     },
     {
       title: "资源 ID",
-      dataIndex: "resource_id",
-      key: "resource_id",
+      dataIndex: "resourceId",
+      key: "resourceId",
       width: 140,
       ellipsis: true,
       render: (id: string | null) => id || "-",
     },
     {
       title: "IP 地址",
-      dataIndex: "ip_address",
-      key: "ip_address",
+      dataIndex: "ipAddress",
+      key: "ipAddress",
       width: 140,
       render: (ip: string | null) => ip || "-",
     },

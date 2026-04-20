@@ -2,20 +2,20 @@ export interface PatientProfile {
   id: string;
   userId: string;
   orgId: string;
-  real_name: string | null;
+  name: string;
   gender: string | null;
-  birth_date: string | null;
-  medical_history: Record<string, unknown> | null;
+  birthDate: string | null;
+  medicalHistory: Record<string, unknown> | null;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface HealthMetric {
   id: string;
-  patient_id: string;
-  metric_type: string;
+  patientId: string;
+  metricType: string;
   value: number;
-  value_secondary: number | null;
+  valueSecondary: number | null;
   unit: string;
   measuredAt: string;
   note: string | null;
@@ -24,9 +24,9 @@ export interface HealthMetric {
 
 export interface ManagementSuggestion {
   id: string;
-  patient_id: string;
-  manager_id: string;
-  suggestion_type: string;
+  patientId: string;
+  managerId: string;
+  suggestionType: string;
   content: string;
   createdAt: string;
 }

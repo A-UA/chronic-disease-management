@@ -32,7 +32,7 @@ export default function HealthTrendChart({ patientId }: { patientId: string }) {
   const chartData = isBloodPressure
     ? data.flatMap((d) => [
         { date: d.measuredAt, value: d.value, type: "收缩压" },
-        { date: d.measuredAt, value: d.value_secondary ?? 0, type: "舒张压" },
+        { date: d.measuredAt, value: d.valueSecondary ?? 0, type: "舒张压" },
       ])
     : data.map((d) => ({ date: d.measuredAt, value: d.value, type: metricType }));
 

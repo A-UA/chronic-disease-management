@@ -7,6 +7,8 @@ export interface PatientVO {
   orgId: string;
   name: string;
   gender: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 /** 健康指标视图 */

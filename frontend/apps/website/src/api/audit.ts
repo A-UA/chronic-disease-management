@@ -3,18 +3,18 @@ import { apiClient } from "./client";
 export interface AuditLogItem {
   id: string;
   userId: string;
-  user_email?: string;
+  userEmail?: string;
   action: string;
-  resource_type: string;
-  resource_id: string | null;
-  ip_address: string | null;
+  resourceType: string;
+  resourceId: string | null;
+  ipAddress: string | null;
   details: string | null;
   createdAt: string;
 }
 
 export interface AuditLogQuery {
   action?: string;
-  resource_type?: string;
+  resourceType?: string;
   skip?: number;
   limit?: number;
 }
@@ -22,7 +22,7 @@ export interface AuditLogQuery {
 export async function listAuditLogs(params: AuditLogQuery = {}): Promise<AuditLogItem[]> {
   const searchParams = new URLSearchParams();
   if (params.action) searchParams.set("action", params.action);
-  if (params.resource_type) searchParams.set("resource_type", params.resource_type);
+  if (params.resourceType) searchParams.set("resourceType", params.resourceType);
   if (params.skip != null) searchParams.set("skip", String(params.skip));
   if (params.limit != null) searchParams.set("limit", String(params.limit));
   const qs = searchParams.toString();
