@@ -231,7 +231,7 @@ CREATE TABLE IF NOT EXISTS management_suggestions (
 -- 15. knowledge_bases - 知识库表
 -- -----------------------------------------------------------
 CREATE TABLE IF NOT EXISTS knowledge_bases (
-    id          BIGSERIAL    PRIMARY KEY,
+    id          BIGINT    PRIMARY KEY,
     tenant_id   BIGINT       NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     org_id      BIGINT       NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     created_by  BIGINT       NOT NULL REFERENCES users(id),
@@ -248,7 +248,7 @@ CREATE INDEX IF NOT EXISTS ix_knowledge_bases_org_id ON knowledge_bases (org_id)
 -- 16. documents - 文档表
 -- -----------------------------------------------------------
 CREATE TABLE IF NOT EXISTS documents (
-    id          BIGSERIAL     PRIMARY KEY,
+    id          BIGINT     PRIMARY KEY,
     tenant_id   BIGINT        NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     kb_id       BIGINT        NOT NULL REFERENCES knowledge_bases(id) ON DELETE CASCADE,
     org_id      BIGINT        NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
