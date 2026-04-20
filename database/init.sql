@@ -338,16 +338,17 @@ INSERT INTO organization_user_roles (org_id, user_id, role_id, tenant_id) VALUES
 
 -- 菜单数据 (使用 diff=60001ms 的雪花 ID，base=2045078279118917636)
 INSERT INTO menus (id, parent_id, tenant_id, name, code, menu_type, path, icon, sort, is_visible, is_enabled) VALUES
-(2045078279118917636, NULL,          NULL, '患者管理',       'patient-list',   'page',      '/patients',             'UserOutlined',              10, true, true),
-(2045078279118917637, NULL,          NULL, '知识摘要与文档', 'knowledge',       'directory', '/knowledge',            'BookOutlined',              20, true, true),
-(2045078279118917638, 2045078279118917637,  NULL, '知识库管理',     'kb-list',         'page',      '/knowledge/list',       'AppstoreAddOutlined',       1,  true, true),
-(2045078279118917639, 2045078279118917637,  NULL, '知识文档',       'kb-documents',    'page',      '/knowledge/documents',  'FileTextOutlined',          2,  true, true),
-(2045078279118917640, NULL,          NULL, '智能问诊 Agent', 'ai-chat',         'page',      '/chat',                 'MessageOutlined',           30, true, true),
-(2045078279118917641, NULL,          NULL, '系统管理',       'system',          'directory', '/system',               'SettingOutlined',           90, true, true),
-(2045078279118917642, 2045078279118917641,  NULL, '用户管理',       'sys-users',       'page',      '/system/users',         'TeamOutlined',              1,  true, true),
-(2045078279118917643, 2045078279118917641,  NULL, '租户管理',       'sys-tenants',     'page',      '/system/tenants',       'BankOutlined',              2,  true, true),
-(2045078279118917644, 2045078279118917641,  NULL, '组织机构',       'sys-orgs',        'page',      '/system/orgs',          'ApartmentOutlined',         3,  true, true),
-(2045078279118917645, 2045078279118917641,  NULL, '角色管理',       'sys-roles',       'page',      '/system/roles',         'SafetyCertificateOutlined', 4,  true, true),
-(2045078279118917646, 2045078279118917641,  NULL, '菜单管理',       'sys-menus',       'page',      '/system/menus',         'MenuOutlined',              5,  true, true),
-(2045078279118917647, 2045078279118917641,  NULL, '审计日志',       'sys-audit',       'page',      '/system/audit',         'AuditOutlined',             6,  true, true)
+(2045078279118917636, NULL,          NULL, '数据看板',       'dashboard',       'page',      '/dashboard',            'DashboardOutlined',         1,  true, true),
+(2045078279118917637, NULL,          NULL, '患者管理',       'patient-list',   'page',      '/patients',             'UserOutlined',              10, true, true),
+(2045078279118917638, NULL,          NULL, '知识摘要与文档', 'knowledge',       'directory', '/knowledge',            'BookOutlined',              20, true, true),
+(2045078279118917639, 2045078279118917638,  NULL, '知识库管理',     'kb-list',         'page',      '/knowledge/list',       'AppstoreAddOutlined',       1,  true, true),
+(2045078279118917640, 2045078279118917638,  NULL, '知识文档',       'kb-documents',    'page',      '/knowledge/documents',  'FileTextOutlined',          2,  true, true),
+(2045078279118917641, NULL,          NULL, '智能问诊 Agent', 'ai-chat',         'page',      '/chat',                 'MessageOutlined',           30, true, true),
+(2045078279118917642, NULL,          NULL, '系统管理',       'system',          'directory', '/system',               'SettingOutlined',           90, true, true),
+(2045078279118917643, 2045078279118917642,  NULL, '用户管理',       'sys-users',       'page',      '/system/users',         'TeamOutlined',              1,  true, true),
+(2045078279118917644, 2045078279118917642,  NULL, '租户管理',       'sys-tenants',     'page',      '/system/tenants',       'BankOutlined',              2,  true, true),
+(2045078279118917645, 2045078279118917642,  NULL, '组织机构',       'sys-orgs',        'page',      '/system/orgs',          'ApartmentOutlined',         3,  true, true),
+(2045078279118917646, 2045078279118917642,  NULL, '角色管理',       'sys-roles',       'page',      '/system/roles',         'SafetyCertificateOutlined', 4,  true, true),
+(2045078279118917647, 2045078279118917642,  NULL, '菜单管理',       'sys-menus',       'page',      '/system/menus',         'MenuOutlined',              5,  true, true),
+(2045078279118917648, 2045078279118917642,  NULL, '审计日志',       'sys-audit',       'page',      '/system/audit',         'AuditOutlined',             6,  true, true)
 ON CONFLICT DO NOTHING;
