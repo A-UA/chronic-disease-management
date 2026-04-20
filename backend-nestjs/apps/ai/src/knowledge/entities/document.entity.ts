@@ -28,4 +28,7 @@ export class DocumentEntity {
 
   @Column({ name: 'minio_url' })
   minioUrl: string;
+
+  @Column({ default: 'processing' })
+  status: string;
 }

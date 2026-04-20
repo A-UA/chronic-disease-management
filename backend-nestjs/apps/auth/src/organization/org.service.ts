@@ -6,6 +6,7 @@ import type {
   UpdateOrgData,
   PaginatedResult,
   OrganizationVO,
+  AuthDashboardStatsVO,
   SuccessVO,
 } from '@cdm/shared';
 import { Injectable } from '@nestjs/common';
@@ -58,6 +59,19 @@ export class OrganizationService {
       status: entity.status,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
+    };
+  }
+
+  async dashboardStats(): Promise<AuthDashboardStatsVO> {
+    const [orgCount, userCount] = await Promise.all([
+      this.repo.count(),
+      this.repo.manager.getRepository('UserEntity').count(),
+    ]);
+    return {
+      totalOrganizations: orgCount,
+      totalUsers: userCount,
+      // 24 小时活跃用户暂无登录日志表，预留为 0
+      activeUsers24h: 0,
     };
   }
 }

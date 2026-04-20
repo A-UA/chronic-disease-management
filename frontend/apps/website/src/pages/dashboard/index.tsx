@@ -10,48 +10,53 @@ import {
 } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import { Line } from "@ant-design/charts";
-import { getDashboardStats } from "@/api/dashboard";
+import { getDashboardStats, type DashboardStats } from "@/api/dashboard";
 import { useAuthStore } from "@/stores/auth";
 
-const statCards = [
+const statCards: {
+  key: keyof DashboardStats;
+  title: string;
+  icon: React.ReactNode;
+  gradient: string;
+}[] = [
   {
-    key: "total_organizations",
+    key: "totalOrganizations",
     title: "机构总数",
     icon: <TeamOutlined />,
     gradient: "gradient-card-1",
   },
-  { key: "total_users", title: "用户总数", icon: <UserOutlined />, gradient: "gradient-card-2" },
+  { key: "totalUsers", title: "用户总数", icon: <UserOutlined />, gradient: "gradient-card-2" },
   {
-    key: "total_patients",
+    key: "totalPatients",
     title: "患者总数",
     icon: <HeartOutlined />,
     gradient: "gradient-card-3",
   },
   {
-    key: "total_conversations",
+    key: "totalConversations",
     title: "对话总数",
     icon: <MessageOutlined />,
     gradient: "gradient-card-4",
   },
   {
-    key: "active_users_24h",
+    key: "activeUsers24h",
     title: "24h 活跃",
     icon: <ThunderboltOutlined />,
     gradient: "gradient-card-7",
   },
   {
-    key: "total_tokens_used",
+    key: "totalTokensUsed",
     title: "Token 消耗",
     icon: <CloudOutlined />,
     gradient: "gradient-card-6",
   },
   {
-    key: "recent_failed_docs",
+    key: "recentFailedDocs",
     title: "失败文档",
     icon: <WarningOutlined />,
     gradient: "gradient-card-5",
   },
-] as const;
+];
 
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
@@ -65,7 +70,7 @@ export default function DashboardPage() {
   }
 
   const lineConfig = {
-    data: data.token_usage_trend ?? [],
+    data: data.tokenUsageTrend ?? [],
     xField: "date",
     yField: "tokens",
     smooth: true,
@@ -95,7 +100,7 @@ export default function DashboardPage() {
               <span className="text-xl text-white/60">{card.icon}</span>
             </div>
             <div className="text-3xl font-bold tracking-tight">
-              {((data as any)[card.key] ?? 0).toLocaleString()}
+              {((data[card.key] as number) ?? 0).toLocaleString()}
             </div>
           </div>
         ))}

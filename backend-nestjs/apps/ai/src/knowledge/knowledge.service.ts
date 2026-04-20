@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { KnowledgeBaseEntity } from './entities/knowledge-base.entity.js';
 import { DocumentEntity } from './entities/document.entity.js';
 import { InfraService } from '../infra/infra.service.js';
@@ -13,6 +13,8 @@ import type {
   DocumentVO,
   DocumentSyncResultVO,
   KbOwnershipResultVO,
+  AiDashboardStatsVO,
+  TokenUsageTrendItem,
 } from '@cdm/shared';
 
 @Injectable()
@@ -21,6 +23,7 @@ export class KnowledgeService {
     @InjectRepository(KnowledgeBaseEntity) private kbRepo: Repository<KnowledgeBaseEntity>,
     @InjectRepository(DocumentEntity) private docRepo: Repository<DocumentEntity>,
     private readonly infraService: InfraService,
+    private readonly dataSource: DataSource,
   ) {}
 
   async findAllKb(tenantId: string): Promise<KnowledgeBaseVO[]> {
@@ -141,6 +144,33 @@ export class KnowledgeService {
   async verifyKbOwnership(kbId: string, tenantId: string): Promise<KbOwnershipResultVO> {
     const kb = await this.kbRepo.findOne({ where: { id: kbId, tenantId } });
     return { valid: !!kb, kbId, tenantId };
+  }
+
+  /** AI 域仪表盘聚合统计 */
+  async dashboardStats(): Promise<AiDashboardStatsVO> {
+    // 并行聚合：对话总数 + Token 总量、失败文档数、近 7 天 Token 趋势
+    const [convAgg, failedDocs, trendRows] = await Promise.all([
+      this.dataSource.query<{ total_conversations: string; total_tokens_used: string }[]>(
+        `SELECT COUNT(*)::text AS total_conversations, COALESCE(SUM(total_tokens), 0)::text AS total_tokens_used FROM conversations WHERE deleted_at IS NULL`,
+      ),
+      this.docRepo.count({ where: { status: 'failed' } }),
+      this.dataSource.query<{ date: string; tokens: string }[]>(
+        `SELECT to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS date, COALESCE(SUM(token_count), 0)::text AS tokens FROM chat_messages WHERE created_at >= NOW() - INTERVAL '7 days' AND deleted_at IS NULL GROUP BY date_trunc('day', created_at) ORDER BY date`,
+      ),
+    ]);
+
+    const agg = convAgg[0] ?? { total_conversations: '0', total_tokens_used: '0' };
+    const trend: TokenUsageTrendItem[] = trendRows.map((r) => ({
+      date: r.date,
+      tokens: Number(r.tokens),
+    }));
+
+    return {
+      totalConversations: Number(agg.total_conversations),
+      totalTokensUsed: Number(agg.total_tokens_used),
+      recentFailedDocs: failedDocs,
+      tokenUsageTrend: trend,
+    };
   }
 
   static toKbVO(entity: KnowledgeBaseEntity): KnowledgeBaseVO {

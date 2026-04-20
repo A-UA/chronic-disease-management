@@ -47,3 +47,8 @@ export interface PatientFamilyLinkVO {
   createdAt: Date;
 }
 
+/** Patient 域仪表盘统计 */
+export interface PatientDashboardStatsVO {
+  totalPatients: number;
+}
+

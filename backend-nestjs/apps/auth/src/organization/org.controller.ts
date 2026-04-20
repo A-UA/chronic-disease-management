@@ -1,6 +1,7 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { OrganizationService } from './org.service.js';
+import { AUTH_DASHBOARD_STATS } from '@cdm/shared';
 import type {
   ListPayload,
   CreatePayload,
@@ -25,4 +26,7 @@ export class OrganizationController {
 
   @MessagePattern({ cmd: 'org_delete' })
   delete(@Payload() payload: DeletePayload) { return this.service.delete(payload.id); }
+
+  @MessagePattern({ cmd: AUTH_DASHBOARD_STATS })
+  dashboardStats() { return this.service.dashboardStats(); }
 }

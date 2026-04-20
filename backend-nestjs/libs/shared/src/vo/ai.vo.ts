@@ -81,3 +81,29 @@ export interface DocumentSyncResultVO {
   chunkCount?: number;
   status?: string;
 }
+
+/** Token 使用趋势条目 */
+export interface TokenUsageTrendItem {
+  date: string;
+  tokens: number;
+}
+
+/** AI 域仪表盘统计 */
+export interface AiDashboardStatsVO {
+  totalConversations: number;
+  totalTokensUsed: number;
+  recentFailedDocs: number;
+  tokenUsageTrend: TokenUsageTrendItem[];
+}
+
+/** Gateway 聚合的完整仪表盘统计 */
+export interface DashboardStatsVO {
+  totalOrganizations: number;
+  totalUsers: number;
+  totalPatients: number;
+  totalConversations: number;
+  activeUsers24h: number;
+  totalTokensUsed: number;
+  recentFailedDocs: number;
+  tokenUsageTrend: TokenUsageTrendItem[];
+}

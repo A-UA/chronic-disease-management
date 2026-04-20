@@ -23,6 +23,7 @@ import { UserProxyController } from './proxy/user-proxy.controller.js';
 import { RoleProxyController } from './proxy/role-proxy.controller.js';
 import { PermissionProxyController } from './proxy/permission-proxy.controller.js';
 import { MenuProxyController } from './proxy/menu-proxy.controller.js';
+import { DashboardProxyController } from './proxy/dashboard-proxy.controller.js';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -66,6 +67,7 @@ import { MenuProxyController } from './proxy/menu-proxy.controller.js';
     RoleProxyController,
     PermissionProxyController,
     MenuProxyController,
+    DashboardProxyController,
   ],
   providers: [
     {

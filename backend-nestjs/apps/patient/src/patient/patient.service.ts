@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { PatientEntity } from './patient.entity.js';
 import { IdentityPayload, nextId } from '@cdm/shared';
-import type { PatientVO } from '@cdm/shared';
+import type { PatientVO, PatientDashboardStatsVO } from '@cdm/shared';
 
 @Injectable()
 export class PatientService {
@@ -32,6 +32,11 @@ export class PatientService {
     });
     const saved = await this.repo.save(entity);
     return PatientService.toVO(saved);
+  }
+
+  async dashboardStats(): Promise<PatientDashboardStatsVO> {
+    const totalPatients = await this.repo.count();
+    return { totalPatients };
   }
 
   static toVO(entity: PatientEntity): PatientVO {

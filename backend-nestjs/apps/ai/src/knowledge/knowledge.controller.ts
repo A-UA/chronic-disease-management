@@ -4,7 +4,7 @@ import { KnowledgeService } from './knowledge.service.js';
 import {
   KNOWLEDGE_BASE_FIND_ALL, KNOWLEDGE_BASE_CREATE, KNOWLEDGE_BASE_STATS, KNOWLEDGE_BASE_DELETE,
   DOCUMENT_FIND_BY_KB, DOCUMENT_CREATE_SYNC, DOCUMENT_DELETE, DOCUMENT_FIND_ONE,
-  KB_VERIFY_OWNERSHIP,
+  KB_VERIFY_OWNERSHIP, AI_DASHBOARD_STATS,
 } from '@cdm/shared';
 import type {
   IdentityPayload,
@@ -66,4 +66,7 @@ export class KnowledgeController {
   verifyKbOwnership(@Payload() payload: KbVerifyOwnershipPayload) {
     return this.service.verifyKbOwnership(payload.kbId, payload.tenantId);
   }
+
+  @MessagePattern({ cmd: AI_DASHBOARD_STATS })
+  dashboardStats() { return this.service.dashboardStats(); }
 }

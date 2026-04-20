@@ -26,3 +26,8 @@ export const MESSAGE_CREATE = 'msg_create';
 
 // 知识库归属校验
 export const KB_VERIFY_OWNERSHIP = 'kb_verify_ownership';
+
+// Dashboard 统计命令
+export const AUTH_DASHBOARD_STATS = 'auth_dashboard_stats';
+export const PATIENT_DASHBOARD_STATS = 'patient_dashboard_stats';
+export const AI_DASHBOARD_STATS = 'ai_dashboard_stats';

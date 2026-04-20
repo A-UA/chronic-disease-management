@@ -111,3 +111,10 @@ export interface CurrentUserVO {
 export interface SuccessVO {
   success: true;
 }
+
+/** Auth 域仪表盘统计 */
+export interface AuthDashboardStatsVO {
+  totalOrganizations: number;
+  totalUsers: number;
+  activeUsers24h: number;
+}
