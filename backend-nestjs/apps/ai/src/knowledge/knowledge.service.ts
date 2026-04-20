@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { KnowledgeBaseEntity } from './entities/knowledge-base.entity.js';
 import { DocumentEntity } from './entities/document.entity.js';
 import { InfraService } from '../infra/infra.service.js';
+import { nextId } from '@cdm/shared';
 import type {
   CreateKbData,
   SyncDocumentPayload,
@@ -27,9 +28,19 @@ export class KnowledgeService {
     return entities.map(KnowledgeService.toKbVO);
   }
 
-  async createKb(tenantId: string, orgId: string, createdBy: string, data: CreateKbData): Promise<KnowledgeBaseVO> {
+  async createKb(
+    tenantId: string,
+    orgId: string,
+    createdBy: string,
+    data: CreateKbData,
+  ): Promise<KnowledgeBaseVO> {
     const kb = this.kbRepo.create({
-      tenantId, orgId, createdBy, name: data.name, description: data.description
+      id: nextId(),
+      tenantId,
+      orgId,
+      createdBy,
+      name: data.name,
+      description: data.description,
     });
     const saved = await this.kbRepo.save(kb);
     return KnowledgeService.toKbVO(saved);
@@ -59,9 +70,7 @@ export class KnowledgeService {
     // 2. MinIO: 批量删除该 KB 下所有文档文件
     const docs = await this.docRepo.find({ where: { kbId: id } });
     await Promise.all(
-      docs
-        .filter((d) => d.minioUrl)
-        .map((d) => this.infraService.deleteFile(d.minioUrl)),
+      docs.filter((d) => d.minioUrl).map((d) => this.infraService.deleteFile(d.minioUrl)),
     );
 
     // 3. DB: CASCADE 删除知识库 + 关联文档记录
@@ -74,14 +83,22 @@ export class KnowledgeService {
     return entities.map(KnowledgeService.toDocVO);
   }
 
-  async syncDocument(tenantId: string, orgId: string, uploaderId: string, payload: SyncDocumentPayload): Promise<DocumentSyncResultVO> {
+  async syncDocument(
+    tenantId: string,
+    orgId: string,
+    uploaderId: string,
+    payload: SyncDocumentPayload,
+  ): Promise<DocumentSyncResultVO> {
     const doc = this.docRepo.create({
-      tenantId, orgId, uploaderId,
+      id: nextId(),
+      tenantId,
+      orgId,
+      uploaderId,
       kbId: payload.kbId,
       fileName: payload.fileName,
       fileType: payload.fileType ?? '',
       fileSize: payload.fileSize ?? 0,
-      minioUrl: payload.minioUrl
+      minioUrl: payload.minioUrl,
     });
     const saved = await this.docRepo.save(doc);
     return {
