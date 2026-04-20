@@ -41,6 +41,7 @@ def create_agent_graph():
         model=settings.CHAT_MODEL,
         base_url=settings.LLM_BASE_URL,
         api_key=settings.LLM_API_KEY,
+        stream_usage=True,
     ).bind_tools(tools)
 
     tool_node = ToolNode(tools)

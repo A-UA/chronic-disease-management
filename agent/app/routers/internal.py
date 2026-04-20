@@ -10,6 +10,7 @@ from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, Tool
 from pydantic import BaseModel, Field
 from typing import Any, List, Dict
 from app.agent.graph import create_agent_graph
+from app.config import settings
 
 internal_router = APIRouter(prefix="/internal")
 graph = create_agent_graph()
@@ -42,6 +43,10 @@ async def chat_stream(req: ChatRequest):
 
             config = {"configurable": req.metadata}
 
+            # 累积 Token 使用统计（可能有多轮 LLM 调用，如工具回调后再次生成）
+            total_input_tokens = 0
+            total_output_tokens = 0
+
             async for event in graph.astream_events(
                 {"messages": messages}, config=config, version="v2"
             ):
@@ -50,6 +55,13 @@ async def chat_stream(req: ChatRequest):
                     chunk = event["data"]["chunk"]
                     if chunk.content:
                         yield {"event": "message", "data": chunk.content}
+                elif kind == "on_chat_model_end":
+                    # 从 AIMessage.usage_metadata 中提取 Token 用量
+                    output = event["data"].get("output")
+                    if hasattr(output, "usage_metadata") and output.usage_metadata:
+                        usage = output.usage_metadata
+                        total_input_tokens += usage.get("input_tokens", 0)
+                        total_output_tokens += usage.get("output_tokens", 0)
                 elif kind == "on_tool_start":
                     yield {
                         "event": "tool_start",
@@ -71,6 +83,19 @@ async def chat_stream(req: ChatRequest):
                         "event": "tool_end",
                         "data": json.dumps(tool_data, ensure_ascii=False),
                     }
+
+            # 流结束后发送 Token 使用统计事件
+            combined_tokens = total_input_tokens + total_output_tokens
+            if combined_tokens > 0:
+                yield {
+                    "event": "usage",
+                    "data": json.dumps({
+                        "input_tokens": total_input_tokens,
+                        "output_tokens": total_output_tokens,
+                        "total_tokens": combined_tokens,
+                        "model": settings.CHAT_MODEL,
+                    }),
+                }
         except Exception as e:
             yield {"event": "error", "data": str(e)}
 

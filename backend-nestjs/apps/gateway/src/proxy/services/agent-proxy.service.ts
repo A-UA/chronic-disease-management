@@ -68,6 +68,7 @@ export class AgentProxyService {
 
       let assistantContent = '';
       let citations: CitationData[] = [];
+      let usageData: { input_tokens: number; output_tokens: number; total_tokens: number; model?: string } | null = null;
       let buffer = '';
 
       response.data.on('data', (chunk: Buffer) => {
@@ -121,18 +122,34 @@ export class AgentProxyService {
                 citations = parsed.artifact;
               }
             } catch { /* 忽略非 JSON 的 tool_end */ }
+          } else if (currentEvent === 'usage' && currentData) {
+            // 提取 Token 使用统计
+            try {
+              usageData = JSON.parse(currentData) as typeof usageData;
+            } catch { /* 忽略非 JSON 的 usage */ }
           }
         }
       });
 
       response.data.on('end', () => {
-        // 持久化助手消息
+        const assistantTokenCount = usageData?.total_tokens ?? 0;
+        const assistantMetadata: Record<string, unknown> | undefined = usageData
+          ? {
+              model: usageData.model ?? undefined,
+              inputTokens: usageData.input_tokens,
+              outputTokens: usageData.output_tokens,
+            }
+          : undefined;
+
+        // 持久化助手消息（含 Token 统计和元数据）
         lastValueFrom(
           aiClient.send({ cmd: MESSAGE_CREATE }, {
             conversationId,
             role: 'assistant',
             content: assistantContent,
             citations: citations.length > 0 ? citations : undefined,
+            tokenCount: assistantTokenCount,
+            metadata: assistantMetadata,
           }),
         ).catch((err: Error) => console.error('Failed to persist assistant message:', err.message));
 
