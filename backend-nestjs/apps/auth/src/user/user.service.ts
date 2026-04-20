@@ -46,7 +46,7 @@ export class UserService {
     const savedUser = await this.repo.save(entity);
 
     // 绑定组织
-    const orgId = data.org_id || identity.orgId;
+    const orgId = data.orgId || identity.orgId;
     const tenantId = identity.tenantId;
 
     if (orgId && tenantId) {
@@ -58,8 +58,8 @@ export class UserService {
       });
 
       // 分配角色
-      if (data.role_ids && Array.isArray(data.role_ids)) {
-        for (const roleId of data.role_ids) {
+      if (data.roleIds && Array.isArray(data.roleIds)) {
+        for (const roleId of data.roleIds) {
           await this.orgUserRoleRepo.save({
             orgId,
             userId: savedUser.id,

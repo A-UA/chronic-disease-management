@@ -63,11 +63,11 @@ export class CreateUserDto {
 
   @IsString()
   @IsOptional()
-  org_id?: string;
+  orgId?: string;
 
   @IsArray()
   @IsOptional()
-  role_ids?: string[];
+  roleIds?: string[];
 }
 
 export class UpdateUserDto {

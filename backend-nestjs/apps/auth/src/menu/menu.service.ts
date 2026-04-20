@@ -16,13 +16,13 @@ export interface MenuNode {
   id: string;
   name: string;
   code: string;
-  menu_type: string;
+  menuType: string;
   path: string | null;
   icon: string | null;
-  permission_code: string | null;
+  permissionCode: string | null;
   sort: number;
-  is_visible: boolean;
-  is_enabled: boolean;
+  isVisible: boolean;
+  isEnabled: boolean;
   meta: Record<string, unknown> | null;
   children: MenuNode[];
 }
@@ -103,13 +103,13 @@ export class MenuService {
         id: m.id,
         name: m.name,
         code: m.code,
-        menu_type: m.menuType,
+        menuType: m.menuType,
         path: m.path,
         icon: m.icon,
-        permission_code: m.permissionCode,
+        permissionCode: m.permissionCode,
         sort: m.sort,
-        is_visible: m.isVisible,
-        is_enabled: m.isEnabled,
+        isVisible: m.isVisible,
+        isEnabled: m.isEnabled,
         meta: m.meta,
         children: [],
       });
@@ -129,7 +129,7 @@ export class MenuService {
 
     // 剪枝
     return roots.filter(
-      (item) => item.menu_type !== 'directory' || item.children.length > 0,
+      (item) => item.menuType !== 'directory' || item.children.length > 0,
     );
   }
 }

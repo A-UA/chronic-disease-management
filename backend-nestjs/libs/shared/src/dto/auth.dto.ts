@@ -27,8 +27,8 @@ export interface CreateUserData {
   email: string;
   password?: string;
   name?: string;
-  org_id?: string;
-  role_ids?: string[];
+  orgId?: string;
+  roleIds?: string[];
 }
 
 export interface UpdateUserData {

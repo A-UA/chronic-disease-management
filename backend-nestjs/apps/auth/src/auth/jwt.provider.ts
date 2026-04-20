@@ -3,9 +3,9 @@ import { JwtService } from '@nestjs/jwt';
 
 interface JwtPayloadData {
   sub: string;
-  tenant_id: string;
-  org_id: string;
-  allowed_org_ids: string[];
+  tenantId: string;
+  orgId: string;
+  allowedOrgIds: string[];
   roles: string[];
 }
 
@@ -27,9 +27,9 @@ export class JwtProvider {
   ): string {
     const payload: JwtPayloadData = {
       sub: userId,
-      tenant_id: tenantId,
-      org_id: orgId,
-      allowed_org_ids: allowedOrgIds,
+      tenantId: tenantId,
+      orgId: orgId,
+      allowedOrgIds: allowedOrgIds,
       roles,
     };
     return this.jwtService.sign(payload);

@@ -1,18 +1,13 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import type { IdentityPayload } from '@cdm/shared';
 
 interface JwtTokenPayload {
   sub: string;
-  tenant_id: string;
-  org_id: string;
-  allowed_org_ids?: string[];
+  tenantId: string;
+  orgId: string;
+  allowedOrgIds?: string[];
   roles?: string[];
 }
 
@@ -36,10 +31,10 @@ export class JwtAuthGuard implements CanActivate {
       const payload = this.jwtService.verify<JwtTokenPayload>(token);
       // 将身份信息注入 request 对象
       request.identity = {
-        userId: String(payload.sub),
-        tenantId: String(payload.tenant_id),
-        orgId: String(payload.org_id),
-        allowedOrgIds: payload.allowed_org_ids || (payload.org_id ? [String(payload.org_id)] : []),
+        userId: payload.sub,
+        tenantId: payload.tenantId,
+        orgId: payload.orgId,
+        allowedOrgIds: payload.allowedOrgIds || (payload.orgId ? [payload.orgId] : []),
         roles: payload.roles || [],
       };
       return true;
