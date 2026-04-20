@@ -12,7 +12,7 @@ import { AUTH_SERVICE, IdentityPayload } from '@cdm/shared';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard.js';
 import { CurrentUser } from '../decorators/current-user.decorator.js';
 
-import { LoginBody, SelectOrgBody, SwitchOrgBody } from './dto/auth.dto.js';
+import { LoginDto, SelectOrgDto, SwitchOrgDto } from '@cdm/shared';
 
 @Controller('auth')
 export class AuthProxyController {
@@ -21,14 +21,14 @@ export class AuthProxyController {
   ) {}
 
   @Post('login/access-token')
-  async login(@Body() body: LoginBody) {
+  async login(@Body() body: LoginDto) {
     return firstValueFrom(
       this.authClient.send({ cmd: 'login' }, body),
     );
   }
 
   @Post('select-org')
-  async selectOrg(@Body() body: SelectOrgBody) {
+  async selectOrg(@Body() body: SelectOrgDto) {
     return firstValueFrom(
       this.authClient.send({ cmd: 'select_org' }, body),
     );
@@ -37,7 +37,7 @@ export class AuthProxyController {
   @Post('switch-org')
   @UseGuards(JwtAuthGuard)
   async switchOrg(
-    @Body() body: SwitchOrgBody,
+    @Body() body: SwitchOrgDto,
     @CurrentUser() identity: IdentityPayload,
   ) {
     return firstValueFrom(
