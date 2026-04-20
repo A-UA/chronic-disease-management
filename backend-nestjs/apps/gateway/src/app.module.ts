@@ -4,7 +4,15 @@ import { JwtModule } from '@nestjs/jwt';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { HttpModule } from '@nestjs/axios';
 import { APP_INTERCEPTOR } from '@nestjs/core';
-import { BigIntSerializerInterceptor, AUTH_TCP_PORT, PATIENT_TCP_PORT, AI_TCP_PORT } from '@cdm/shared';
+import {
+  BigIntSerializerInterceptor,
+  AUTH_SERVICE,
+  AUTH_TCP_PORT,
+  PATIENT_SERVICE,
+  PATIENT_TCP_PORT,
+  AI_SERVICE,
+  AI_TCP_PORT
+} from '@cdm/shared';
 
 import { AuthProxyController } from './proxy/auth-proxy.controller.js';
 import { PatientProxyController } from './proxy/patient-proxy.controller.js';
@@ -34,17 +42,17 @@ import { DashboardProxyController } from './proxy/dashboard-proxy.controller.js'
     HttpModule,
     ClientsModule.register([
       {
-        name: 'AUTH_SERVICE',
+        name: AUTH_SERVICE,
         transport: Transport.TCP,
         options: { host: process.env.AUTH_HOST || 'localhost', port: Number(process.env.AUTH_TCP_PORT) || AUTH_TCP_PORT },
       },
       {
-        name: 'PATIENT_SERVICE',
+        name: PATIENT_SERVICE,
         transport: Transport.TCP,
         options: { host: process.env.PATIENT_HOST || 'localhost', port: Number(process.env.PATIENT_TCP_PORT) || PATIENT_TCP_PORT },
       },
       {
-        name: 'AI_SERVICE',
+        name: AI_SERVICE,
         transport: Transport.TCP,
         options: { host: process.env.AI_HOST || 'localhost', port: Number(process.env.AI_TCP_PORT) || AI_TCP_PORT },
       },
