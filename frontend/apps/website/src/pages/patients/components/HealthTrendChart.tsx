@@ -6,9 +6,9 @@ import { getPatientTrend } from "@/api/health-metrics";
 
 const METRIC_OPTIONS = [
   { label: "血压", value: "blood_pressure" },
-  { label: "血糖", value: "blood_sugar" },
+  { label: "血糖", value: "bloodSugar" },
   { label: "体重", value: "weight" },
-  { label: "心率", value: "heart_rate" },
+  { label: "心率", value: "heartRate" },
   { label: "BMI", value: "bmi" },
   { label: "血氧", value: "spo2" },
 ];
@@ -31,10 +31,10 @@ export default function HealthTrendChart({ patientId }: { patientId: string }) {
   const isBloodPressure = metricType === "blood_pressure";
   const chartData = isBloodPressure
     ? data.flatMap((d) => [
-        { date: d.measured_at, value: d.value, type: "收缩压" },
-        { date: d.measured_at, value: d.value_secondary ?? 0, type: "舒张压" },
+        { date: d.measuredAt, value: d.value, type: "收缩压" },
+        { date: d.measuredAt, value: d.value_secondary ?? 0, type: "舒张压" },
       ])
-    : data.map((d) => ({ date: d.measured_at, value: d.value, type: metricType }));
+    : data.map((d) => ({ date: d.measuredAt, value: d.value, type: metricType }));
 
   return (
     <Card

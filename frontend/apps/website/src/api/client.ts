@@ -13,7 +13,7 @@ export const apiClient = ky.create({
           request.headers.set("Authorization", `Bearer ${token}`);
         }
         // 注意：不再注入 X-Organization-ID
-        // org_id 已内嵌在 JWT 中，由后端从 token 解析
+        // orgId 已内嵌在 JWT 中，由后端从 token 解析
       },
     ],
     afterResponse: [

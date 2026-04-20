@@ -15,32 +15,32 @@ export interface TenantItem {
   name: string;
   slug: string;
   status: string;
-  plan_type: string;
-  quota_tokens_limit: number;
-  quota_tokens_used: number;
-  max_members: number | null;
-  max_patients: number | null;
-  contact_name: string | null;
-  contact_phone: string | null;
-  contact_email: string | null;
-  org_type: string | null;
+  planType: string;
+  quotaTokensLimit: number;
+  quotaTokensUsed: number;
+  maxMembers: number | null;
+  maxPatients: number | null;
+  contactName: string | null;
+  contactPhone: string | null;
+  contactEmail: string | null;
+  orgType: string | null;
   address: string | null;
-  org_count: number;
-  created_at: string;
+  orgCount: number;
+  createdAt: string;
 }
 
 export interface TenantCreateReq {
   name: string;
   slug: string;
-  plan_type?: string;
+  planType?: string;
   status?: string;
-  quota_tokens_limit?: number;
-  max_members?: number | null;
-  max_patients?: number | null;
-  contact_name?: string;
-  contact_phone?: string;
-  contact_email?: string;
-  org_type?: string;
+  quotaTokensLimit?: number;
+  maxMembers?: number | null;
+  maxPatients?: number | null;
+  contactName?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  orgType?: string;
   address?: string;
 }
 
@@ -83,19 +83,19 @@ export interface OrgItem {
   name: string;
   code: string;
   status: string;
-  tenant_id: string;
+  tenantId: string;
   description: string | null;
   sort: number;
-  created_at: string;
+  createdAt: string;
 }
 
 export interface OrgCreateReq {
   name: string;
   code: string;
-  tenant_id?: string;
+  tenantId?: string;
   status?: string;
   description?: string;
-  parent_id?: string;
+  parentId?: string;
 }
 
 export async function listOrgs(params?: {
@@ -125,11 +125,11 @@ export async function deleteOrg(id: string): Promise<void> {
 
 // 组织成员（复用 members API 的类型）
 export interface OrgMemberItem {
-  user_id: string;
+  userId: string;
   email: string;
   name: string | null;
   roles: string[];
-  user_type: string;
+  userType: string;
 }
 
 export async function listOrgMembers(orgId: string): Promise<OrgMemberItem[]> {
@@ -142,7 +142,7 @@ export async function removeOrgMember(orgId: string, userId: string): Promise<vo
 
 export async function addOrgMember(
   orgId: string,
-  data: { user_id: string; role_ids?: string[]; user_type?: string },
+  data: { userId: string; roleIds?: string[]; userType?: string },
 ): Promise<void> {
   await apiClient.post(`organizations/${orgId}/members`, { json: data });
 }
@@ -155,16 +155,16 @@ export interface UserItem {
   id: string;
   email: string;
   name: string | null;
-  created_at: string;
-  org_count: number;
+  createdAt: string;
+  orgCount: number;
 }
 
 export interface UserCreateReq {
   email: string;
   name?: string;
   password: string;
-  org_id?: string;
-  role_ids?: string[];
+  orgId?: string;
+  roleIds?: string[];
 }
 
 export async function listUsers(params?: {
@@ -196,7 +196,7 @@ export async function deleteUser(id: string): Promise<void> {
 }
 
 export async function setUserStatus(id: string, isActive: boolean): Promise<void> {
-  await apiClient.put(`users/${id}/status`, { searchParams: { is_active: String(isActive) } });
+  await apiClient.put(`users/${id}/status`, { searchParams: { isActive: String(isActive) } });
 }
 
 // ═══════════════════════════════════════
@@ -208,18 +208,18 @@ export interface RoleItem {
   code: string;
   name: string;
   description: string | null;
-  is_system: boolean;
-  parent_role_id: string | null;
+  isSystem: boolean;
+  parentRoleId: string | null;
   permissions: { id: string; code: string; name: string }[];
-  user_count?: number;
+  userCount?: number;
 }
 
 export interface RoleCreateReq {
   name: string;
   code: string;
   description?: string;
-  parent_role_id?: string;
-  permission_ids: string[];
+  parentRoleId?: string;
+  permissionIds: string[];
 }
 
 export async function listRoles(): Promise<RoleItem[]> {
@@ -232,7 +232,7 @@ export async function createRole(data: RoleCreateReq): Promise<RoleItem> {
 
 export async function updateRole(
   id: string,
-  data: { name?: string; description?: string; permission_ids?: string[] },
+  data: { name?: string; description?: string; permissionIds?: string[] },
 ): Promise<RoleItem> {
   return apiClient.put(`rbac/roles/${id}`, { json: data }).json<RoleItem>();
 }
@@ -257,30 +257,30 @@ export async function listPermissions(): Promise<PermissionItem[]> {
 
 export interface MenuItemData {
   id: string;
-  parent_id: string | null;
+  parentId: string | null;
   name: string;
   code: string;
-  menu_type: string;
+  menuType: string;
   path: string | null;
   icon: string | null;
-  permission_code: string | null;
+  permissionCode: string | null;
   sort: number;
-  is_visible: boolean;
-  is_enabled: boolean;
+  isVisible: boolean;
+  isEnabled: boolean;
   children: MenuItemData[];
 }
 
 export interface MenuCreateReq {
-  parent_id?: string;
+  parentId?: string;
   name: string;
   code: string;
-  menu_type?: string;
+  menuType?: string;
   path?: string;
   icon?: string;
-  permission_code?: string;
+  permissionCode?: string;
   sort?: number;
-  is_visible?: boolean;
-  is_enabled?: boolean;
+  isVisible?: boolean;
+  isEnabled?: boolean;
 }
 
 export async function listMenus(): Promise<MenuItemData[]> {

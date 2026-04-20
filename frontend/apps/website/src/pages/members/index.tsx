@@ -61,8 +61,8 @@ export default function MemberListPage() {
     },
     {
       title: "类型",
-      dataIndex: "user_type",
-      key: "user_type",
+      dataIndex: "userType",
+      key: "userType",
       width: 100,
       render: (t: string) => {
         const info = TYPE_MAP[t] || { color: "default", label: t };
@@ -81,8 +81,8 @@ export default function MemberListPage() {
     },
     {
       title: "加入时间",
-      dataIndex: "created_at",
-      key: "created_at",
+      dataIndex: "createdAt",
+      key: "createdAt",
       width: 180,
       render: (t: string) => new Date(t).toLocaleString("zh-CN"),
     },
@@ -95,7 +95,7 @@ export default function MemberListPage() {
             render: (_: unknown, record: OrgMember) => (
               <Popconfirm
                 title="确定移除该成员？"
-                onConfirm={() => void handleRemove(record.user_id)}
+                onConfirm={() => void handleRemove(record.userId)}
               >
                 <Button type="link" danger icon={<DeleteOutlined />} size="small">
                   移除

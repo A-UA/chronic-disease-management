@@ -23,19 +23,19 @@ function relativePath(parentPath: string, childPath: string): string {
 
 export function generateRoutes(menus: MenuItem[], parentPath?: string): RouteObject[] {
   return menus
-    .filter((menu) => menu.menu_type !== "link" && menu.is_visible)
+    .filter((menu) => menu.menuType !== "link" && menu.isVisible)
     .flatMap((menu): RouteObject[] => {
       const mod = routeRegistry[menu.code];
       const menuPath = menu.path ?? "";
 
-      if (menu.menu_type === "directory") {
+      if (menu.menuType === "directory") {
         const dirPath = stripLeadingSlash(menuPath);
         const childRoutes = generateRoutes(menu.children ?? [], menuPath);
         return [
           {
             path: parentPath ? relativePath(parentPath, menuPath) : dirPath,
             element: <Outlet />,
-            handle: { permission: menu.permission_code, menuCode: menu.code },
+            handle: { permission: menu.permissionCode, menuCode: menu.code },
             children: childRoutes,
           } satisfies RouteObject,
         ];
@@ -51,11 +51,11 @@ export function generateRoutes(menus: MenuItem[], parentPath?: string): RouteObj
         ? {
             index: true,
             element: mod?.index ?? null,
-            handle: { permission: menu.permission_code, menuCode: menu.code },
+            handle: { permission: menu.permissionCode, menuCode: menu.code },
           }
         : {
             path: pagePath,
-            handle: { permission: menu.permission_code, menuCode: menu.code },
+            handle: { permission: menu.permissionCode, menuCode: menu.code },
             children: [{ index: true, element: mod?.index ?? null }, ...(mod?.children ?? [])],
           };
 

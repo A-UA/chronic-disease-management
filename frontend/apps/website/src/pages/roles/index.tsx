@@ -23,10 +23,10 @@ export default function RoleListPage() {
       key: "name",
       render: (_, r) => (
         <Space>
-          <SafetyCertificateOutlined style={{ color: r.is_system ? "#fa8c16" : "#667eea" }} />
+          <SafetyCertificateOutlined style={{ color: r.isSystem ? "#fa8c16" : "#667eea" }} />
           <div>
             <Typography.Text strong>{r.name}</Typography.Text>
-            {r.is_system && (
+            {r.isSystem && (
               <Tooltip title="系统预置角色，不可修改">
                 <LockOutlined style={{ marginLeft: 6, color: "#fa8c16", fontSize: 12 }} />
               </Tooltip>
@@ -68,7 +68,7 @@ export default function RoleListPage() {
       key: "type",
       width: 100,
       render: (_, r) =>
-        r.is_system ? <Tag color="orange">系统</Tag> : <Tag color="blue">自定义</Tag>,
+        r.isSystem ? <Tag color="orange">系统</Tag> : <Tag color="blue">自定义</Tag>,
     },
   ];
 

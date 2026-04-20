@@ -76,9 +76,9 @@ export interface DeleteDocPayload {
 
 /** 聊天请求体 */
 export interface ChatRequestDto {
-  kb_id: string;
+  kbId: string;
   query: string;
-  conversation_id?: string;
+  conversationId?: string;
 }
 
 /** SSE 流结束载荷 */

@@ -45,8 +45,8 @@ export default function AuditLogsPage() {
   const columns: ColumnsType<AuditLogItem> = [
     {
       title: "时间",
-      dataIndex: "created_at",
-      key: "created_at",
+      dataIndex: "createdAt",
+      key: "createdAt",
       width: 180,
       render: (t: string) => (
         <Space>

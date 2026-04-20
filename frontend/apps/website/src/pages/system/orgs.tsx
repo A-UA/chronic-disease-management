@@ -175,9 +175,9 @@ export default function OrgsPage() {
     try {
       const values = await addMemberForm.validateFields();
       await addOrgMember(selectedOrg.id, {
-        user_id: values.user_id,
-        role_ids: values.role_ids,
-        user_type: values.user_type || "staff",
+        userId: values.userId,
+        roleIds: values.roleIds,
+        userType: values.userType || "staff",
       });
       void message.success("添加成功");
       setAddMemberOpen(false);
@@ -206,7 +206,7 @@ export default function OrgsPage() {
     },
     {
       title: "类型",
-      dataIndex: "user_type",
+      dataIndex: "userType",
       width: 80,
       render: (t: string) => (
         <Tag color={t === "staff" ? "blue" : "green"}>{t === "staff" ? "员工" : "患者"}</Tag>
@@ -227,7 +227,7 @@ export default function OrgsPage() {
       key: "action",
       width: 80,
       render: (_, r) => (
-        <Popconfirm title="确定移除该成员？" onConfirm={() => void handleRemoveMember(r.user_id)}>
+        <Popconfirm title="确定移除该成员？" onConfirm={() => void handleRemoveMember(r.userId)}>
           <Button type="link" size="small" danger icon={<DeleteOutlined />}>
             移除
           </Button>
@@ -270,7 +270,7 @@ export default function OrgsPage() {
     },
     {
       title: "创建时间",
-      dataIndex: "created_at",
+      dataIndex: "createdAt",
       width: 170,
       render: (v: string) => new Date(v).toLocaleString("zh-CN"),
     },
@@ -401,7 +401,7 @@ export default function OrgsPage() {
                   <Table
                     columns={memberColumns}
                     dataSource={members}
-                    rowKey="user_id"
+                    rowKey="userId"
                     loading={memberLoading}
                     pagination={false}
                     size="small"
@@ -424,7 +424,7 @@ export default function OrgsPage() {
       >
         <Form form={addMemberForm} layout="vertical" style={{ marginTop: 16 }}>
           <Form.Item
-            name="user_id"
+            name="userId"
             label="选择用户"
             rules={[{ required: true, message: "请选择用户" }]}
           >
@@ -438,7 +438,7 @@ export default function OrgsPage() {
               }))}
             />
           </Form.Item>
-          <Form.Item name="role_ids" label="分配角色">
+          <Form.Item name="roleIds" label="分配角色">
             <Select
               mode="multiple"
               placeholder="选择角色..."
@@ -449,7 +449,7 @@ export default function OrgsPage() {
               }))}
             />
           </Form.Item>
-          <Form.Item name="user_type" label="用户类型" initialValue="staff">
+          <Form.Item name="userType" label="用户类型" initialValue="staff">
             <Select
               options={[
                 { label: "员工", value: "staff" },

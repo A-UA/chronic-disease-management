@@ -51,7 +51,7 @@ export class KnowledgeService {
 
   async getKbStats(kbId: string): Promise<KnowledgeBaseStatsVO> {
     const docs = await this.docRepo.count({ where: { kbId } });
-    return { document_count: docs, chunk_count: 0, total_tokens: 0 };
+    return { documentCount: docs, chunkCount: 0, totalTokens: 0 };
   }
 
   /**

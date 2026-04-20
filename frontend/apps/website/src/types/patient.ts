@@ -1,13 +1,13 @@
 export interface PatientProfile {
   id: string;
-  user_id: string;
-  org_id: string;
+  userId: string;
+  orgId: string;
   real_name: string | null;
   gender: string | null;
   birth_date: string | null;
   medical_history: Record<string, unknown> | null;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface HealthMetric {
@@ -17,9 +17,9 @@ export interface HealthMetric {
   value: number;
   value_secondary: number | null;
   unit: string;
-  measured_at: string;
+  measuredAt: string;
   note: string | null;
-  created_at: string;
+  createdAt: string;
 }
 
 export interface ManagementSuggestion {
@@ -28,5 +28,5 @@ export interface ManagementSuggestion {
   manager_id: string;
   suggestion_type: string;
   content: string;
-  created_at: string;
+  createdAt: string;
 }

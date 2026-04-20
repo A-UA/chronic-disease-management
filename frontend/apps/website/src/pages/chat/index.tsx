@@ -306,9 +306,9 @@ export default function AIChatPage() {
 
     try {
       const response = await sendChat({
-        kb_id: selectedKB,
+        kbId: selectedKB,
         query,
-        ...(currentConvId ? { conversation_id: currentConvId } : {}),
+        ...(currentConvId ? { conversationId: currentConvId } : {}),
       });
 
       if (!response.ok || !response.body) {
@@ -338,9 +338,9 @@ export default function AIChatPage() {
           try {
             const payload = JSON.parse(line.slice(6)) as Record<string, unknown>;
 
-            // meta 事件：获取 conversation_id 和 citations
-            if ("conversation_id" in payload && typeof payload.conversation_id === "string") {
-              setCurrentConvId(payload.conversation_id);
+            // meta 事件：获取 conversationId 和 citations
+            if ("conversationId" in payload && typeof payload.conversationId === "string") {
+              setCurrentConvId(payload.conversationId);
             }
             if ("citations" in payload && Array.isArray(payload.citations)) {
               currentCitations = payload.citations as Citation[];

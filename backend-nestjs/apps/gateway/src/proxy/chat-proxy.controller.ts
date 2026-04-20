@@ -48,10 +48,10 @@ export class ChatProxyController {
     @CurrentUser() identity: IdentityPayload,
     @Res() res: Response,
   ) {
-    // 1. 验证 kb_id 归属当前租户
+    // 1. 验证 kbId 归属当前租户
     const ownership = await lastValueFrom(
       this.aiClient.send<KbOwnershipResultVO>({ cmd: KB_VERIFY_OWNERSHIP }, {
-        kbId: body.kb_id,
+        kbId: body.kbId,
         tenantId: identity.tenantId,
       }),
     );
@@ -60,13 +60,13 @@ export class ChatProxyController {
       return;
     }
 
-    // 2. 如果没有 conversation_id，自动创建会话
-    let conversationId = body.conversation_id;
+    // 2. 如果没有 conversationId，自动创建会话
+    let conversationId = body.conversationId;
     if (!conversationId) {
       const conv = await lastValueFrom(
         this.aiClient.send<ConversationVO>({ cmd: CONVERSATION_CREATE }, {
           identity,
-          kbId: body.kb_id,
+          kbId: body.kbId,
           title: body.query.slice(0, 50),
         }),
       );
@@ -77,7 +77,7 @@ export class ChatProxyController {
     await this.agentService.streamChat(
       identity,
       body.query,
-      body.kb_id,
+      body.kbId,
       conversationId,
       this.aiClient,
       res,

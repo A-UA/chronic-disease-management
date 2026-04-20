@@ -2,14 +2,14 @@ import { apiClient } from "./client";
 
 export interface AuditLogItem {
   id: string;
-  user_id: string;
+  userId: string;
   user_email?: string;
   action: string;
   resource_type: string;
   resource_id: string | null;
   ip_address: string | null;
   details: string | null;
-  created_at: string;
+  createdAt: string;
 }
 
 export interface AuditLogQuery {

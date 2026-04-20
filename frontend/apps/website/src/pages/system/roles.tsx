@@ -73,8 +73,8 @@ export default function RolesPage() {
       name: record.name,
       code: record.code,
       description: record.description,
-      parent_role_id: record.parent_role_id,
-      permission_ids: record.permissions.map((p) => p.id),
+      parentRoleId: record.parentRoleId,
+      permissionIds: record.permissions.map((p) => p.id),
     });
     setModalOpen(true);
   };
@@ -87,7 +87,7 @@ export default function RolesPage() {
         await updateRole(editing.id, {
           name: values.name,
           description: values.description,
-          permission_ids: values.permission_ids,
+          permissionIds: values.permissionIds,
         });
         void message.success("更新成功");
       } else {
@@ -119,10 +119,10 @@ export default function RolesPage() {
       key: "name",
       render: (_, r) => (
         <Space>
-          <SafetyCertificateOutlined style={{ color: r.is_system ? "#fa8c16" : "#667eea" }} />
+          <SafetyCertificateOutlined style={{ color: r.isSystem ? "#fa8c16" : "#667eea" }} />
           <div>
             <Typography.Text strong>{r.name}</Typography.Text>
-            {r.is_system && (
+            {r.isSystem && (
               <Tooltip title="系统预置角色，不可修改">
                 <LockOutlined style={{ marginLeft: 6, color: "#fa8c16", fontSize: 12 }} />
               </Tooltip>
@@ -160,12 +160,12 @@ export default function RolesPage() {
     },
     {
       title: "用户数",
-      key: "user_count",
+      key: "userCount",
       width: 90,
       align: "center",
       render: (_, r) => (
-        <Tag icon={<TeamOutlined />} color={r.user_count ? "blue" : "default"}>
-          {r.user_count ?? 0}
+        <Tag icon={<TeamOutlined />} color={r.userCount ? "blue" : "default"}>
+          {r.userCount ?? 0}
         </Tag>
       ),
     },
@@ -174,14 +174,14 @@ export default function RolesPage() {
       key: "type",
       width: 100,
       render: (_, r) =>
-        r.is_system ? <Tag color="orange">系统</Tag> : <Tag color="blue">自定义</Tag>,
+        r.isSystem ? <Tag color="orange">系统</Tag> : <Tag color="blue">自定义</Tag>,
     },
     {
       title: "操作",
       key: "action",
       width: 130,
       render: (_, record) =>
-        record.is_system ? (
+        record.isSystem ? (
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             不可操作
           </Typography.Text>
@@ -251,7 +251,7 @@ export default function RolesPage() {
               <Input placeholder="例如：auditor" />
             </Form.Item>
           )}
-          <Form.Item name="parent_role_id" label="继承角色">
+          <Form.Item name="parentRoleId" label="继承角色">
             <Select
               allowClear
               placeholder="无（不继承）"
@@ -264,7 +264,7 @@ export default function RolesPage() {
             <Input.TextArea rows={2} placeholder="角色描述..." />
           </Form.Item>
           <Form.Item
-            name="permission_ids"
+            name="permissionIds"
             label="权限"
             rules={[{ required: true, message: "请选择权限" }]}
           >

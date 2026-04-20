@@ -14,21 +14,21 @@ export async function loginApi(username: string, password: string): Promise<Logi
     .json<LoginResponse>();
 }
 
-/** 多部门登录时，用 selection_token 选择部门 */
+/** 多部门登录时，用 selectionToken 选择部门 */
 export async function selectOrgApi(
   orgId: string,
   selectionToken: string,
 ): Promise<SelectOrgResponse> {
   return apiClient
     .post("auth/select-org", {
-      json: { org_id: orgId, selection_token: selectionToken },
+      json: { orgId: orgId, selectionToken: selectionToken },
     })
     .json<SelectOrgResponse>();
 }
 
 /** 已登录用户切换部门 */
 export async function switchOrgApi(orgId: string): Promise<SelectOrgResponse> {
-  return apiClient.post("auth/switch-org", { json: { org_id: orgId } }).json<SelectOrgResponse>();
+  return apiClient.post("auth/switch-org", { json: { orgId: orgId } }).json<SelectOrgResponse>();
 }
 
 /** 获取当前用户可用的部门列表 */

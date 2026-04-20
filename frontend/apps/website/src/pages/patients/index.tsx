@@ -26,7 +26,7 @@ export default function PatientListPage() {
     { title: "出生日期", dataIndex: "birth_date", valueType: "date", width: 120 },
     {
       title: "创建时间",
-      dataIndex: "created_at",
+      dataIndex: "createdAt",
       valueType: "dateTime",
       width: 180,
       sorter: true,

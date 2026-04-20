@@ -6,9 +6,9 @@ export interface KnowledgeBase {
   id: string;
   name: string;
   description: string | null;
-  document_count: number;
-  chunk_count: number;
-  created_at: string;
+  documentCount: number;
+  chunkCount: number;
+  createdAt: string;
 }
 
 export interface KBCreateRequest {
@@ -30,7 +30,7 @@ export async function deleteKB(id: string): Promise<void> {
 
 export async function getKBStats(
   id: string,
-): Promise<{ document_count: number; chunk_count: number; total_tokens: number }> {
+): Promise<{ documentCount: number; chunkCount: number; totalTokens: number }> {
   return apiClient.get(`kb/${id}/stats`).json();
 }
 
@@ -38,12 +38,12 @@ export async function getKBStats(
 
 export interface KBDocument {
   id: string;
-  kb_id: string;
-  file_name: string;
+  kbId: string;
+  fileName: string;
   status: "pending" | "processing" | "completed" | "failed";
-  failed_reason: string | null;
-  chunk_count: number;
-  created_at: string;
+  failedReason: string | null;
+  chunkCount: number;
+  createdAt: string;
 }
 
 export async function listDocuments(kbId: string): Promise<KBDocument[]> {

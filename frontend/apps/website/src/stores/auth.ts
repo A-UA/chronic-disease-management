@@ -45,20 +45,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (email, password) => {
     const res = await loginApi(email, password);
 
-    if (res.require_org_selection) {
+    if (res.requireOrgSelection) {
       // 多部门 → 暂存部门列表，等用户选择
       set({
         pendingOrgs: res.organizations,
-        selectionToken: res.selection_token,
+        selectionToken: res.selectionToken,
         token: null,
       });
       return;
     }
 
     // 单部门 → 直接登录
-    setToken(res.access_token);
+    setToken(res.accessToken);
     set({
-      token: res.access_token,
+      token: res.accessToken,
       currentOrg: res.organization,
       pendingOrgs: null,
       selectionToken: null,
@@ -69,13 +69,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   selectOrg: async (orgId: string) => {
     const { selectionToken } = get();
     if (!selectionToken) {
-      throw new Error("没有 selection_token，无法选择部门");
+      throw new Error("没有 selectionToken，无法选择部门");
     }
 
     const res = await selectOrgApi(orgId, selectionToken);
-    setToken(res.access_token);
+    setToken(res.accessToken);
     set({
-      token: res.access_token,
+      token: res.accessToken,
       currentOrg: res.organization,
       pendingOrgs: null,
       selectionToken: null,
@@ -85,9 +85,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   switchOrg: async (orgId: string) => {
     const res = await switchOrgApi(orgId);
-    setToken(res.access_token);
+    setToken(res.accessToken);
     set({
-      token: res.access_token,
+      token: res.accessToken,
       currentOrg: res.organization,
     });
     await get().fetchUserInfo();

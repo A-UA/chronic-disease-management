@@ -75,7 +75,7 @@ export default function TenantsPage() {
   const openCreate = () => {
     setEditing(null);
     form.resetFields();
-    form.setFieldsValue({ plan_type: "free", status: "active", quota_tokens_limit: 1000000 });
+    form.setFieldsValue({ planType: "free", status: "active", quotaTokensLimit: 1000000 });
     setModalOpen(true);
   };
 
@@ -134,7 +134,7 @@ export default function TenantsPage() {
     },
     {
       title: "套餐",
-      dataIndex: "plan_type",
+      dataIndex: "planType",
       width: 100,
       render: (v: string) => {
         const info = PLAN_MAP[v] || { color: "default", label: v };
@@ -156,12 +156,10 @@ export default function TenantsPage() {
       width: 200,
       render: (_, r) => {
         const pct =
-          r.quota_tokens_limit > 0
-            ? Math.round((r.quota_tokens_used / r.quota_tokens_limit) * 100)
-            : 0;
+          r.quotaTokensLimit > 0 ? Math.round((r.quotaTokensUsed / r.quotaTokensLimit) * 100) : 0;
         return (
           <Tooltip
-            title={`${r.quota_tokens_used.toLocaleString()} / ${r.quota_tokens_limit.toLocaleString()}`}
+            title={`${r.quotaTokensUsed.toLocaleString()} / ${r.quotaTokensLimit.toLocaleString()}`}
           >
             <Progress percent={pct} size="small" status={pct > 90 ? "exception" : "active"} />
           </Tooltip>
@@ -170,13 +168,13 @@ export default function TenantsPage() {
     },
     {
       title: "组织数",
-      dataIndex: "org_count",
+      dataIndex: "orgCount",
       width: 80,
       render: (v: number) => <Tag>{v}</Tag>,
     },
     {
       title: "创建时间",
-      dataIndex: "created_at",
+      dataIndex: "createdAt",
       width: 170,
       render: (v: string) => new Date(v).toLocaleString("zh-CN"),
     },
@@ -257,7 +255,7 @@ export default function TenantsPage() {
             <Input placeholder="例如：xx-hospital" disabled={!!editing} />
           </Form.Item>
           <Space style={{ width: "100%" }} size="large">
-            <Form.Item name="plan_type" label="套餐类型">
+            <Form.Item name="planType" label="套餐类型">
               <Select
                 style={{ width: 140 }}
                 options={[
@@ -279,25 +277,25 @@ export default function TenantsPage() {
               />
             </Form.Item>
           </Space>
-          <Form.Item name="quota_tokens_limit" label="Token 配额">
+          <Form.Item name="quotaTokensLimit" label="Token 配额">
             <InputNumber style={{ width: "100%" }} min={0} step={100000} />
           </Form.Item>
           <Space style={{ width: "100%" }} size="large">
-            <Form.Item name="max_members" label="最大成员数">
+            <Form.Item name="maxMembers" label="最大成员数">
               <InputNumber style={{ width: 140 }} min={0} />
             </Form.Item>
-            <Form.Item name="max_patients" label="最大患者数">
+            <Form.Item name="maxPatients" label="最大患者数">
               <InputNumber style={{ width: 140 }} min={0} />
             </Form.Item>
           </Space>
-          <Form.Item name="contact_name" label="联系人">
+          <Form.Item name="contactName" label="联系人">
             <Input placeholder="联系人姓名" />
           </Form.Item>
           <Space style={{ width: "100%" }} size="large">
-            <Form.Item name="contact_phone" label="联系电话">
+            <Form.Item name="contactPhone" label="联系电话">
               <Input placeholder="联系电话" />
             </Form.Item>
-            <Form.Item name="contact_email" label="联系邮箱">
+            <Form.Item name="contactEmail" label="联系邮箱">
               <Input placeholder="联系邮箱" />
             </Form.Item>
           </Space>

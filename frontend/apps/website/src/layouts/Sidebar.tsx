@@ -28,7 +28,7 @@ export default function Sidebar({ collapsed, onCollapse }: SidebarProps) {
   const activeMenuPath = useMemo(() => {
     const find = (items: MenuItem[], parents: string[] = []): string[] | null => {
       for (const item of items) {
-        if (!item.is_visible) continue;
+        if (!item.isVisible) continue;
         const cur = [...parents, item.code];
         if (item.path && location.pathname.startsWith(item.path)) return cur;
         if (item.children?.length) {
@@ -72,8 +72,8 @@ export default function Sidebar({ collapsed, onCollapse }: SidebarProps) {
   };
 
   const renderItem = (item: MenuItem, depth = 0) => {
-    if (!item.is_visible) return null;
-    const hasChildren = item.children?.some((c) => c.is_visible);
+    if (!item.isVisible) return null;
+    const hasChildren = item.children?.some((c) => c.isVisible);
     const isActive = !hasChildren && item.path ? location.pathname.startsWith(item.path) : false;
     const isExpanded = expandedKeys.has(item.code);
 
@@ -150,7 +150,7 @@ export default function Sidebar({ collapsed, onCollapse }: SidebarProps) {
 
       {/* 菜单 */}
       <nav className="flex-1 overflow-y-auto py-3 space-y-0.5 scrollbar-thin">
-        {menus.filter((m) => m.is_visible).map((item) => renderItem(item))}
+        {menus.filter((m) => m.isVisible).map((item) => renderItem(item))}
       </nav>
 
       {/* 折叠按钮 */}

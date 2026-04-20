@@ -61,12 +61,12 @@ export class AuthService {
       const token = this.jwtProvider.createAccessToken(
         user.id, org.tenantId, org.id, allowedOrgIds, roleCodes,
       );
-      const orgSummary: OrganizationSummaryVO = { id: org.id, name: org.name, tenant_id: org.tenantId };
+      const orgSummary: OrganizationSummaryVO = { id: org.id, name: org.name, tenantId: org.tenantId };
       return {
-        access_token: token,
-        token_type: 'bearer',
+        accessToken: token,
+        tokenType: 'bearer',
         organization: orgSummary,
-        require_org_selection: false,
+        requireOrgSelection: false,
       };
     }
 
@@ -75,16 +75,16 @@ export class AuthService {
     const orgList: OrganizationSummaryVO[] = await Promise.all(
       orgUsers.map(async (ou) => {
         const org = await this.orgRepo.findOneBy({ id: ou.orgId });
-        return { id: org.id, name: org.name, tenant_id: org.tenantId };
+        return { id: org.id, name: org.name, tenantId: org.tenantId };
       }),
     );
 
     return {
-      access_token: null as string | null,
-      token_type: 'bearer',
+      accessToken: null as string | null,
+      tokenType: 'bearer',
       organizations: orgList,
-      require_org_selection: true,
-      selection_token: selectionToken,
+      requireOrgSelection: true,
+      selectionToken: selectionToken,
     };
   }
 
@@ -113,9 +113,9 @@ export class AuthService {
     );
 
     return {
-      access_token: token,
-      token_type: 'bearer',
-      organization: { id: org.id, name: org.name, tenant_id: org.tenantId },
+      accessToken: token,
+      tokenType: 'bearer',
+      organization: { id: org.id, name: org.name, tenantId: org.tenantId },
     };
   }
 
@@ -135,9 +135,9 @@ export class AuthService {
     );
 
     return {
-      access_token: token,
-      token_type: 'bearer',
-      organization: { id: org.id, name: org.name, tenant_id: org.tenantId },
+      accessToken: token,
+      tokenType: 'bearer',
+      organization: { id: org.id, name: org.name, tenantId: org.tenantId },
     };
   }
 
@@ -146,7 +146,7 @@ export class AuthService {
     return Promise.all(
       orgUsers.map(async (ou) => {
         const org = await this.orgRepo.findOneBy({ id: ou.orgId });
-        return { id: org.id, name: org.name, tenant_id: org.tenantId };
+        return { id: org.id, name: org.name, tenantId: org.tenantId };
       }),
     );
   }
@@ -159,9 +159,9 @@ export class AuthService {
       id: user.id,
       email: user.email,
       name: user.name,
-      created_at: user.createdAt,
-      tenant_id: identity.tenantId,
-      org_id: identity.orgId,
+      createdAt: user.createdAt,
+      tenantId: identity.tenantId,
+      orgId: identity.orgId,
       permissions: [...perms],
     };
   }

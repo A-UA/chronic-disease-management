@@ -4,12 +4,12 @@ import { apiClient } from "./client";
 
 export interface OrgMember {
   id: string;
-  user_id: string;
+  userId: string;
   email: string;
   name: string | null;
-  user_type: "staff" | "patient";
+  userType: "staff" | "patient";
   roles: { id: string; code: string; name: string }[];
-  created_at: string;
+  createdAt: string;
 }
 
 export interface InviteRequest {
@@ -36,7 +36,7 @@ export interface RoleItem {
   code: string;
   name: string;
   description: string | null;
-  is_system: boolean;
+  isSystem: boolean;
   permissions: { id: string; code: string; name: string }[];
 }
 
@@ -47,7 +47,7 @@ export async function listRoles(): Promise<RoleItem[]> {
 export async function createRole(data: {
   name: string;
   description?: string;
-  permission_ids: string[];
+  permissionIds: string[];
 }): Promise<RoleItem> {
   return apiClient.post("rbac/roles", { json: data }).json<RoleItem>();
 }

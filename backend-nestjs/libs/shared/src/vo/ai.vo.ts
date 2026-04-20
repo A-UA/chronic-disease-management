@@ -55,9 +55,9 @@ export interface KnowledgeBaseVO {
 
 /** 知识库统计 */
 export interface KnowledgeBaseStatsVO {
-  document_count: number;
-  chunk_count: number;
-  total_tokens: number;
+  documentCount: number;
+  chunkCount: number;
+  totalTokens: number;
 }
 
 /** 文档视图 */

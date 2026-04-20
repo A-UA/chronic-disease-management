@@ -57,8 +57,8 @@ export class AgentProxyService {
       res.setHeader('Connection', 'keep-alive');
       res.flushHeaders();
 
-      // 第一个事件：发送 conversation_id
-      res.write(`data: ${JSON.stringify({ conversation_id: conversationId })}\n\n`);
+      // 第一个事件：发送 conversationId
+      res.write(`data: ${JSON.stringify({ conversationId })}\n\n`);
 
       const response = await this.httpService.axiosRef.post(
         `${this.agentUrl}/internal/chat`,

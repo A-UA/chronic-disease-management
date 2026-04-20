@@ -100,24 +100,24 @@ export default function KBListPage() {
     },
     {
       title: "文档数",
-      dataIndex: "document_count",
-      key: "document_count",
+      dataIndex: "documentCount",
+      key: "documentCount",
       width: 100,
       align: "center",
       render: (count: number) => <Tag color="blue">{count}</Tag>,
     },
     {
       title: "切块数",
-      dataIndex: "chunk_count",
-      key: "chunk_count",
+      dataIndex: "chunkCount",
+      key: "chunkCount",
       width: 100,
       align: "center",
       render: (count: number) => <Tag color="green">{count}</Tag>,
     },
     {
       title: "创建时间",
-      dataIndex: "created_at",
-      key: "created_at",
+      dataIndex: "createdAt",
+      key: "createdAt",
       width: 180,
       render: (t: string) => new Date(t).toLocaleString("zh-CN"),
     },
@@ -136,8 +136,8 @@ export default function KBListPage() {
   ];
 
   // 统计
-  const totalDocs = data.reduce((s, kb) => s + (kb.document_count || 0), 0);
-  const totalChunks = data.reduce((s, kb) => s + (kb.chunk_count || 0), 0);
+  const totalDocs = data.reduce((s, kb) => s + (kb.documentCount || 0), 0);
+  const totalChunks = data.reduce((s, kb) => s + (kb.chunkCount || 0), 0);
 
   return (
     <>

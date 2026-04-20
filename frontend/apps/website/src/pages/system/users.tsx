@@ -139,13 +139,13 @@ export default function UsersPage() {
     },
     {
       title: "关联组织数",
-      dataIndex: "org_count",
+      dataIndex: "orgCount",
       width: 110,
       render: (v: number) => <Tag color="blue">{v} 个</Tag>,
     },
     {
       title: "创建时间",
-      dataIndex: "created_at",
+      dataIndex: "createdAt",
       width: 170,
       render: (v: string) => new Date(v).toLocaleString("zh-CN"),
     },
@@ -232,7 +232,7 @@ export default function UsersPage() {
               >
                 <Input.Password placeholder="至少 6 位" />
               </Form.Item>
-              <Form.Item name="org_id" label="所属组织">
+              <Form.Item name="orgId" label="所属组织">
                 <Select
                   placeholder="默认绑定当前组织"
                   allowClear
@@ -241,7 +241,7 @@ export default function UsersPage() {
                   options={orgs.map((o) => ({ label: `${o.name} (${o.code})`, value: o.id }))}
                 />
               </Form.Item>
-              <Form.Item name="role_ids" label="分配角色">
+              <Form.Item name="roleIds" label="分配角色">
                 <Select
                   mode="multiple"
                   placeholder="默认分配 staff 角色"
@@ -250,7 +250,7 @@ export default function UsersPage() {
                   options={roles.map((r) => ({
                     label: `${r.name} (${r.code})`,
                     value: r.id,
-                    disabled: r.is_system,
+                    disabled: r.isSystem,
                   }))}
                 />
               </Form.Item>

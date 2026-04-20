@@ -72,8 +72,8 @@ export default function KBDocumentsPage() {
   const columns: ColumnsType<KBDocument> = [
     {
       title: "文件名",
-      dataIndex: "file_name",
-      key: "file_name",
+      dataIndex: "fileName",
+      key: "fileName",
       render: (text: string) => (
         <Space>
           <FileTextOutlined style={{ color: "#667eea" }} />
@@ -93,15 +93,15 @@ export default function KBDocumentsPage() {
     },
     {
       title: "切块数",
-      dataIndex: "chunk_count",
-      key: "chunk_count",
+      dataIndex: "chunkCount",
+      key: "chunkCount",
       width: 100,
       align: "center",
     },
     {
       title: "失败原因",
-      dataIndex: "failed_reason",
-      key: "failed_reason",
+      dataIndex: "failedReason",
+      key: "failedReason",
       ellipsis: true,
       render: (text: string | null) =>
         text ? (
@@ -114,8 +114,8 @@ export default function KBDocumentsPage() {
     },
     {
       title: "上传时间",
-      dataIndex: "created_at",
-      key: "created_at",
+      dataIndex: "createdAt",
+      key: "createdAt",
       width: 180,
       render: (t: string) => new Date(t).toLocaleString("zh-CN"),
     },

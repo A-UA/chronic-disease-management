@@ -78,7 +78,7 @@ export default function MenusPage() {
   const openCreate = () => {
     setEditing(null);
     form.resetFields();
-    form.setFieldsValue({ menu_type: "page", sort: 0, is_visible: true, is_enabled: true });
+    form.setFieldsValue({ menuType: "page", sort: 0, isVisible: true, isEnabled: true });
     setModalOpen(true);
   };
 
@@ -134,7 +134,7 @@ export default function MenusPage() {
     },
     {
       title: "类型",
-      dataIndex: "menu_type",
+      dataIndex: "menuType",
       width: 80,
       render: (v: string) => {
         const info = TYPE_MAP[v] || { color: "default", label: v };
@@ -156,7 +156,7 @@ export default function MenusPage() {
     },
     {
       title: "权限码",
-      dataIndex: "permission_code",
+      dataIndex: "permissionCode",
       width: 140,
       render: (v: string | null) => (v ? <Tag color="geekblue">{v}</Tag> : "-"),
     },
@@ -172,7 +172,7 @@ export default function MenusPage() {
       width: 80,
       render: (_, r) => (
         <Space direction="vertical" size={0}>
-          {r.is_visible ? <Tag color="green">可见</Tag> : <Tag>隐藏</Tag>}
+          {r.isVisible ? <Tag color="green">可见</Tag> : <Tag>隐藏</Tag>}
         </Space>
       ),
     },
@@ -232,7 +232,7 @@ export default function MenusPage() {
         destroyOnClose
       >
         <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
-          <Form.Item name="parent_id" label="父级菜单">
+          <Form.Item name="parentId" label="父级菜单">
             <Select
               allowClear
               placeholder="无（一级菜单）"
@@ -256,7 +256,7 @@ export default function MenusPage() {
             <Input placeholder="例如：patient-list" disabled={!!editing} />
           </Form.Item>
           <Space style={{ width: "100%" }} size="large">
-            <Form.Item name="menu_type" label="类型">
+            <Form.Item name="menuType" label="类型">
               <Select
                 style={{ width: 140 }}
                 options={[
@@ -276,7 +276,7 @@ export default function MenusPage() {
           <Form.Item name="icon" label="图标名称">
             <Input placeholder="例如：TeamOutlined" />
           </Form.Item>
-          <Form.Item name="permission_code" label="权限编码">
+          <Form.Item name="permissionCode" label="权限编码">
             <Select
               allowClear
               placeholder="无权限限制"
@@ -286,10 +286,10 @@ export default function MenusPage() {
             />
           </Form.Item>
           <Space size="large">
-            <Form.Item name="is_visible" label="侧边栏可见" valuePropName="checked">
+            <Form.Item name="isVisible" label="侧边栏可见" valuePropName="checked">
               <Switch />
             </Form.Item>
-            <Form.Item name="is_enabled" label="启用" valuePropName="checked">
+            <Form.Item name="isEnabled" label="启用" valuePropName="checked">
               <Switch />
             </Form.Item>
           </Space>

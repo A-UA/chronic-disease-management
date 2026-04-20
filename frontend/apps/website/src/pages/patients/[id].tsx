@@ -40,7 +40,7 @@ export default function PatientDetailPage() {
             </Tag>
           </Descriptions.Item>
           <Descriptions.Item label="出生日期">{patient.birth_date ?? "-"}</Descriptions.Item>
-          <Descriptions.Item label="创建时间">{patient.created_at}</Descriptions.Item>
+          <Descriptions.Item label="创建时间">{patient.createdAt}</Descriptions.Item>
         </Descriptions>
       </Card>
 

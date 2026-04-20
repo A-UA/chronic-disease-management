@@ -34,7 +34,7 @@ export interface OrganizationVO {
 export interface OrganizationSummaryVO {
   id: string;
   name: string;
-  tenant_id: string;
+  tenantId: string;
 }
 
 /** 角色视图 */
@@ -81,18 +81,18 @@ export interface MenuVO {
 
 /** 登录响应（单组织直接签发 token） */
 export interface LoginResultVO {
-  access_token: string | null;
-  token_type: 'bearer';
+  accessToken: string | null;
+  tokenType: 'bearer';
   organization?: OrganizationSummaryVO;
   organizations?: OrganizationSummaryVO[];
-  require_org_selection: boolean;
-  selection_token?: string;
+  requireOrgSelection: boolean;
+  selectionToken?: string;
 }
 
 /** 选择/切换组织响应 */
 export interface OrgTokenResultVO {
-  access_token: string;
-  token_type: 'bearer';
+  accessToken: string;
+  tokenType: 'bearer';
   organization: OrganizationSummaryVO;
 }
 
@@ -101,9 +101,9 @@ export interface CurrentUserVO {
   id: string;
   email: string;
   name: string;
-  created_at: Date;
-  tenant_id: string;
-  org_id: string;
+  createdAt: Date;
+  tenantId: string;
+  orgId: string;
   permissions: string[];
 }
 
