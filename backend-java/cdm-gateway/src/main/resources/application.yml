@@ -1,0 +1,39 @@
+server:
+  port: 8001
+
+sa-token:
+  token-name: Authorization
+  token-prefix: Bearer
+  timeout: 604800
+  jwt-secret-key: ${JWT_SECRET:your-jwt-secret-here-must-be-32-chars-long}
+  is-read-header: true
+  is-read-cookie: false
+  is-print: false
+
+security:
+  ignore:
+    whites:
+      - /api/v1/auth/login/access-token
+      - /api/v1/auth/register
+      - /api/v1/auth/select-org
+      - /api/v1/auth/forgot-password
+      - /api/v1/auth/reset-password
+
+spring:
+  application:
+    name: cdm-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: cdm-auth
+          uri: lb://cdm-auth
+          predicates:
+            - Path=/api/v1/auth/**,/api/v1/users/**,/api/v1/tenants/**,/api/v1/organizations/**,/api/v1/roles/**,/api/v1/permissions/**,/api/v1/menus/**
+        - id: cdm-patient
+          uri: lb://cdm-patient
+          predicates:
+            - Path=/api/v1/patients/**,/api/v1/health-metrics/**,/api/v1/family-links/**,/api/v1/manager-assignments/**,/api/v1/management-suggestions/**
+        - id: cdm-ai
+          uri: lb://cdm-ai
+          predicates:
+            - Path=/api/v1/kb/**,/api/v1/documents/**,/api/v1/conversations/**

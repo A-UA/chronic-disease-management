@@ -1,0 +1,3 @@
+com.cdm.common.config.JacksonAutoConfiguration
+com.cdm.common.config.WebMvcAutoConfiguration
+com.cdm.common.exception.GlobalExceptionHandler

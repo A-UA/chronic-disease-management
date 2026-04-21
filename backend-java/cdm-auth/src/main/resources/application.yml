@@ -1,0 +1,28 @@
+server:
+  port: 8011
+
+sa-token:
+  token-name: Authorization
+  token-prefix: Bearer
+  timeout: 604800
+  jwt-secret-key: ${JWT_SECRET:your-jwt-secret-here-must-be-32-chars-long}
+  is-read-header: true
+  is-read-cookie: false
+  is-print: false
+
+spring:
+  application:
+    name: cdm-auth
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ai_saas
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true

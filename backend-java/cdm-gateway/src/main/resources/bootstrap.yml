@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: cdm-gateway
+  cloud:
+    nacos:
+      server-addr: ${NACOS_ADDR:localhost:8848}
+      discovery:
+        namespace: ${NACOS_NAMESPACE:}
+        group: CDM_GROUP
+      config:
+        namespace: ${NACOS_NAMESPACE:}
+        group: CDM_GROUP
+        file-extension: yml
+        shared-configs:
+          - data-id: cdm-common.yml
+            group: CDM_GROUP
+            refresh: true
