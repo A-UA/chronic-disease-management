@@ -1,25 +1,30 @@
 package com.cdm.patient.entity;
 
+import com.cdm.common.domain.BaseEntity;
+import com.cdm.patient.vo.HealthMetricVo;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "health_metrics")
-public class HealthMetricEntity {
-    @Id
-    private Long id;
+@Getter
+@Setter
+@NoArgsConstructor
+public class HealthMetricEntity extends BaseEntity {
 
     @Column(name = "tenant_id")
-    private Long tenantId;
+    private String tenantId;
 
     @Column(name = "org_id")
-    private Long orgId;
+    private String orgId;
 
     @Column(name = "patient_id")
-    private Long patientId;
+    private String patientId;
 
     @Column(name = "metric_type")
     private String metricType;
@@ -30,18 +35,16 @@ public class HealthMetricEntity {
     @Column(name = "recorded_at")
     private LocalDateTime recordedAt;
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public Long getTenantId() { return tenantId; }
-    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }
-    public Long getOrgId() { return orgId; }
-    public void setOrgId(Long orgId) { this.orgId = orgId; }
-    public Long getPatientId() { return patientId; }
-    public void setPatientId(Long patientId) { this.patientId = patientId; }
-    public String getMetricType() { return metricType; }
-    public void setMetricType(String metricType) { this.metricType = metricType; }
-    public String getMetricValue() { return metricValue; }
-    public void setMetricValue(String metricValue) { this.metricValue = metricValue; }
-    public LocalDateTime getRecordedAt() { return recordedAt; }
-    public void setRecordedAt(LocalDateTime recordedAt) { this.recordedAt = recordedAt; }
+    public static HealthMetricVo toVo(HealthMetricEntity entity) {
+        if (entity == null) return null;
+        return HealthMetricVo.builder()
+                .id(entity.getId())
+                .tenantId(entity.getTenantId())
+                .orgId(entity.getOrgId())
+                .patientId(entity.getPatientId())
+                .metricType(entity.getMetricType())
+                .metricValue(entity.getMetricValue())
+                .recordedAt(entity.getRecordedAt())
+                .build();
+    }
 }

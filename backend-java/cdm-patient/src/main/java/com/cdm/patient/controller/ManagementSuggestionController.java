@@ -1,16 +1,19 @@
 package com.cdm.patient.controller;
 
-import com.cdm.common.security.IdentityPayload;
-import com.cdm.patient.entity.ManagementSuggestionEntity;
+import com.cdm.common.domain.Result;
+import com.cdm.patient.dto.CreateManagementSuggestionDto;
 import com.cdm.patient.service.ManagementSuggestionService;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.cdm.patient.vo.ManagementSuggestionVo;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
-import java.util.Base64;
+
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/management-suggestions")
+@Tag(name = "Management Suggestion", description = "慢病管理建议记录")
 public class ManagementSuggestionController {
 
     private final ManagementSuggestionService service;
@@ -19,32 +22,18 @@ public class ManagementSuggestionController {
         this.service = service;
     }
 
-    private IdentityPayload getIdentity(String base64Identity) {
-        try {
-            String json = new String(Base64.getDecoder().decode(base64Identity));
-            return new ObjectMapper().readValue(json, IdentityPayload.class);
-        } catch (Exception e) {
-            throw new RuntimeException("Invalid identity header", e);
-        }
-    }
-
+    @Operation(summary = "获取建议列表", description = "获取特定患者的所有慢病管理建议")
     @GetMapping("/{patientId}")
-    public List<ManagementSuggestionEntity> getSuggestions(
-            @RequestHeader("X-Identity-Base64") String identityHeader,
-            @PathVariable Long patientId
-    ) {
-        IdentityPayload identity = getIdentity(identityHeader);
-        return service.findAllForPatient(identity, patientId);
+    public Result<List<ManagementSuggestionVo>> getSuggestions(@PathVariable String patientId) {
+        return Result.ok(service.findAllForPatient(patientId));
     }
 
+    @Operation(summary = "新建建议", description = "由管家或医生为特定患者下发管理建议")
     @PostMapping("/{patientId}")
-    public ManagementSuggestionEntity createSuggestion(
-            @RequestHeader("X-Identity-Base64") String identityHeader,
-            @PathVariable Long patientId,
-            @RequestParam String suggestionType,
-            @RequestParam String content
+    public Result<ManagementSuggestionVo> createSuggestion(
+            @PathVariable String patientId,
+            @Valid @RequestBody CreateManagementSuggestionDto dto
     ) {
-        IdentityPayload identity = getIdentity(identityHeader);
-        return service.createSuggestion(identity, patientId, suggestionType, content);
+        return Result.ok(service.createSuggestion(patientId, dto.getSuggestionType(), dto.getContent()));
     }
 }

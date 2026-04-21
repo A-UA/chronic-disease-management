@@ -7,7 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
-public interface HealthMetricRepository extends JpaRepository<HealthMetricEntity, Long> {
+public interface HealthMetricRepository extends JpaRepository<HealthMetricEntity, String> {
     @Query("SELECT h FROM HealthMetricEntity h WHERE h.tenantId = :tenantId AND h.orgId IN :orgIds AND h.patientId = :patientId")
-    List<HealthMetricEntity> findAllByContextAndPatient(@Param("tenantId") Long tenantId, @Param("orgIds") List<Long> orgIds, @Param("patientId") Long patientId);
+    List<HealthMetricEntity> findAllByContextAndPatient(@Param("tenantId") String tenantId, @Param("orgIds") List<String> orgIds, @Param("patientId") String patientId);
 }

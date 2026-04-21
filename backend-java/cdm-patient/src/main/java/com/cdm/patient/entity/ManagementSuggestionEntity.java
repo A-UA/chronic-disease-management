@@ -1,28 +1,33 @@
 package com.cdm.patient.entity;
 
+import com.cdm.common.domain.BaseEntity;
+import com.cdm.patient.vo.ManagementSuggestionVo;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "management_suggestions")
-public class ManagementSuggestionEntity {
-    @Id
-    private Long id;
+@Getter
+@Setter
+@NoArgsConstructor
+public class ManagementSuggestionEntity extends BaseEntity {
 
     @Column(name = "tenant_id")
-    private Long tenantId;
+    private String tenantId;
 
     @Column(name = "org_id")
-    private Long orgId;
+    private String orgId;
 
     @Column(name = "patient_id")
-    private Long patientId;
+    private String patientId;
 
     @Column(name = "created_by_user_id")
-    private Long createdByUserId;
+    private String createdByUserId;
 
     @Column(name = "suggestion_type")
     private String suggestionType;
@@ -36,22 +41,18 @@ public class ManagementSuggestionEntity {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public Long getTenantId() { return tenantId; }
-    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }
-    public Long getOrgId() { return orgId; }
-    public void setOrgId(Long orgId) { this.orgId = orgId; }
-    public Long getPatientId() { return patientId; }
-    public void setPatientId(Long patientId) { this.patientId = patientId; }
-    public Long getCreatedByUserId() { return createdByUserId; }
-    public void setCreatedByUserId(Long createdByUserId) { this.createdByUserId = createdByUserId; }
-    public String getSuggestionType() { return suggestionType; }
-    public void setSuggestionType(String suggestionType) { this.suggestionType = suggestionType; }
-    public String getContent() { return content; }
-    public void setContent(String content) { this.content = content; }
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public static ManagementSuggestionVo toVo(ManagementSuggestionEntity entity) {
+        if (entity == null) return null;
+        return ManagementSuggestionVo.builder()
+                .id(entity.getId())
+                .tenantId(entity.getTenantId())
+                .orgId(entity.getOrgId())
+                .patientId(entity.getPatientId())
+                .createdByUserId(entity.getCreatedByUserId())
+                .suggestionType(entity.getSuggestionType())
+                .content(entity.getContent())
+                .status(entity.getStatus())
+                .createdAt(entity.getCreatedAt())
+                .build();
+    }
 }

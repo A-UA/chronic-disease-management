@@ -1,33 +1,38 @@
 package com.cdm.patient.entity;
 
+import com.cdm.common.domain.BaseEntity;
+import com.cdm.patient.vo.PatientVo;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "patient_profiles")
-public class PatientProfileEntity {
-    @Id
-    private Long id;
-    
+@Getter
+@Setter
+@NoArgsConstructor
+public class PatientProfileEntity extends BaseEntity {
+
     @Column(name = "tenant_id")
-    private Long tenantId;
+    private String tenantId;
     
     @Column(name = "org_id")
-    private Long orgId;
+    private String orgId;
     
     private String name;
     private String gender;
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public Long getTenantId() { return tenantId; }
-    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }
-    public Long getOrgId() { return orgId; }
-    public void setOrgId(Long orgId) { this.orgId = orgId; }
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-    public String getGender() { return gender; }
-    public void setGender(String gender) { this.gender = gender; }
+    public static PatientVo toVo(PatientProfileEntity entity) {
+        if (entity == null) return null;
+        return PatientVo.builder()
+                .id(entity.getId())
+                .tenantId(entity.getTenantId())
+                .orgId(entity.getOrgId())
+                .name(entity.getName())
+                .gender(entity.getGender())
+                .build();
+    }
 }

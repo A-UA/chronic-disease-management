@@ -1,16 +1,19 @@
 package com.cdm.patient.controller;
 
-import com.cdm.common.security.IdentityPayload;
-import com.cdm.patient.entity.PatientManagerAssignmentEntity;
+import com.cdm.common.domain.Result;
+import com.cdm.patient.dto.CreatePatientManagerAssignmentDto;
 import com.cdm.patient.service.PatientManagerAssignmentService;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.cdm.patient.vo.PatientManagerAssignmentVo;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
-import java.util.Base64;
+
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/manager-assignments")
+@Tag(name = "Manager Assignment", description = "患者与管理人员分配")
 public class PatientManagerAssignmentController {
 
     private final PatientManagerAssignmentService service;
@@ -19,32 +22,18 @@ public class PatientManagerAssignmentController {
         this.service = service;
     }
 
-    private IdentityPayload getIdentity(String base64Identity) {
-        try {
-            String json = new String(Base64.getDecoder().decode(base64Identity));
-            return new ObjectMapper().readValue(json, IdentityPayload.class);
-        } catch (Exception e) {
-            throw new RuntimeException("Invalid identity header", e);
-        }
-    }
-
+    @Operation(summary = "查询管理分配", description = "查询特定患者分配的管理人员及其类型")
     @GetMapping("/{patientId}")
-    public List<PatientManagerAssignmentEntity> getAssignments(
-            @RequestHeader("X-Identity-Base64") String identityHeader,
-            @PathVariable Long patientId
-    ) {
-        IdentityPayload identity = getIdentity(identityHeader);
-        return service.findAllForPatient(identity, patientId);
+    public Result<List<PatientManagerAssignmentVo>> getAssignments(@PathVariable String patientId) {
+        return Result.ok(service.findAllForPatient(patientId));
     }
 
+    @Operation(summary = "分配管理员", description = "为特定患者分配管家或医生")
     @PostMapping("/{patientId}")
-    public PatientManagerAssignmentEntity createAssignment(
-            @RequestHeader("X-Identity-Base64") String identityHeader,
-            @PathVariable Long patientId,
-            @RequestParam Long managerUserId,
-            @RequestParam String assignmentType
+    public Result<PatientManagerAssignmentVo> createAssignment(
+            @PathVariable String patientId,
+            @Valid @RequestBody CreatePatientManagerAssignmentDto dto
     ) {
-        IdentityPayload identity = getIdentity(identityHeader);
-        return service.assignManager(identity, patientId, managerUserId, assignmentType);
+        return Result.ok(service.assignManager(patientId, dto.getManagerUserId(), dto.getAssignmentType()));
     }
 }

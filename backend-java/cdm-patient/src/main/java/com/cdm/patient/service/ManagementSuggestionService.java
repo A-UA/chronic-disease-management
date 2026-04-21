@@ -1,37 +1,43 @@
 package com.cdm.patient.service;
 
-import com.cdm.common.security.IdentityPayload;
+import com.cdm.common.security.SecurityUtils;
 import com.cdm.patient.entity.ManagementSuggestionEntity;
 import com.cdm.patient.repository.ManagementSuggestionRepository;
+import com.cdm.patient.vo.ManagementSuggestionVo;
+import com.cdm.common.util.SnowflakeIdGenerator;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class ManagementSuggestionService {
     private final ManagementSuggestionRepository repository;
+    private final SnowflakeIdGenerator idGenerator;
 
-    public ManagementSuggestionService(ManagementSuggestionRepository repository) {
+    public ManagementSuggestionService(ManagementSuggestionRepository repository, SnowflakeIdGenerator idGenerator) {
         this.repository = repository;
+        this.idGenerator = idGenerator;
     }
 
-    public List<ManagementSuggestionEntity> findAllForPatient(IdentityPayload identity, Long patientId) {
-        return repository.findAllByContextAndPatient(identity.getTenantId(), identity.getAllowedOrgIds(), patientId);
+    public List<ManagementSuggestionVo> findAllForPatient(String patientId) {
+        return repository.findAllByContextAndPatient(SecurityUtils.getTenantId(), SecurityUtils.getAllowedOrgIds(), patientId)
+            .stream().map(ManagementSuggestionEntity::toVo).collect(Collectors.toList());
     }
 
-    public ManagementSuggestionEntity createSuggestion(IdentityPayload identity, Long patientId, String suggestionType, String content) {
+    public ManagementSuggestionVo createSuggestion(String patientId, String suggestionType, String content) {
         ManagementSuggestionEntity entity = new ManagementSuggestionEntity();
-        entity.setId(com.cdm.common.util.SnowflakeIdGenerator.nextId());
-        entity.setTenantId(identity.getTenantId());
-        entity.setOrgId(identity.getOrgId());
+        entity.setId(idGenerator.nextId());
+        entity.setTenantId(SecurityUtils.getTenantId());
+        entity.setOrgId(SecurityUtils.getOrgId());
         entity.setPatientId(patientId);
-        entity.setCreatedByUserId(identity.getUserId());
+        entity.setCreatedByUserId(SecurityUtils.getUserId());
         entity.setSuggestionType(suggestionType);
         entity.setContent(content);
         entity.setStatus("active");
         entity.setCreatedAt(LocalDateTime.now());
         
-        return repository.save(entity);
+        return ManagementSuggestionEntity.toVo(repository.save(entity));
     }
 }

@@ -1,16 +1,19 @@
 package com.cdm.patient.controller;
 
-import com.cdm.common.security.IdentityPayload;
-import com.cdm.patient.entity.PatientProfileEntity;
+import com.cdm.common.domain.Result;
+import com.cdm.patient.dto.CreatePatientDto;
 import com.cdm.patient.service.PatientService;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.cdm.patient.vo.PatientVo;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
-import java.util.Base64;
+
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/patients")
+@Tag(name = "Patient", description = "患者基本信息管理")
 public class PatientController {
 
     private final PatientService service;
@@ -19,30 +22,15 @@ public class PatientController {
         this.service = service;
     }
 
-    private IdentityPayload getIdentity(String base64Identity) {
-        try {
-            String json = new String(Base64.getDecoder().decode(base64Identity));
-            return new ObjectMapper().readValue(json, IdentityPayload.class);
-        } catch (Exception e) {
-            throw new RuntimeException("Invalid identity header", e);
-        }
-    }
-
+    @Operation(summary = "患者列表", description = "获取当前组织下所有的患者档案")
     @GetMapping
-    public List<PatientProfileEntity> getPatients(
-            @RequestHeader("X-Identity-Base64") String identityHeader
-    ) {
-        IdentityPayload identity = getIdentity(identityHeader);
-        return service.findAll(identity);
+    public Result<List<PatientVo>> getPatients() {
+        return Result.ok(service.findAll());
     }
 
+    @Operation(summary = "新建患者", description = "创建一条新的患者档案")
     @PostMapping
-    public PatientProfileEntity createPatient(
-            @RequestHeader("X-Identity-Base64") String identityHeader,
-            @RequestParam String name,
-            @RequestParam String gender
-    ) {
-        IdentityPayload identity = getIdentity(identityHeader);
-        return service.createPatient(identity, name, gender);
+    public Result<PatientVo> createPatient(@Valid @RequestBody CreatePatientDto dto) {
+        return Result.ok(service.createPatient(dto.getName(), dto.getGender()));
     }
 }

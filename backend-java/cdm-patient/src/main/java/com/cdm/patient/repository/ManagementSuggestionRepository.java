@@ -7,7 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
-public interface ManagementSuggestionRepository extends JpaRepository<ManagementSuggestionEntity, Long> {
+public interface ManagementSuggestionRepository extends JpaRepository<ManagementSuggestionEntity, String> {
     @Query("SELECT s FROM ManagementSuggestionEntity s WHERE s.tenantId = :tenantId AND s.orgId IN :orgIds AND s.patientId = :patientId")
-    List<ManagementSuggestionEntity> findAllByContextAndPatient(@Param("tenantId") Long tenantId, @Param("orgIds") List<Long> orgIds, @Param("patientId") Long patientId);
+    List<ManagementSuggestionEntity> findAllByContextAndPatient(@Param("tenantId") String tenantId, @Param("orgIds") List<String> orgIds, @Param("patientId") String patientId);
 }

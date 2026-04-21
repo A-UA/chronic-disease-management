@@ -1,28 +1,33 @@
 package com.cdm.patient.entity;
 
+import com.cdm.common.domain.BaseEntity;
+import com.cdm.patient.vo.PatientManagerAssignmentVo;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "patient_manager_assignments")
-public class PatientManagerAssignmentEntity {
-    @Id
-    private Long id;
+@Getter
+@Setter
+@NoArgsConstructor
+public class PatientManagerAssignmentEntity extends BaseEntity {
 
     @Column(name = "tenant_id")
-    private Long tenantId;
+    private String tenantId;
 
     @Column(name = "org_id")
-    private Long orgId;
+    private String orgId;
 
     @Column(name = "patient_id")
-    private Long patientId;
+    private String patientId;
 
     @Column(name = "manager_user_id")
-    private Long managerUserId;
+    private String managerUserId;
 
     @Column(name = "assignment_type")
     private String assignmentType;
@@ -30,18 +35,16 @@ public class PatientManagerAssignmentEntity {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public Long getTenantId() { return tenantId; }
-    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }
-    public Long getOrgId() { return orgId; }
-    public void setOrgId(Long orgId) { this.orgId = orgId; }
-    public Long getPatientId() { return patientId; }
-    public void setPatientId(Long patientId) { this.patientId = patientId; }
-    public Long getManagerUserId() { return managerUserId; }
-    public void setManagerUserId(Long managerUserId) { this.managerUserId = managerUserId; }
-    public String getAssignmentType() { return assignmentType; }
-    public void setAssignmentType(String assignmentType) { this.assignmentType = assignmentType; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public static PatientManagerAssignmentVo toVo(PatientManagerAssignmentEntity entity) {
+        if (entity == null) return null;
+        return PatientManagerAssignmentVo.builder()
+                .id(entity.getId())
+                .tenantId(entity.getTenantId())
+                .orgId(entity.getOrgId())
+                .patientId(entity.getPatientId())
+                .managerUserId(entity.getManagerUserId())
+                .assignmentType(entity.getAssignmentType())
+                .createdAt(entity.getCreatedAt())
+                .build();
+    }
 }

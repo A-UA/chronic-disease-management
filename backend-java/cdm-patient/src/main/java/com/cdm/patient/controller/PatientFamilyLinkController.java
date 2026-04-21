@@ -1,16 +1,19 @@
 package com.cdm.patient.controller;
 
-import com.cdm.common.security.IdentityPayload;
-import com.cdm.patient.entity.PatientFamilyLinkEntity;
+import com.cdm.common.domain.Result;
+import com.cdm.patient.dto.CreatePatientFamilyLinkDto;
 import com.cdm.patient.service.PatientFamilyLinkService;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.cdm.patient.vo.PatientFamilyLinkVo;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
-import java.util.Base64;
+
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/family-links")
+@Tag(name = "Family Link", description = "患者家属关系绑定")
 public class PatientFamilyLinkController {
 
     private final PatientFamilyLinkService service;
@@ -19,32 +22,18 @@ public class PatientFamilyLinkController {
         this.service = service;
     }
 
-    private IdentityPayload getIdentity(String base64Identity) {
-        try {
-            String json = new String(Base64.getDecoder().decode(base64Identity));
-            return new ObjectMapper().readValue(json, IdentityPayload.class);
-        } catch (Exception e) {
-            throw new RuntimeException("Invalid identity header", e);
-        }
-    }
-
+    @Operation(summary = "查询家属绑定", description = "获取特定患者当前的家属关联列表")
     @GetMapping("/{patientId}")
-    public List<PatientFamilyLinkEntity> getLinks(
-            @RequestHeader("X-Identity-Base64") String identityHeader,
-            @PathVariable Long patientId
-    ) {
-        IdentityPayload identity = getIdentity(identityHeader);
-        return service.findAllForPatient(identity, patientId);
+    public Result<List<PatientFamilyLinkVo>> getLinks(@PathVariable String patientId) {
+        return Result.ok(service.findAllForPatient(patientId));
     }
 
+    @Operation(summary = "绑定家属", description = "为特定患者绑定注册用户作为家属")
     @PostMapping("/{patientId}")
-    public PatientFamilyLinkEntity createLink(
-            @RequestHeader("X-Identity-Base64") String identityHeader,
-            @PathVariable Long patientId,
-            @RequestParam Long familyUserId,
-            @RequestParam String relationship
+    public Result<PatientFamilyLinkVo> createLink(
+            @PathVariable String patientId,
+            @Valid @RequestBody CreatePatientFamilyLinkDto dto
     ) {
-        IdentityPayload identity = getIdentity(identityHeader);
-        return service.linkFamily(identity, patientId, familyUserId, relationship);
+        return Result.ok(service.linkFamily(patientId, dto.getFamilyUserId(), dto.getRelationship()));
     }
 }

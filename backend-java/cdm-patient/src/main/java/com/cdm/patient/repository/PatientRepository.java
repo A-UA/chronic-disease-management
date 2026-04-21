@@ -7,7 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
-public interface PatientRepository extends JpaRepository<PatientProfileEntity, Long> {
+public interface PatientRepository extends JpaRepository<PatientProfileEntity, String> {
     @Query("SELECT p FROM PatientProfileEntity p WHERE p.tenantId = :tenantId AND p.orgId IN :orgIds")
-    List<PatientProfileEntity> findAllByContext(@Param("tenantId") Long tenantId, @Param("orgIds") List<Long> orgIds);
+    List<PatientProfileEntity> findAllByContext(@Param("tenantId") String tenantId, @Param("orgIds") List<String> orgIds);
 }
