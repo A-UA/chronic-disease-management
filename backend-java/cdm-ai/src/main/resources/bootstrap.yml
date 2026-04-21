@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: cdm-ai
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+      config:
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        file-extension: yml
+        shared-configs:
+          - data-id: cdm-common.yml
+            refresh: true

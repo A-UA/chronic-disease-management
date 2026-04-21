@@ -1,3 +1,20 @@
+server:
+  port: 8031
 spring:
-  application:
-    name: cdm-ai
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:cdm_saas}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASS:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    
+minio:
+  endpoint: http://localhost:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket-name: cdm-docs
+
+agent:
+  url: http://localhost:8000
