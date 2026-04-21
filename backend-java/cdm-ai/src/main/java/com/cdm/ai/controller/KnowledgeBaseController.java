@@ -4,6 +4,7 @@ import com.cdm.ai.dto.CreateKnowledgeBaseDto;
 import com.cdm.ai.entity.KnowledgeBaseEntity;
 import com.cdm.ai.repository.DocumentRepository;
 import com.cdm.ai.repository.KnowledgeBaseRepository;
+import com.cdm.ai.service.KnowledgeBaseService;
 import com.cdm.ai.vo.KnowledgeBaseVo;
 import com.cdm.common.domain.Result;
 import com.cdm.common.security.SecurityUtils;
@@ -27,10 +28,13 @@ public class KnowledgeBaseController {
     private final DocumentRepository docRepo;
     private final SnowflakeIdGenerator idGenerator;
 
-    public KnowledgeBaseController(KnowledgeBaseRepository kbRepo, DocumentRepository docRepo, SnowflakeIdGenerator idGenerator) {
+    private final KnowledgeBaseService kbService;
+
+    public KnowledgeBaseController(KnowledgeBaseRepository kbRepo, DocumentRepository docRepo, SnowflakeIdGenerator idGenerator, KnowledgeBaseService kbService) {
         this.kbRepo = kbRepo;
         this.docRepo = docRepo;
         this.idGenerator = idGenerator;
+        this.kbService = kbService;
     }
 
     @Operation(summary = "列出知识库", description = "获取当前租户下的所有知识库")
@@ -66,7 +70,7 @@ public class KnowledgeBaseController {
     @Operation(summary = "删除知识库", description = "删除指定的知识库")
     @DeleteMapping("/{id}")
     public Result<Void> deleteKb(@PathVariable String id) {
-        kbRepo.deleteById(id);
+        kbService.deleteKnowledgeBase(id);
         return Result.ok();
     }
 }

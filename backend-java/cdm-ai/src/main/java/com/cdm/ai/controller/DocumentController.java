@@ -4,6 +4,7 @@ import com.cdm.ai.entity.DocumentEntity;
 import com.cdm.ai.repository.DocumentRepository;
 import com.cdm.ai.service.MinioService;
 import com.cdm.ai.client.AgentClient;
+import com.cdm.ai.service.DocumentService;
 import com.cdm.ai.vo.DocumentVo;
 import com.cdm.common.domain.Result;
 import com.cdm.common.security.SecurityUtils;
@@ -25,11 +26,14 @@ public class DocumentController {
     private final AgentClient agentClient;
     private final SnowflakeIdGenerator idGenerator;
 
-    public DocumentController(DocumentRepository docRepo, MinioService minioService, AgentClient agentClient, SnowflakeIdGenerator idGenerator) {
+    private final DocumentService documentService;
+
+    public DocumentController(DocumentRepository docRepo, MinioService minioService, AgentClient agentClient, SnowflakeIdGenerator idGenerator, DocumentService documentService) {
         this.docRepo = docRepo;
         this.minioService = minioService;
         this.agentClient = agentClient;
         this.idGenerator = idGenerator;
+        this.documentService = documentService;
     }
 
     @Operation(summary = "列出文档", description = "获取特定知识库下的所有文档")
@@ -74,7 +78,7 @@ public class DocumentController {
     @Operation(summary = "删除文档", description = "删除知识库中包含的该文档记录")
     @DeleteMapping("/{id}")
     public Result<Void> deleteDocument(@PathVariable String id) {
-        docRepo.deleteById(id);
+        documentService.deleteDocument(id);
         return Result.ok();
     }
 }
