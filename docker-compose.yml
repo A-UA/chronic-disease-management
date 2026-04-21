@@ -20,6 +20,17 @@ services:
       - "6379:6379"
 
   # ── 对象存储 ──
+  nacos:
+    image: nacos/nacos-server:v2.4.3
+    container_name: cdm-nacos
+    environment:
+      - MODE=standalone
+      - NACOS_AUTH_ENABLE=false
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+    restart: unless-stopped
+
   minio:
     image: minio/minio
     command: server /data --console-address ":9001"
