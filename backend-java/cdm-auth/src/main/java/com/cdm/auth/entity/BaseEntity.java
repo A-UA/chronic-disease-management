@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 public abstract class BaseEntity {
     @Id
     @Column(columnDefinition = "bigint")
-    private Long id;
+    private String id;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

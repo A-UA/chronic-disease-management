@@ -6,5 +6,5 @@ import java.util.List;
 
 public interface OrganizationUserRoleRepository
         extends JpaRepository<OrganizationUserRoleEntity, OrganizationUserRoleEntity.PK> {
-    List<OrganizationUserRoleEntity> findByOrgIdAndUserId(Long orgId, Long userId);
+    List<OrganizationUserRoleEntity> findByOrgIdAndUserId(String orgId, String userId);
 }

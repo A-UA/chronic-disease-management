@@ -1,5 +1,7 @@
 package com.cdm.auth.entity;
 
+import com.cdm.auth.vo.MenuVo;
+import com.cdm.common.domain.BaseEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -14,10 +16,10 @@ import java.util.Map;
 public class MenuEntity extends BaseEntity {
 
     @Column(name = "parent_id")
-    private Long parentId;
+    private String parentId;
 
     @Column(name = "tenant_id")
-    private Long tenantId;
+    private String tenantId;
 
     @Column(nullable = false, length = 100)
     private String name;
@@ -49,4 +51,22 @@ public class MenuEntity extends BaseEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> meta;
+
+    public static MenuVo toVo(MenuEntity entity) {
+        if (entity == null) return null;
+        return MenuVo.builder()
+                .id(entity.getId())
+                .parentId(entity.getParentId() != null ? String.valueOf(entity.getParentId()) : null)
+                .name(entity.getName())
+                .code(entity.getCode())
+                .menuType(entity.getMenuType())
+                .path(entity.getPath())
+                .icon(entity.getIcon())
+                .permissionCode(entity.getPermissionCode())
+                .sort(entity.getSort())
+                .isVisible(entity.getIsVisible())
+                .isEnabled(entity.getIsEnabled())
+                .meta(entity.getMeta())
+                .build();
+    }
 }

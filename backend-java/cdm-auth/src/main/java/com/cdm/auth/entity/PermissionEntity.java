@@ -14,7 +14,7 @@ import lombok.Setter;
 public class PermissionEntity {
 
     @Id
-    private Long id;
+    private String id;
 
     @Column(nullable = false, length = 100)
     private String name;
@@ -23,8 +23,8 @@ public class PermissionEntity {
     private String code;
 
     @Column(name = "resource_id")
-    private Long resourceId;
+    private String resourceId;
 
     @Column(name = "action_id")
-    private Long actionId;
+    private String actionId;
 }

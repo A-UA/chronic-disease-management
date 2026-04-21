@@ -5,6 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-public interface OrganizationRepository extends JpaRepository<OrganizationEntity, Long> {
-    List<OrganizationEntity> findByParentId(Long parentId);
+public interface OrganizationRepository extends JpaRepository<OrganizationEntity, String> {
+    List<OrganizationEntity> findByParentId(String parentId);
 }

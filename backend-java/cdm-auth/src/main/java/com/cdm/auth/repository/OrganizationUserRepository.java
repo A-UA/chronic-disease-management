@@ -7,6 +7,6 @@ import java.util.Optional;
 
 public interface OrganizationUserRepository
         extends JpaRepository<OrganizationUserEntity, OrganizationUserEntity.PK> {
-    List<OrganizationUserEntity> findByUserId(Long userId);
-    Optional<OrganizationUserEntity> findByOrgIdAndUserId(Long orgId, Long userId);
+    List<OrganizationUserEntity> findByUserId(String userId);
+    Optional<OrganizationUserEntity> findByOrgIdAndUserId(String orgId, String userId);
 }

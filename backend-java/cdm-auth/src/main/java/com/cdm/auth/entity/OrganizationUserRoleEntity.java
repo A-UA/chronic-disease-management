@@ -13,21 +13,21 @@ import java.io.Serializable;
 public class OrganizationUserRoleEntity {
 
     @Id @Column(name = "org_id")
-    private Long orgId;
+    private String orgId;
 
     @Id @Column(name = "user_id")
-    private Long userId;
+    private String userId;
 
     @Id @Column(name = "role_id")
-    private Long roleId;
+    private String roleId;
 
     @Column(name = "tenant_id", nullable = false)
-    private Long tenantId;
+    private String tenantId;
 
     @Getter @Setter @NoArgsConstructor
     public static class PK implements Serializable {
-        private Long orgId;
-        private Long userId;
-        private Long roleId;
+        private String orgId;
+        private String userId;
+        private String roleId;
     }
 }

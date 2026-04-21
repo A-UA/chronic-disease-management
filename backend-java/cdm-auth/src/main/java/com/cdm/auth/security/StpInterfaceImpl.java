@@ -25,12 +25,12 @@ public class StpInterfaceImpl implements StpInterface {
     public List<String> getPermissionList(Object loginId, String loginType) {
         Object orgIdObj = StpUtil.getExtra("org_id");
         if (orgIdObj == null) return List.of();
-        Long userId = Long.parseLong(String.valueOf(loginId));
-        Long orgId = Long.parseLong(String.valueOf(orgIdObj));
+        String userId = String.valueOf(loginId);
+        String orgId = String.valueOf(orgIdObj);
 
         var roleIds = orgUserRoleRepo.findByOrgIdAndUserId(orgId, userId)
                 .stream().map(OrganizationUserRoleEntity::getRoleId).collect(Collectors.toList());
-        Set<Long> allRoleIds = expandRoleHierarchy(roleIds);
+        Set<String> allRoleIds = expandRoleHierarchy(roleIds);
         if (allRoleIds.isEmpty()) return List.of();
 
         return new ArrayList<>(permRepo.findCodesByRoleIds(new ArrayList<>(allRoleIds)));
@@ -40,19 +40,19 @@ public class StpInterfaceImpl implements StpInterface {
     public List<String> getRoleList(Object loginId, String loginType) {
         Object orgIdObj = StpUtil.getExtra("org_id");
         if (orgIdObj == null) return List.of();
-        Long userId = Long.parseLong(String.valueOf(loginId));
-        Long orgId = Long.parseLong(String.valueOf(orgIdObj));
+        String userId = String.valueOf(loginId);
+        String orgId = String.valueOf(orgIdObj);
 
         return orgUserRoleRepo.findByOrgIdAndUserId(orgId, userId).stream()
                 .map(our -> roleRepo.findById(our.getRoleId()).map(RoleEntity::getCode).orElse(null))
                 .filter(Objects::nonNull).collect(Collectors.toList());
     }
 
-    private Set<Long> expandRoleHierarchy(List<Long> roleIds) {
-        Set<Long> all = new HashSet<>(roleIds);
-        Queue<Long> queue = new LinkedList<>(roleIds);
+    private Set<String> expandRoleHierarchy(List<String> roleIds) {
+        Set<String> all = new HashSet<>(roleIds);
+        Queue<String> queue = new LinkedList<>(roleIds);
         while (!queue.isEmpty()) {
-            Long rid = queue.poll();
+            String rid = queue.poll();
             roleRepo.findById(rid).ifPresent(role -> {
                 if (role.getParentRoleId() != null && all.add(role.getParentRoleId())) {
                     queue.add(role.getParentRoleId());

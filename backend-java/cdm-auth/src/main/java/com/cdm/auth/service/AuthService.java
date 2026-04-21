@@ -3,11 +3,12 @@ package com.cdm.auth.service;
 import cn.dev33.satoken.stp.SaLoginConfig;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.dev33.satoken.temp.SaTempUtil;
-import com.cdm.auth.dto.UserReadDto;
+import com.cdm.auth.vo.*;
 import com.cdm.auth.entity.*;
-import com.cdm.auth.exception.BusinessException;
+import com.cdm.common.exception.BusinessException;
+import com.cdm.common.security.SecurityUtils;
 import com.cdm.auth.repository.*;
-import com.cdm.auth.util.SnowflakeIdGenerator;
+import com.cdm.common.util.SnowflakeIdGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -32,7 +33,7 @@ public class AuthService {
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @Transactional
-    public Map<String, Object> register(String email, String password, String name) {
+    public LoginVo register(String email, String password, String name) {
         if (userRepo.existsByEmail(email)) {
             throw BusinessException.validation("The user with this email already exists.");
         }
@@ -71,12 +72,11 @@ public class AuthService {
             our.setTenantId(tenant.getId());
             orgUserRoleRepo.save(our);
         });
-
-        return Map.of("id", user.getId(), "email", email,
-                       "tenant_id", tenant.getId(), "org_id", org.getId());
+        
+        return loginToOrg(user, orgUser);
     }
 
-    public Map<String, Object> login(String username, String password) {
+    public LoginVo login(String username, String password) {
         var user = userRepo.findByEmail(username)
                 .orElseThrow(() -> BusinessException.validation("Incorrect email or password"));
         if (!verifyPassword(password, user.getPasswordHash())) {
@@ -95,33 +95,31 @@ public class AuthService {
         String selectionToken = SaTempUtil.createToken("select:" + user.getId(), 300);
         var orgList = orgUsers.stream().map(ou -> {
             var org = orgRepo.findById(ou.getOrgId()).orElseThrow();
-            return Map.<String, Object>of("id", org.getId(), "name", org.getName(),
-                                          "tenant_id", org.getTenantId());
+            return OrganizationEntity.toVo(org);
         }).toList();
 
-        var result = new HashMap<String, Object>();
-        result.put("access_token", null);
-        result.put("token_type", "bearer");
-        result.put("organizations", orgList);
-        result.put("require_org_selection", true);
-        result.put("selection_token", selectionToken);
-        return result;
+        return LoginVo.builder()
+                .token(selectionToken)
+                .organizations(orgList)
+                .user(UserEntity.toVo(user))
+                .build();
     }
 
-    public Map<String, Object> selectOrg(Long orgId, String selectionToken) {
+    public LoginVo selectOrg(String orgId, String selectionToken) {
         Object value = SaTempUtil.parseToken(selectionToken);
         if (value == null || !String.valueOf(value).startsWith("select:")) {
             throw BusinessException.validation("Invalid or expired selection token");
         }
         SaTempUtil.deleteToken(selectionToken);
-        Long userId = Long.parseLong(String.valueOf(value).substring("select:".length()));
+        String userId = String.valueOf(value).substring("select:".length());
         var ou = orgUserRepo.findByOrgIdAndUserId(orgId, userId)
                 .orElseThrow(() -> BusinessException.forbidden("User is not a member of this organization"));
         var user = userRepo.findById(userId).orElseThrow();
         return loginToOrg(user, ou);
     }
 
-    public Map<String, Object> switchOrg(Long userId, Long orgId) {
+    public LoginVo switchOrg(String orgId) {
+        String userId = SecurityUtils.getUserId();
         StpUtil.logout();
         var ou = orgUserRepo.findByOrgIdAndUserId(orgId, userId)
                 .orElseThrow(() -> BusinessException.forbidden("User is not a member of this organization"));
@@ -129,31 +127,41 @@ public class AuthService {
         return loginToOrg(user, ou);
     }
 
-    public List<Map<String, Object>> listMyOrgs(Long userId) {
+    public List<OrganizationVo> listMyOrgs() {
+        String userId = SecurityUtils.getUserId();
         return orgUserRepo.findByUserId(userId).stream().map(ou -> {
             var org = orgRepo.findById(ou.getOrgId()).orElseThrow();
-            return Map.<String, Object>of("id", org.getId(), "name", org.getName(),
-                                          "tenant_id", org.getTenantId());
+            return OrganizationEntity.toVo(org);
         }).toList();
     }
 
-    public UserReadDto getMe(Long userId, Long orgId, Long tenantId) {
+    public UserVo getMe() {
+        String userId = SecurityUtils.getUserId();
+        String orgId = SecurityUtils.getOrgId();
+        String tenantId = SecurityUtils.getTenantId();
+        
         var user = userRepo.findById(userId).orElseThrow();
         Set<String> perms = getEffectivePermissions(orgId, userId);
-        return UserReadDto.builder()
-                .id(user.getId()).email(user.getEmail()).name(user.getName())
-                .createdAt(user.getCreatedAt()).tenantId(tenantId).orgId(orgId)
-                .permissions(new ArrayList<>(perms)).build();
+        
+        UserVo vo = UserEntity.toVo(user);
+        vo.setTenantId(tenantId);
+        vo.setOrgId(orgId);
+        vo.setPermissions(new ArrayList<>(perms));
+        vo.setCreatedAt(user.getCreatedAt());
+        return vo;
     }
 
-    public List<Map<String, Object>> getMenuTree(Long userId, Long orgId, Long tenantId) {
+    public List<MenuVo> getMenuTree() {
+        String userId = SecurityUtils.getUserId();
+        String orgId = SecurityUtils.getOrgId();
+        String tenantId = SecurityUtils.getTenantId();
         Set<String> permCodes = getEffectivePermissions(orgId, userId);
         return menuService.getMenuTree(tenantId, permCodes);
     }
 
     // ── 私有方法 ──
 
-    private Map<String, Object> loginToOrg(UserEntity user, OrganizationUserEntity ou) {
+    private LoginVo loginToOrg(UserEntity user, OrganizationUserEntity ou) {
         var org = orgRepo.findById(ou.getOrgId()).orElseThrow();
         var roleCodes = getRoleCodes(ou.getOrgId(), ou.getUserId());
         var allowedOrgIds = getDescendingOrgIds(ou.getOrgId());
@@ -162,23 +170,22 @@ public class AuthService {
                 SaLoginConfig
                         .setExtra("tenant_id", org.getTenantId())
                         .setExtra("org_id", org.getId())
-                        .setExtra("allowed_org_ids", allowedOrgIds)
+                        .setExtra("allowed_org_ids", String.join(",", allowedOrgIds))
                         .setExtra("roles", String.join(",", roleCodes)));
 
-        return Map.of(
-                "access_token", StpUtil.getTokenValue(),
-                "token_type", "bearer",
-                "organization", Map.of("id", org.getId(), "name", org.getName(),
-                                       "tenant_id", org.getTenantId()),
-                "require_org_selection", false);
+        return LoginVo.builder()
+                .token(StpUtil.getTokenValue())
+                .user(UserEntity.toVo(user))
+                .organizations(List.of(OrganizationEntity.toVo(org)))
+                .build();
     }
 
-    private List<Long> getDescendingOrgIds(Long rootOrgId) {
-        List<Long> result = new ArrayList<>();
-        Queue<Long> queue = new LinkedList<>();
+    private List<String> getDescendingOrgIds(String rootOrgId) {
+        List<String> result = new ArrayList<>();
+        Queue<String> queue = new LinkedList<>();
         queue.add(rootOrgId);
         while (!queue.isEmpty()) {
-            Long current = queue.poll();
+            String current = queue.poll();
             if (!result.contains(current)) {
                 result.add(current);
                 List<OrganizationEntity> children = orgRepo.findByParentId(current);
@@ -196,19 +203,19 @@ public class AuthService {
         return passwordEncoder.matches(raw, hash);
     }
 
-    private List<String> getRoleCodes(Long orgId, Long userId) {
+    private List<String> getRoleCodes(String orgId, String userId) {
         return orgUserRoleRepo.findByOrgIdAndUserId(orgId, userId).stream()
                 .map(our -> roleRepo.findById(our.getRoleId()).map(RoleEntity::getCode).orElse(null))
                 .filter(Objects::nonNull).toList();
     }
 
-    private Set<String> getEffectivePermissions(Long orgId, Long userId) {
+    private Set<String> getEffectivePermissions(String orgId, String userId) {
         var roleIds = orgUserRoleRepo.findByOrgIdAndUserId(orgId, userId).stream()
                 .map(OrganizationUserRoleEntity::getRoleId).collect(Collectors.toList());
-        Set<Long> allRoleIds = new HashSet<>(roleIds);
-        Queue<Long> queue = new LinkedList<>(roleIds);
+        Set<String> allRoleIds = new HashSet<>(roleIds);
+        Queue<String> queue = new LinkedList<>(roleIds);
         while (!queue.isEmpty()) {
-            Long rid = queue.poll();
+            String rid = queue.poll();
             roleRepo.findById(rid).ifPresent(role -> {
                 if (role.getParentRoleId() != null && allRoleIds.add(role.getParentRoleId())) {
                     queue.add(role.getParentRoleId());

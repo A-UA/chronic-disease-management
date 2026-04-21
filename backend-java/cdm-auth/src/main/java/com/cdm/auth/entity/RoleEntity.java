@@ -13,10 +13,10 @@ import java.util.List;
 public class RoleEntity extends BaseEntity {
 
     @Column(name = "tenant_id")
-    private Long tenantId;
+    private String tenantId;
 
     @Column(name = "parent_role_id")
-    private Long parentRoleId;
+    private String parentRoleId;
 
     @Column(nullable = false, length = 100)
     private String name;

@@ -13,20 +13,20 @@ import java.io.Serializable;
 public class OrganizationUserEntity {
 
     @Id @Column(name = "org_id")
-    private Long orgId;
+    private String orgId;
 
     @Id @Column(name = "user_id")
-    private Long userId;
+    private String userId;
 
     @Column(name = "tenant_id", nullable = false)
-    private Long tenantId;
+    private String tenantId;
 
     @Column(name = "user_type", length = 20)
     private String userType = "staff";
 
     @Getter @Setter @NoArgsConstructor
     public static class PK implements Serializable {
-        private Long orgId;
-        private Long userId;
+        private String orgId;
+        private String userId;
     }
 }

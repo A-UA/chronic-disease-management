@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.List;
 import java.util.Set;
 
-public interface PermissionRepository extends JpaRepository<PermissionEntity, Long> {
+public interface PermissionRepository extends JpaRepository<PermissionEntity, String> {
     @Query("SELECT p.code FROM RoleEntity r JOIN r.permissions p WHERE r.id IN :roleIds")
-    Set<String> findCodesByRoleIds(List<Long> roleIds);
+    Set<String> findCodesByRoleIds(List<String> roleIds);
 }
