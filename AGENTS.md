@@ -19,9 +19,10 @@
 为了适应多团队技术栈演进，核心业务服务提供两套等价架构（实际部署时只保留其一或按域切分）：
 
 #### 方案 A: Java + Spring Cloud
-- **技术栈**: Java, Spring Boot 3.x, Spring Cloud Gateway, Sa-Token（全局鉴权拦截）, MyBatis-Plus / Spring Data JPA。
-- **结构**: Maven 多模块结构 (`gateway` / `auth-service` / `patient-service` / `common-lib`)。
-- **服务通信**: 基于 Spring Cloud 内部调用规范。
+- **技术栈**: Java 17, Spring Boot 3.5.x, Spring Cloud 2025.0, Spring Cloud Alibaba (Nacos), Sa-Token（全局鉴权拦截）, Spring Data JPA, OpenFeign, SpringDoc。
+- **结构**: Maven 多模块聚合 (`cdm-parent` / `cdm-common` / `cdm-gateway` / `cdm-auth` / `cdm-patient` / `cdm-ai`)。
+- **服务通信**: 基于 Nacos Discovery 注册中心，利用 OpenFeign 和 Spring Cloud LoadBalancer 实现内部 HTTP RPC 调用。
+- **配置管理**: 基于 Nacos Config，统一从 `cdm-common.yml` 加载共享配置（DB、Sa-Token 等）。
 
 #### 方案 B: Node.js + NestJS
 - **技术栈**: TypeScript (strict, 零 `any`), NestJS 11.x, TypeORM 0.3.x, Node ≥20.19。
@@ -53,11 +54,12 @@
 ```
 chronic-disease-management/
 ├── backend-java/                  # Java 业务微服务群
-│   ├── common-lib/                # 通用 DTO / 过滤器 / 异常类
-│   ├── gateway/                   # Spring Gateway + SaToken
-│   ├── auth-service/              # RBAC 角色、租户、JWT 鉴权服务
-│   ├── patient-service/           # 患者档案、家属、健康指标相关服务
-│   └── pom.xml                    # Maven 聚合构建配置
+│   ├── cdm-common/                # 通用 DTO / Result / 全局异常 / SecurityUtils / 身份拦截器
+│   ├── cdm-gateway/               # Spring Gateway + SaToken 全局拦截鉴权 + 异常清洗
+│   ├── cdm-auth/                  # RBAC 角色、租户、JWT 鉴权服务
+│   ├── cdm-patient/               # 患者档案、家属、健康指标相关服务
+│   ├── cdm-ai/                    # 知识库管理、自动向量化拆解与清洗生命周期
+│   └── pom.xml                    # Maven 聚合构建配置编排
 ├── backend-nestjs/                # Nest.js 业务微服务群 (Turborepo Monorepo)
 │   ├── libs/shared/               # 共享库
 │   │   ├── src/constants.ts       # 服务标识、TCP 命令常量（AUTH/PATIENT/AI_SERVICE）
@@ -136,9 +138,9 @@ chronic-disease-management/
    - `JwtAuthGuard` 拦截所有需鉴权请求，验证 JWT 后将身份信息注入 `RequestWithIdentity.identity`（类型为 `IdentityPayload`）。
    - `@CurrentUser()` 装饰器在 Controller 中提取身份上下文。
 3. **流量分发**（Gateway 通过 `ClientProxy.send()` TCP 转发至下游微服务）：
-   - `/api/v1/auth/**` · `/api/v1/users/**` · `/api/v1/tenants/**` · `/api/v1/organizations/**` · `/api/v1/roles/**` · `/api/v1/permissions/**` · `/api/v1/menus/**` → `auth-service`
-   - `/api/v1/patients/**` · `/api/v1/health-metrics/**` · `/api/v1/management-suggestions/**` · `/api/v1/manager-assignments/**` · `/api/v1/patient-family-links/**` → `patient-service`
-   - `/api/v1/kb/**` · `/api/v1/documents/**` · `/api/v1/conversations/**` → `ai-service`
+   - `/api/v1/auth/**` · `/api/v1/users/**` · `/api/v1/tenants/**` · `/api/v1/organizations/**` · `/api/v1/roles/**` · `/api/v1/permissions/**` · `/api/v1/menus/**` → `cdm-auth` (8011) / `auth-service`
+   - `/api/v1/patients/**` · `/api/v1/health-metrics/**` · `/api/v1/management-suggestions/**` · `/api/v1/manager-assignments/**` · `/api/v1/patient-family-links/**` → `cdm-patient` (8021) / `patient-service`
+   - `/api/v1/kb/**` · `/api/v1/documents/**` · `/api/v1/conversations/**` → `cdm-ai` (8031) / `ai-service`
    - `/api/v1/chat` → Gateway 内 `AgentProxyService` 直连 Agent HTTP 接口，SSE 流式透传
 4. **文件上传流** (知识库文档)：
    - 客户端 `POST /api/v1/documents/kb/:kbId/documents` multipart 上传
@@ -189,7 +191,12 @@ uv run uvicorn app.main:app --reload --port 8000
 > 测试运行：`uv run pytest`
 
 ### 5.4 启动后端业务服务
-- **Java**：使用 Maven 或 IDEA 打开 `backend-java` 并按序启动 Gateway、Auth 服务。（`ddl-auto: none`，必须先执行 5.2）
+- **Java**：使用 Maven 或 IDEA 打开 `backend-java` 并按序启动。由于使用了 Nacos，建议先启动 Docker 环境中的 Nacos。
+  - `cdm-gateway` (:8001)
+  - `cdm-auth` (:8011)
+  - `cdm-patient` (:8021)
+  - `cdm-ai` (:8031)
+  - `cdm-common.yml` Nacos 共享配置已内置于代码库或 Nacos 中，请确保 Nacos 正常访问。（注：数据库表由 `database/init.sql` 接管，JPA 开启禁止 ddl-auto）。
 - **NestJS**：在 `backend-nestjs` 运行 `pnpm install` 安装所有依赖并执行 `pnpm run build`。平时开发可使用以下脚本单独启动服务，或直接 `pnpm dev` 通过 Turborepo 全量启动。（`synchronize: false`，必须先执行 5.2；TCP 微服务需先于网关启动）
 
 ```powershell
