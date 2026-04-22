@@ -17,14 +17,14 @@
 *   **ORM 注解更替**：
     *   移除所有的 `@Entity`, `@Table`, `@Column`, `@Id`。
     *   引入 `@TableName`。
-    *   在 `id` 上标注 `@TableId(type = IdType.ASSIGN_ID)`，激活 MyBatis-Plus 原生的 64 位雪花算法生成器。
-*   **逻辑删除**：对诸如 `is_deleted` 的字段补充 `@TableLogic` 注解。
+*   **全局配置 (代替散落的注解)**：不使用 `@TableId(type = IdType.ASSIGN_ID)` 和 `@TableLogic` 注解，而是采用诸如若依、芋道等大型开源项目中流行的全局配置方案。在 `application.yml` 的 `mybatis-plus.global-config.db-config` 中统一配置 `id-type: assign_id` 以及 `logic-delete-field`，保持实体类的极度整洁。
 
 ### 3.3 数据流与类型边界 (Data Flow & Type Safety)
-针对 `AGENTS.md` 规定的“入站出站参数 ID 皆为 String”的要求，确立明确的数据转换边界：
-1.  **前端与 Controller 交互 (入站 DTO & 出站 VO)**：维持 ID 类型为 `String` 不变，确保外部 API 契约不破损。
-2.  **业务逻辑与数据库交互 (Service & Entity)**：实体层 `Entity` 强制采用 `Long`。
-3.  **转换边界**：所有的 `String` 到 `Long` 的互相转化，严格收拢在 Service 层的组装阶段以及各实体类现有的 `toVo(Entity entity)` 方法内部处理，例如：`vo.setId(String.valueOf(entity.getId()))`。
+得益于项目中已存在的 `JacksonAutoConfiguration`（已配置 `ToStringSerializer`），我们不再需要在代码里手动做 String 和 Long 的互相转换（推翻初版繁琐设计），而是采用最彻底的 Java 行业最佳实践：
+1.  **全栈类型统一**：在 Java 端（Entity、所有入站 DTO、所有出站 VO），涉及的所有 ID 字段统统修正为 `Long`。
+2.  **出站响应给前端 (JSON)**：由 `JacksonAutoConfiguration` 全局拦截，自动将 VO 中的 `Long` 转换为前端所需的 `String`，完美规避精度丢失。
+3.  **入站接收前端数据 (JSON)**：Jackson 原生支持自动将前端传来的 JSON 字符串（如 `{"id": "12345"}`）安全地反序列化回 DTO 中的 `Long` 字段。
+如此一来，Java 核心代码内将只有高效的 `Long` 在流转，且代码极其清爽，没有任何类型强制转换的性能损耗，这也是为什么该类已经存在于您的代码库中的原因。
 
 ### 3.4 数据访问层 (Repository -> Mapper)
 *   彻底删除所有现存的 `JpaRepository` 接口（如 `UserRepository`、`MenuRepository` 等）。
