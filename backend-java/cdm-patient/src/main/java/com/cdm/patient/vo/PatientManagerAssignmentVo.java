@@ -11,11 +11,11 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PatientManagerAssignmentVo {
-    private String id;
-    private String tenantId;
-    private String orgId;
-    private String patientId;
-    private String managerUserId;
+    private Long id;
+    private Long tenantId;
+    private Long orgId;
+    private Long patientId;
+    private Long managerUserId;
     private String assignmentType;
     private LocalDateTime createdAt;
 }

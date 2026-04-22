@@ -13,8 +13,8 @@ import java.util.ArrayList;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MenuVo {
-    private String id;
-    private String parentId;
+    private Long id;
+    private Long parentId;
     private String name;
     private String code;
     private String menuType;

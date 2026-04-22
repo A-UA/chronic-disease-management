@@ -2,11 +2,13 @@ package com.cdm.auth.security;
 
 import cn.dev33.satoken.stp.StpInterface;
 import cn.dev33.satoken.stp.StpUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cdm.auth.entity.OrganizationUserRoleEntity;
+import com.cdm.auth.entity.PermissionEntity;
 import com.cdm.auth.entity.RoleEntity;
-import com.cdm.auth.repository.OrganizationUserRoleRepository;
-import com.cdm.auth.repository.PermissionRepository;
-import com.cdm.auth.repository.RoleRepository;
+import com.cdm.auth.mapper.OrganizationUserRoleMapper;
+import com.cdm.auth.mapper.PermissionMapper;
+import com.cdm.auth.mapper.RoleMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -17,47 +19,58 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class StpInterfaceImpl implements StpInterface {
 
-    private final OrganizationUserRoleRepository orgUserRoleRepo;
-    private final RoleRepository roleRepo;
-    private final PermissionRepository permRepo;
+    private final OrganizationUserRoleMapper orgUserRoleMapper;
+    private final RoleMapper roleMapper;
+    private final PermissionMapper permMapper;
 
     @Override
     public List<String> getPermissionList(Object loginId, String loginType) {
         Object orgIdObj = StpUtil.getExtra("org_id");
         if (orgIdObj == null) return List.of();
-        String userId = String.valueOf(loginId);
-        String orgId = String.valueOf(orgIdObj);
+        Long userId = Long.parseLong(String.valueOf(loginId));
+        Long orgId = Long.parseLong(String.valueOf(orgIdObj));
 
-        var roleIds = orgUserRoleRepo.findByOrgIdAndUserId(orgId, userId)
+        var roleIds = orgUserRoleMapper.selectList(new LambdaQueryWrapper<OrganizationUserRoleEntity>()
+                .eq(OrganizationUserRoleEntity::getOrgId, orgId)
+                .eq(OrganizationUserRoleEntity::getUserId, userId))
                 .stream().map(OrganizationUserRoleEntity::getRoleId).collect(Collectors.toList());
-        Set<String> allRoleIds = expandRoleHierarchy(roleIds);
+        Set<Long> allRoleIds = expandRoleHierarchy(roleIds);
         if (allRoleIds.isEmpty()) return List.of();
 
-        return new ArrayList<>(permRepo.findCodesByRoleIds(new ArrayList<>(allRoleIds)));
+        return permMapper.selectList(new LambdaQueryWrapper<PermissionEntity>()
+                .inSql(PermissionEntity::getId, "SELECT permission_id FROM role_permissions WHERE role_id IN (" +
+                        allRoleIds.stream().map(String::valueOf).collect(Collectors.joining(",")) + ")"))
+                .stream().map(PermissionEntity::getCode).collect(Collectors.toList());
     }
 
     @Override
     public List<String> getRoleList(Object loginId, String loginType) {
         Object orgIdObj = StpUtil.getExtra("org_id");
         if (orgIdObj == null) return List.of();
-        String userId = String.valueOf(loginId);
-        String orgId = String.valueOf(orgIdObj);
+        Long userId = Long.parseLong(String.valueOf(loginId));
+        Long orgId = Long.parseLong(String.valueOf(orgIdObj));
 
-        return orgUserRoleRepo.findByOrgIdAndUserId(orgId, userId).stream()
-                .map(our -> roleRepo.findById(our.getRoleId()).map(RoleEntity::getCode).orElse(null))
+        return orgUserRoleMapper.selectList(new LambdaQueryWrapper<OrganizationUserRoleEntity>()
+                .eq(OrganizationUserRoleEntity::getOrgId, orgId)
+                .eq(OrganizationUserRoleEntity::getUserId, userId)).stream()
+                .map(our -> {
+                    RoleEntity role = roleMapper.selectById(our.getRoleId());
+                    return role != null ? role.getCode() : null;
+                })
                 .filter(Objects::nonNull).collect(Collectors.toList());
     }
 
-    private Set<String> expandRoleHierarchy(List<String> roleIds) {
-        Set<String> all = new HashSet<>(roleIds);
-        Queue<String> queue = new LinkedList<>(roleIds);
+    private Set<Long> expandRoleHierarchy(List<Long> roleIds) {
+        Set<Long> all = new HashSet<>(roleIds);
+        Queue<Long> queue = new LinkedList<>(roleIds);
         while (!queue.isEmpty()) {
-            String rid = queue.poll();
-            roleRepo.findById(rid).ifPresent(role -> {
+            Long rid = queue.poll();
+            RoleEntity role = roleMapper.selectById(rid);
+            if (role != null) {
                 if (role.getParentRoleId() != null && all.add(role.getParentRoleId())) {
                     queue.add(role.getParentRoleId());
                 }
-            });
+            }
         }
         return all;
     }

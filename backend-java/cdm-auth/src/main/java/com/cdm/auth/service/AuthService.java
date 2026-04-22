@@ -3,12 +3,12 @@ package com.cdm.auth.service;
 import cn.dev33.satoken.stp.SaLoginConfig;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.dev33.satoken.temp.SaTempUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cdm.auth.vo.*;
 import com.cdm.auth.entity.*;
 import com.cdm.common.exception.BusinessException;
 import com.cdm.common.security.SecurityUtils;
-import com.cdm.auth.repository.*;
-import com.cdm.common.util.SnowflakeIdGenerator;
+import com.cdm.auth.mapper.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -21,69 +21,71 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AuthService {
 
-    private final UserRepository userRepo;
-    private final OrganizationRepository orgRepo;
-    private final OrganizationUserRepository orgUserRepo;
-    private final OrganizationUserRoleRepository orgUserRoleRepo;
-    private final RoleRepository roleRepo;
-    private final PermissionRepository permRepo;
+    private final UserMapper userMapper;
+    private final OrganizationMapper orgMapper;
+    private final OrganizationUserMapper orgUserMapper;
+    private final OrganizationUserRoleMapper orgUserRoleMapper;
+    private final RoleMapper roleMapper;
+    private final PermissionMapper permMapper;
+    private final TenantMapper tenantMapper;
     private final MenuService menuService;
-    private final SnowflakeIdGenerator idGenerator;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @Transactional
     public LoginVo register(String email, String password, String name) {
-        if (userRepo.existsByEmail(email)) {
+        if (userMapper.exists(new LambdaQueryWrapper<UserEntity>().eq(UserEntity::getEmail, email))) {
             throw BusinessException.validation("The user with this email already exists.");
         }
 
         var user = new UserEntity();
-        user.setId(idGenerator.nextId());
         user.setEmail(email);
         user.setPasswordHash(passwordEncoder.encode(password));
         user.setName(name);
-        userRepo.save(user);
+        userMapper.insert(user);
 
         var tenant = new TenantEntity();
-        tenant.setId(idGenerator.nextId());
         tenant.setName((name != null ? name : email) + "'s Workspace");
         tenant.setSlug("ws-" + user.getId());
+        tenantMapper.insert(tenant);
 
         var org = new OrganizationEntity();
-        org.setId(idGenerator.nextId());
         org.setTenantId(tenant.getId());
         org.setName("默认部门");
         org.setCode("DEFAULT");
+        orgMapper.insert(org);
 
         var orgUser = new OrganizationUserEntity();
         orgUser.setOrgId(org.getId());
         orgUser.setUserId(user.getId());
         orgUser.setTenantId(tenant.getId());
+        orgUserMapper.insert(orgUser);
 
-        orgRepo.save(org);
-        orgUserRepo.save(orgUser);
-
-        roleRepo.findByCodeAndTenantIdIsNull("owner").ifPresent(ownerRole -> {
+        RoleEntity ownerRole = roleMapper.selectOne(new LambdaQueryWrapper<RoleEntity>()
+                .eq(RoleEntity::getCode, "owner")
+                .isNull(RoleEntity::getTenantId));
+        if (ownerRole != null) {
             var our = new OrganizationUserRoleEntity();
             our.setOrgId(org.getId());
             our.setUserId(user.getId());
             our.setRoleId(ownerRole.getId());
             our.setTenantId(tenant.getId());
-            orgUserRoleRepo.save(our);
-        });
+            orgUserRoleMapper.insert(our);
+        }
         
         return loginToOrg(user, orgUser);
     }
 
     public LoginVo login(String username, String password) {
-        var user = userRepo.findByEmail(username)
-                .orElseThrow(() -> BusinessException.validation("Incorrect email or password"));
+        var user = userMapper.selectOne(new LambdaQueryWrapper<UserEntity>().eq(UserEntity::getEmail, username));
+        if (user == null) {
+            throw BusinessException.validation("Incorrect email or password");
+        }
         if (!verifyPassword(password, user.getPasswordHash())) {
             throw BusinessException.validation("Incorrect email or password");
         }
 
-        var orgUsers = orgUserRepo.findByUserId(user.getId());
+        var orgUsers = orgUserMapper.selectList(new LambdaQueryWrapper<OrganizationUserEntity>().eq(OrganizationUserEntity::getUserId, user.getId()));
         if (orgUsers.isEmpty()) {
             throw BusinessException.validation("User is not a member of any active organization");
         }
@@ -94,7 +96,7 @@ public class AuthService {
 
         String selectionToken = SaTempUtil.createToken("select:" + user.getId(), 300);
         var orgList = orgUsers.stream().map(ou -> {
-            var org = orgRepo.findById(ou.getOrgId()).orElseThrow();
+            var org = orgMapper.selectById(ou.getOrgId());
             return OrganizationEntity.toVo(org);
         }).toList();
 
@@ -105,56 +107,65 @@ public class AuthService {
                 .build();
     }
 
-    public LoginVo selectOrg(String orgId, String selectionToken) {
+    public LoginVo selectOrg(Long orgId, String selectionToken) {
         Object value = SaTempUtil.parseToken(selectionToken);
         if (value == null || !String.valueOf(value).startsWith("select:")) {
             throw BusinessException.validation("Invalid or expired selection token");
         }
         SaTempUtil.deleteToken(selectionToken);
-        String userId = String.valueOf(value).substring("select:".length());
-        var ou = orgUserRepo.findByOrgIdAndUserId(orgId, userId)
-                .orElseThrow(() -> BusinessException.forbidden("User is not a member of this organization"));
-        var user = userRepo.findById(userId).orElseThrow();
+        Long userId = Long.parseLong(String.valueOf(value).substring("select:".length()));
+        var ou = orgUserMapper.selectOne(new LambdaQueryWrapper<OrganizationUserEntity>()
+                .eq(OrganizationUserEntity::getOrgId, orgId)
+                .eq(OrganizationUserEntity::getUserId, userId));
+        if (ou == null) {
+            throw BusinessException.forbidden("User is not a member of this organization");
+        }
+        var user = userMapper.selectById(userId);
         return loginToOrg(user, ou);
     }
 
-    public LoginVo switchOrg(String orgId) {
-        String userId = SecurityUtils.getUserId();
+    public LoginVo switchOrg(Long orgId) {
+        Long userId = Long.parseLong(SecurityUtils.getUserId());
         StpUtil.logout();
-        var ou = orgUserRepo.findByOrgIdAndUserId(orgId, userId)
-                .orElseThrow(() -> BusinessException.forbidden("User is not a member of this organization"));
-        var user = userRepo.findById(userId).orElseThrow();
+        var ou = orgUserMapper.selectOne(new LambdaQueryWrapper<OrganizationUserEntity>()
+                .eq(OrganizationUserEntity::getOrgId, orgId)
+                .eq(OrganizationUserEntity::getUserId, userId));
+        if (ou == null) {
+            throw BusinessException.forbidden("User is not a member of this organization");
+        }
+        var user = userMapper.selectById(userId);
         return loginToOrg(user, ou);
     }
 
     public List<OrganizationVo> listMyOrgs() {
-        String userId = SecurityUtils.getUserId();
-        return orgUserRepo.findByUserId(userId).stream().map(ou -> {
-            var org = orgRepo.findById(ou.getOrgId()).orElseThrow();
+        Long userId = Long.parseLong(SecurityUtils.getUserId());
+        return orgUserMapper.selectList(new LambdaQueryWrapper<OrganizationUserEntity>().eq(OrganizationUserEntity::getUserId, userId))
+                .stream().map(ou -> {
+            var org = orgMapper.selectById(ou.getOrgId());
             return OrganizationEntity.toVo(org);
         }).toList();
     }
 
     public UserVo getMe() {
-        String userId = SecurityUtils.getUserId();
-        String orgId = SecurityUtils.getOrgId();
+        Long userId = Long.parseLong(SecurityUtils.getUserId());
+        Long orgId = Long.parseLong(SecurityUtils.getOrgId());
         String tenantId = SecurityUtils.getTenantId();
         
-        var user = userRepo.findById(userId).orElseThrow();
+        var user = userMapper.selectById(userId);
         Set<String> perms = getEffectivePermissions(orgId, userId);
         
         UserVo vo = UserEntity.toVo(user);
         vo.setTenantId(tenantId);
-        vo.setOrgId(orgId);
+        vo.setOrgId(String.valueOf(orgId));
         vo.setPermissions(new ArrayList<>(perms));
         vo.setCreatedAt(user.getCreatedAt());
         return vo;
     }
 
     public List<MenuVo> getMenuTree() {
-        String userId = SecurityUtils.getUserId();
-        String orgId = SecurityUtils.getOrgId();
-        String tenantId = SecurityUtils.getTenantId();
+        Long userId = Long.parseLong(SecurityUtils.getUserId());
+        Long orgId = Long.parseLong(SecurityUtils.getOrgId());
+        Long tenantId = Long.parseLong(SecurityUtils.getTenantId());
         Set<String> permCodes = getEffectivePermissions(orgId, userId);
         return menuService.getMenuTree(tenantId, permCodes);
     }
@@ -162,15 +173,15 @@ public class AuthService {
     // ── 私有方法 ──
 
     private LoginVo loginToOrg(UserEntity user, OrganizationUserEntity ou) {
-        var org = orgRepo.findById(ou.getOrgId()).orElseThrow();
+        var org = orgMapper.selectById(ou.getOrgId());
         var roleCodes = getRoleCodes(ou.getOrgId(), ou.getUserId());
         var allowedOrgIds = getDescendingOrgIds(ou.getOrgId());
 
         StpUtil.login(user.getId(),
                 SaLoginConfig
-                        .setExtra("tenant_id", org.getTenantId())
-                        .setExtra("org_id", org.getId())
-                        .setExtra("allowed_org_ids", String.join(",", allowedOrgIds))
+                        .setExtra("tenant_id", String.valueOf(org.getTenantId()))
+                        .setExtra("org_id", String.valueOf(org.getId()))
+                        .setExtra("allowed_org_ids", allowedOrgIds.stream().map(String::valueOf).collect(Collectors.joining(",")))
                         .setExtra("roles", String.join(",", roleCodes)));
 
         return LoginVo.builder()
@@ -180,15 +191,15 @@ public class AuthService {
                 .build();
     }
 
-    private List<String> getDescendingOrgIds(String rootOrgId) {
-        List<String> result = new ArrayList<>();
-        Queue<String> queue = new LinkedList<>();
+    private List<Long> getDescendingOrgIds(Long rootOrgId) {
+        List<Long> result = new ArrayList<>();
+        Queue<Long> queue = new LinkedList<>();
         queue.add(rootOrgId);
         while (!queue.isEmpty()) {
-            String current = queue.poll();
+            Long current = queue.poll();
             if (!result.contains(current)) {
                 result.add(current);
-                List<OrganizationEntity> children = orgRepo.findByParentId(current);
+                List<OrganizationEntity> children = orgMapper.selectList(new LambdaQueryWrapper<OrganizationEntity>().eq(OrganizationEntity::getParentId, current));
                 for (OrganizationEntity child : children) {
                     queue.add(child.getId());
                 }
@@ -203,26 +214,40 @@ public class AuthService {
         return passwordEncoder.matches(raw, hash);
     }
 
-    private List<String> getRoleCodes(String orgId, String userId) {
-        return orgUserRoleRepo.findByOrgIdAndUserId(orgId, userId).stream()
-                .map(our -> roleRepo.findById(our.getRoleId()).map(RoleEntity::getCode).orElse(null))
+    private List<String> getRoleCodes(Long orgId, Long userId) {
+        return orgUserRoleMapper.selectList(new LambdaQueryWrapper<OrganizationUserRoleEntity>()
+                .eq(OrganizationUserRoleEntity::getOrgId, orgId)
+                .eq(OrganizationUserRoleEntity::getUserId, userId))
+                .stream()
+                .map(our -> {
+                    RoleEntity role = roleMapper.selectById(our.getRoleId());
+                    return role != null ? role.getCode() : null;
+                })
                 .filter(Objects::nonNull).toList();
     }
 
-    private Set<String> getEffectivePermissions(String orgId, String userId) {
-        var roleIds = orgUserRoleRepo.findByOrgIdAndUserId(orgId, userId).stream()
+    private Set<String> getEffectivePermissions(Long orgId, Long userId) {
+        var roleIds = orgUserRoleMapper.selectList(new LambdaQueryWrapper<OrganizationUserRoleEntity>()
+                .eq(OrganizationUserRoleEntity::getOrgId, orgId)
+                .eq(OrganizationUserRoleEntity::getUserId, userId))
+                .stream()
                 .map(OrganizationUserRoleEntity::getRoleId).collect(Collectors.toList());
-        Set<String> allRoleIds = new HashSet<>(roleIds);
-        Queue<String> queue = new LinkedList<>(roleIds);
+        Set<Long> allRoleIds = new HashSet<>(roleIds);
+        Queue<Long> queue = new LinkedList<>(roleIds);
         while (!queue.isEmpty()) {
-            String rid = queue.poll();
-            roleRepo.findById(rid).ifPresent(role -> {
+            Long rid = queue.poll();
+            RoleEntity role = roleMapper.selectById(rid);
+            if (role != null) {
                 if (role.getParentRoleId() != null && allRoleIds.add(role.getParentRoleId())) {
                     queue.add(role.getParentRoleId());
                 }
-            });
+            }
         }
         if (allRoleIds.isEmpty()) return Set.of();
-        return permRepo.findCodesByRoleIds(new ArrayList<>(allRoleIds));
+        
+        return permMapper.selectList(new LambdaQueryWrapper<PermissionEntity>()
+                .inSql(PermissionEntity::getId, "SELECT permission_id FROM role_permissions WHERE role_id IN (" +
+                        allRoleIds.stream().map(String::valueOf).collect(Collectors.joining(",")) + ")"))
+                .stream().map(PermissionEntity::getCode).collect(Collectors.toSet());
     }
 }

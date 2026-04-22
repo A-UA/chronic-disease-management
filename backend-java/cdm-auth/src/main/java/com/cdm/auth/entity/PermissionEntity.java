@@ -1,30 +1,21 @@
 package com.cdm.auth.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Entity
-@Table(name = "permissions")
+@TableName("permissions")
 @Getter @Setter @NoArgsConstructor
 public class PermissionEntity {
 
-    @Id
-    private String id;
+    @TableId(type = IdType.ASSIGN_ID)
+    private Long id;
 
-    @Column(nullable = false, length = 100)
     private String name;
-
-    @Column(nullable = false, unique = true, length = 100)
     private String code;
-
-    @Column(name = "resource_id")
-    private String resourceId;
-
-    @Column(name = "action_id")
-    private String actionId;
+    private Long resourceId;
+    private Long actionId;
 }

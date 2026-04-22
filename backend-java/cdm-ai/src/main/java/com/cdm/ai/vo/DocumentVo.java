@@ -11,11 +11,11 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DocumentVo {
-    private String id;
-    private String tenantId;
-    private String kbId;
-    private String orgId;
-    private String uploaderId;
+    private Long id;
+    private Long tenantId;
+    private Long kbId;
+    private Long orgId;
+    private Long uploaderId;
     private String fileName;
     private String fileType;
     private Integer fileSize;

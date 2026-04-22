@@ -24,14 +24,14 @@ public class ManagementSuggestionController {
 
     @Operation(summary = "获取建议列表", description = "获取特定患者的所有慢病管理建议")
     @GetMapping("/{patientId}")
-    public Result<List<ManagementSuggestionVo>> getSuggestions(@PathVariable String patientId) {
+    public Result<List<ManagementSuggestionVo>> getSuggestions(@PathVariable Long patientId) {
         return Result.ok(service.findAllForPatient(patientId));
     }
 
     @Operation(summary = "新建建议", description = "由管家或医生为特定患者下发管理建议")
     @PostMapping("/{patientId}")
     public Result<ManagementSuggestionVo> createSuggestion(
-            @PathVariable String patientId,
+            @PathVariable Long patientId,
             @Valid @RequestBody CreateManagementSuggestionDto dto
     ) {
         return Result.ok(service.createSuggestion(patientId, dto.getSuggestionType(), dto.getContent()));

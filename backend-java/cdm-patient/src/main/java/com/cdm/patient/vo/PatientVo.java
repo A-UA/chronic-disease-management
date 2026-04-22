@@ -10,9 +10,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PatientVo {
-    private String id;
-    private String tenantId;
-    private String orgId;
+    private Long id;
+    private Long tenantId;
+    private Long orgId;
     private String name;
     private String gender;
 }

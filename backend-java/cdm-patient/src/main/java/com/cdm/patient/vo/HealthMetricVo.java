@@ -11,10 +11,10 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class HealthMetricVo {
-    private String id;
-    private String tenantId;
-    private String orgId;
-    private String patientId;
+    private Long id;
+    private Long tenantId;
+    private Long orgId;
+    private Long patientId;
     private String metricType;
     private String metricValue;
     private LocalDateTime recordedAt;

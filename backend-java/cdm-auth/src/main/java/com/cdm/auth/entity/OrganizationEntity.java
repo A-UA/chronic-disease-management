@@ -1,38 +1,28 @@
 package com.cdm.auth.entity;
 
+import com.baomidou.mybatisplus.annotation.TableName;
 import com.cdm.auth.vo.OrganizationVo;
 import com.cdm.common.domain.BaseEntity;
-import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Entity
-@Table(name = "organizations")
+@TableName("organizations")
 @Getter @Setter @NoArgsConstructor
 public class OrganizationEntity extends BaseEntity {
 
-    @Column(name = "tenant_id", nullable = false)
-    private String tenantId;
-
-    @Column(name = "parent_id")
-    private String parentId;
-
-    @Column(nullable = false, length = 255)
+    private Long tenantId;
+    private Long parentId;
     private String name;
-
-    @Column(nullable = false, length = 50)
     private String code;
-
-    @Column(length = 20)
     private String status = "active";
 
     public static OrganizationVo toVo(OrganizationEntity entity) {
         if (entity == null) return null;
         return OrganizationVo.builder()
                 .id(entity.getId())
-                .tenantId(entity.getTenantId() != null ? String.valueOf(entity.getTenantId()) : null)
-                .parentId(entity.getParentId() != null ? String.valueOf(entity.getParentId()) : null)
+                .tenantId(entity.getTenantId())
+                .parentId(entity.getParentId())
                 .name(entity.getName())
                 .code(entity.getCode())
                 .status(entity.getStatus())

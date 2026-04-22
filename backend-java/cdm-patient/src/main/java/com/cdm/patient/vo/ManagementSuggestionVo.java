@@ -11,11 +11,11 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ManagementSuggestionVo {
-    private String id;
-    private String tenantId;
-    private String orgId;
-    private String patientId;
-    private String createdByUserId;
+    private Long id;
+    private Long tenantId;
+    private Long orgId;
+    private Long patientId;
+    private Long createdByUserId;
     private String suggestionType;
     private String content;
     private String status;

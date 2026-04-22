@@ -24,14 +24,14 @@ public class PatientFamilyLinkController {
 
     @Operation(summary = "查询家属绑定", description = "获取特定患者当前的家属关联列表")
     @GetMapping("/{patientId}")
-    public Result<List<PatientFamilyLinkVo>> getLinks(@PathVariable String patientId) {
+    public Result<List<PatientFamilyLinkVo>> getLinks(@PathVariable Long patientId) {
         return Result.ok(service.findAllForPatient(patientId));
     }
 
     @Operation(summary = "绑定家属", description = "为特定患者绑定注册用户作为家属")
     @PostMapping("/{patientId}")
     public Result<PatientFamilyLinkVo> createLink(
-            @PathVariable String patientId,
+            @PathVariable Long patientId,
             @Valid @RequestBody CreatePatientFamilyLinkDto dto
     ) {
         return Result.ok(service.linkFamily(patientId, dto.getFamilyUserId(), dto.getRelationship()));

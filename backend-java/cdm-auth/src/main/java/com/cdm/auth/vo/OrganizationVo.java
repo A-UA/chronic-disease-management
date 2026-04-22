@@ -10,9 +10,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class OrganizationVo {
-    private String id;
-    private String tenantId;
-    private String parentId;
+    private Long id;
+    private Long tenantId;
+    private Long parentId;
     private String name;
     private String code;
     private String status;

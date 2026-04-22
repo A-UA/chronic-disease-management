@@ -24,14 +24,14 @@ public class PatientManagerAssignmentController {
 
     @Operation(summary = "查询管理分配", description = "查询特定患者分配的管理人员及其类型")
     @GetMapping("/{patientId}")
-    public Result<List<PatientManagerAssignmentVo>> getAssignments(@PathVariable String patientId) {
+    public Result<List<PatientManagerAssignmentVo>> getAssignments(@PathVariable Long patientId) {
         return Result.ok(service.findAllForPatient(patientId));
     }
 
     @Operation(summary = "分配管理员", description = "为特定患者分配管家或医生")
     @PostMapping("/{patientId}")
     public Result<PatientManagerAssignmentVo> createAssignment(
-            @PathVariable String patientId,
+            @PathVariable Long patientId,
             @Valid @RequestBody CreatePatientManagerAssignmentDto dto
     ) {
         return Result.ok(service.assignManager(patientId, dto.getManagerUserId(), dto.getAssignmentType()));

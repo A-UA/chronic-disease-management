@@ -1,10 +1,10 @@
 package com.cdm.patient.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cdm.common.security.SecurityUtils;
 import com.cdm.patient.entity.ManagementSuggestionEntity;
-import com.cdm.patient.repository.ManagementSuggestionRepository;
+import com.cdm.patient.mapper.ManagementSuggestionMapper;
 import com.cdm.patient.vo.ManagementSuggestionVo;
-import com.cdm.common.util.SnowflakeIdGenerator;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -13,31 +13,34 @@ import java.util.stream.Collectors;
 
 @Service
 public class ManagementSuggestionService {
-    private final ManagementSuggestionRepository repository;
-    private final SnowflakeIdGenerator idGenerator;
+    private final ManagementSuggestionMapper mapper;
 
-    public ManagementSuggestionService(ManagementSuggestionRepository repository, SnowflakeIdGenerator idGenerator) {
-        this.repository = repository;
-        this.idGenerator = idGenerator;
+    public ManagementSuggestionService(ManagementSuggestionMapper mapper) {
+        this.mapper = mapper;
     }
 
-    public List<ManagementSuggestionVo> findAllForPatient(String patientId) {
-        return repository.findAllByContextAndPatient(SecurityUtils.getTenantId(), SecurityUtils.getAllowedOrgIds(), patientId)
+    public List<ManagementSuggestionVo> findAllForPatient(Long patientId) {
+        Long tenantId = Long.parseLong(SecurityUtils.getTenantId());
+        List<Long> orgIds = SecurityUtils.getAllowedOrgIds().stream().map(Long::parseLong).collect(Collectors.toList());
+        return mapper.selectList(new LambdaQueryWrapper<ManagementSuggestionEntity>()
+                .eq(ManagementSuggestionEntity::getTenantId, tenantId)
+                .in(ManagementSuggestionEntity::getOrgId, orgIds)
+                .eq(ManagementSuggestionEntity::getPatientId, patientId))
             .stream().map(ManagementSuggestionEntity::toVo).collect(Collectors.toList());
     }
 
-    public ManagementSuggestionVo createSuggestion(String patientId, String suggestionType, String content) {
+    public ManagementSuggestionVo createSuggestion(Long patientId, String suggestionType, String content) {
         ManagementSuggestionEntity entity = new ManagementSuggestionEntity();
-        entity.setId(idGenerator.nextId());
-        entity.setTenantId(SecurityUtils.getTenantId());
-        entity.setOrgId(SecurityUtils.getOrgId());
+        entity.setTenantId(Long.parseLong(SecurityUtils.getTenantId()));
+        entity.setOrgId(Long.parseLong(SecurityUtils.getOrgId()));
         entity.setPatientId(patientId);
-        entity.setCreatedByUserId(SecurityUtils.getUserId());
+        entity.setCreatedByUserId(Long.parseLong(SecurityUtils.getUserId()));
         entity.setSuggestionType(suggestionType);
         entity.setContent(content);
         entity.setStatus("active");
         entity.setCreatedAt(LocalDateTime.now());
         
-        return ManagementSuggestionEntity.toVo(repository.save(entity));
+        mapper.insert(entity);
+        return ManagementSuggestionEntity.toVo(entity);
     }
 }

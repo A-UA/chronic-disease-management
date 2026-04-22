@@ -24,14 +24,14 @@ public class HealthMetricController {
 
     @Operation(summary = "获取指标列表", description = "获取特定患者的所有健康指标记录")
     @GetMapping("/{patientId}")
-    public Result<List<HealthMetricVo>> getMetrics(@PathVariable String patientId) {
+    public Result<List<HealthMetricVo>> getMetrics(@PathVariable Long patientId) {
         return Result.ok(service.findAllForPatient(patientId));
     }
 
     @Operation(summary = "新增健康指标", description = "为特定患者新增健康测量指标记录")
     @PostMapping("/{patientId}")
     public Result<HealthMetricVo> createMetric(
-            @PathVariable String patientId,
+            @PathVariable Long patientId,
             @Valid @RequestBody CreateHealthMetricDto dto
     ) {
         return Result.ok(service.create(patientId, dto.getMetricType(), dto.getMetricValue()));

@@ -11,10 +11,10 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class KnowledgeBaseVo {
-    private String id;
-    private String tenantId;
-    private String orgId;
-    private String createdBy;
+    private Long id;
+    private Long tenantId;
+    private Long orgId;
+    private Long createdBy;
     private String name;
     private String description;
     private LocalDateTime createdAt;
