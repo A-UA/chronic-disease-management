@@ -18,11 +18,12 @@ spring:
     username: postgres
     password: postgres
     driver-class-name: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: none
-    show-sql: false
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
+mybatis-plus:
+  global-config:
+    db-config:
+      id-type: assign_id
+      logic-delete-field: is_deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

@@ -12,7 +12,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserVo {
-    private String id;
+    private Long id;
     private String email;
     private String name;
     private String tenantId;
