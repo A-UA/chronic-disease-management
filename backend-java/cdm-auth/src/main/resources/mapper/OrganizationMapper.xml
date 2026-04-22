@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cdm.auth.mapper.OrganizationMapper">
+
+    <!--
+        递归 CTE 获取从 rootOrgId 出发的所有下级组织 ID（含自身），
+        替代 AuthService.getDescendingOrgIds() 中的 N+1 BFS 循环
+    -->
+    <select id="selectDescendantIds" resultType="java.lang.Long">
+        WITH RECURSIVE org_tree AS (
+            -- 锚点：根节点自身
+            SELECT id
+            FROM organizations
+            WHERE id = #{rootOrgId}
+
+            UNION ALL
+
+            -- 递归：所有以当前节点为 parent_id 的子组织
+            SELECT o.id
+            FROM organizations o
+                     JOIN org_tree ot ON o.parent_id = ot.id
+        )
+        SELECT id FROM org_tree
+    </select>
+
+</mapper>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cdm.auth.mapper.RoleMapper">
+
+    <!-- 通过组织+用户一次 JOIN 查出所有直接角色 code，消除 N+1 -->
+    <select id="selectRoleCodesByOrgAndUser" resultType="java.lang.String">
+        SELECT r.code
+        FROM organization_user_roles our
+                 JOIN roles r ON r.id = our.role_id
+        WHERE our.org_id = #{orgId}
+          AND our.user_id = #{userId}
+    </select>
+
+    <!--
+        递归 CTE 展开角色继承链：
+        从用户在指定组织下的直接角色出发，沿 parent_role_id 向上遍历，
+        返回所有（直接 + 继承）角色 ID 集合
+    -->
+    <select id="selectAllRoleIdsByOrgAndUser" resultType="java.lang.Long">
+        WITH RECURSIVE role_tree AS (
+            -- 锚点：用户在该组织下直接拥有的角色
+            SELECT r.id, r.parent_role_id
+            FROM organization_user_roles our
+                     JOIN roles r ON r.id = our.role_id
+            WHERE our.org_id = #{orgId}
+              AND our.user_id = #{userId}
+
+            UNION
+
+            -- 递归：沿 parent_role_id 向上
+            SELECT p.id, p.parent_role_id
+            FROM roles p
+                     JOIN role_tree rt ON rt.parent_role_id = p.id
+        )
+        SELECT DISTINCT id FROM role_tree
+    </select>
+
+</mapper>

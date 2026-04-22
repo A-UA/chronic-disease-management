@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cdm.auth.mapper.PermissionMapper">
+
+    <!--
+        通过角色 ID 集合查出关联的权限 code，
+        替代 Service 层 inSql() 拼接字符串的写法
+    -->
+    <select id="selectPermCodesByRoleIds" resultType="java.lang.String">
+        SELECT DISTINCT p.code
+        FROM role_permissions rp
+                 JOIN permissions p ON p.id = rp.permission_id
+        WHERE rp.role_id IN
+        <foreach collection="roleIds" item="rid" open="(" separator="," close=")">
+            #{rid}
+        </foreach>
+    </select>
+
+</mapper>

@@ -192,20 +192,7 @@ public class AuthService {
     }
 
     private List<Long> getDescendingOrgIds(Long rootOrgId) {
-        List<Long> result = new ArrayList<>();
-        Queue<Long> queue = new LinkedList<>();
-        queue.add(rootOrgId);
-        while (!queue.isEmpty()) {
-            Long current = queue.poll();
-            if (!result.contains(current)) {
-                result.add(current);
-                List<OrganizationEntity> children = orgMapper.selectList(new LambdaQueryWrapper<OrganizationEntity>().eq(OrganizationEntity::getParentId, current));
-                for (OrganizationEntity child : children) {
-                    queue.add(child.getId());
-                }
-            }
-        }
-        return result;
+        return orgMapper.selectDescendantIds(rootOrgId);
     }
 
     private boolean verifyPassword(String raw, String hash) {
@@ -215,39 +202,12 @@ public class AuthService {
     }
 
     private List<String> getRoleCodes(Long orgId, Long userId) {
-        return orgUserRoleMapper.selectList(new LambdaQueryWrapper<OrganizationUserRoleEntity>()
-                .eq(OrganizationUserRoleEntity::getOrgId, orgId)
-                .eq(OrganizationUserRoleEntity::getUserId, userId))
-                .stream()
-                .map(our -> {
-                    RoleEntity role = roleMapper.selectById(our.getRoleId());
-                    return role != null ? role.getCode() : null;
-                })
-                .filter(Objects::nonNull).toList();
+        return roleMapper.selectRoleCodesByOrgAndUser(orgId, userId);
     }
 
     private Set<String> getEffectivePermissions(Long orgId, Long userId) {
-        var roleIds = orgUserRoleMapper.selectList(new LambdaQueryWrapper<OrganizationUserRoleEntity>()
-                .eq(OrganizationUserRoleEntity::getOrgId, orgId)
-                .eq(OrganizationUserRoleEntity::getUserId, userId))
-                .stream()
-                .map(OrganizationUserRoleEntity::getRoleId).collect(Collectors.toList());
-        Set<Long> allRoleIds = new HashSet<>(roleIds);
-        Queue<Long> queue = new LinkedList<>(roleIds);
-        while (!queue.isEmpty()) {
-            Long rid = queue.poll();
-            RoleEntity role = roleMapper.selectById(rid);
-            if (role != null) {
-                if (role.getParentRoleId() != null && allRoleIds.add(role.getParentRoleId())) {
-                    queue.add(role.getParentRoleId());
-                }
-            }
-        }
+        List<Long> allRoleIds = roleMapper.selectAllRoleIdsByOrgAndUser(orgId, userId);
         if (allRoleIds.isEmpty()) return Set.of();
-        
-        return permMapper.selectList(new LambdaQueryWrapper<PermissionEntity>()
-                .inSql(PermissionEntity::getId, "SELECT permission_id FROM role_permissions WHERE role_id IN (" +
-                        allRoleIds.stream().map(String::valueOf).collect(Collectors.joining(",")) + ")"))
-                .stream().map(PermissionEntity::getCode).collect(Collectors.toSet());
+        return new HashSet<>(permMapper.selectPermCodesByRoleIds(allRoleIds));
     }
 }
