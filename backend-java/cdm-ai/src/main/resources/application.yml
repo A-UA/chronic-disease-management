@@ -1,6 +1,19 @@
 server:
   port: 8031
 spring:
+  application:
+    name: cdm-ai
+  config:
+    import:
+      - optional:nacos:cdm-ai.yml?refresh=true
+      - optional:nacos:cdm-common.yml?refresh=true
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+      config:
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        file-extension: yml
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:cdm_saas}
     username: ${DB_USER:postgres}

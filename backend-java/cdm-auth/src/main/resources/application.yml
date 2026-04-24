@@ -13,6 +13,20 @@ sa-token:
 spring:
   application:
     name: cdm-auth
+  config:
+    import:
+      - optional:nacos:cdm-auth.yml?group=CDM_GROUP&refresh=true
+      - optional:nacos:cdm-common.yml?group=CDM_GROUP&refresh=true
+  cloud:
+    nacos:
+      server-addr: ${NACOS_ADDR:localhost:8848}
+      discovery:
+        namespace: ${NACOS_NAMESPACE:}
+        group: CDM_GROUP
+      config:
+        namespace: ${NACOS_NAMESPACE:}
+        group: CDM_GROUP
+        file-extension: yml
   datasource:
     url: jdbc:postgresql://localhost:5432/ai_saas
     username: postgres

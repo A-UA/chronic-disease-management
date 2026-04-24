@@ -22,7 +22,20 @@ security:
 spring:
   application:
     name: cdm-gateway
+  config:
+    import:
+      - optional:nacos:cdm-gateway.yml?group=CDM_GROUP&refresh=true
+      - optional:nacos:cdm-common.yml?group=CDM_GROUP&refresh=true
   cloud:
+    nacos:
+      server-addr: ${NACOS_ADDR:localhost:8848}
+      discovery:
+        namespace: ${NACOS_NAMESPACE:}
+        group: CDM_GROUP
+      config:
+        namespace: ${NACOS_NAMESPACE:}
+        group: CDM_GROUP
+        file-extension: yml
     gateway:
       routes:
         - id: cdm-auth
